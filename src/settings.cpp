@@ -365,6 +365,8 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         }
         else if (k == "synth_min_freq_hz") cfg.synth_min_freq_hz = std::stoi(v);
         else if (k == "synth_max_freq_hz") cfg.synth_max_freq_hz = std::stoi(v);
+        else if (k == "midi_interpolated_pan_mode") cfg.midi_interpolated_pan_mode = (v == "1" || v == "true");
+        else if (k == "midi_interpolation_strength") cfg.midi_interpolation_strength = std::stod(v);
         else if (k == "dotted_duration_ms") cfg.dotted_duration_ms = std::stoi(v);
         else if (k == "dotted_pause_ms") cfg.dotted_pause_ms = std::stoi(v);
         else if (k == "freeze_point_pause_ms") cfg.freeze_point_pause_ms = std::stoi(v);
@@ -508,6 +510,18 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "\n# Synthesizer frequency range (Hz)\n";
     ofs << "synth_min_freq_hz=" << cfg.synth_min_freq_hz << "\n";
     ofs << "synth_max_freq_hz=" << cfg.synth_max_freq_hz << "\n";
+    
+    ofs << "\n";
+    ofs << "# MIDI interpolated panning (Mischtechniken)\n";
+    ofs << "# Enable volume-based pan interpolation for smoother spatial transitions\n";
+    ofs << "# 0=disabled, 1=enabled\n";
+    ofs << "midi_interpolated_pan_mode=" << (cfg.midi_interpolated_pan_mode ? "1" : "0") << "\n";
+    ofs << "\n";
+    ofs << "# Interpolation strength: how much volume affects perceived pan position\n";
+    ofs << "# Range: 0.0 (no effect) to 1.0 (maximum effect)\n";
+    ofs << "# Recommended: 0.2-0.4 for subtle effect, 0.5-0.8 for pronounced effect\n";
+    ofs << "midi_interpolation_strength=" << cfg.midi_interpolation_strength << "\n";
+    
     ofs << "\n# Dotted mode settings\n";
     ofs << "dotted_duration_ms=" << cfg.dotted_duration_ms << "\n";
     ofs << "dotted_pause_ms=" << cfg.dotted_pause_ms << "\n";

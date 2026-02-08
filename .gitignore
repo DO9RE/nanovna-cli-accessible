@@ -28,3 +28,4 @@ Export/*
 # OS files
 .DS_Store
 Thumbs.db
+demos/*.mp3

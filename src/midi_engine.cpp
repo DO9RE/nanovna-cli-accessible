@@ -14,6 +14,11 @@ static constexpr int A4_NOTE = 69;         // MIDI note number for A4
 // This range is set via RPN commands and applies to both gliding and dotted modes
 static constexpr int PITCH_BEND_SEMITONES = 24; // 24 semitones (2 octaves)
 
+// Velocity for gliding mode (fixed to avoid volume changes on note start)
+// In gliding mode, volume is controlled via CC7 (Volume) for smooth modulation
+// Note velocity is kept constant to ensure consistent attack
+static constexpr uint8_t GLIDING_MODE_VELOCITY = 100;
+
 MIDIEngine::MIDIEngine() 
 #if defined(_WIN32)
     : hMidiOut(nullptr)
@@ -471,14 +476,18 @@ void MIDIEngine::generateAudio(
     // Map curve index to MIDI channel (skip channel 9 which is drums)
     int midiChannel = (curveIndex < 4) ? curveIndex : (curveIndex + 1);
     
-    // Convert volume percent to MIDI velocity (0-127)
-    int velocity = static_cast<int>(std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0));
+    // Convert volume percent to MIDI volume (0-127)
+    uint8_t baseVolume = static_cast<uint8_t>(
+        std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0)
+    );
     
-    // Convert pan fraction to MIDI pan (0-127, 64 = center)
-    uint8_t pan = static_cast<uint8_t>(std::clamp(panFraction * 127.0, 0.0, 127.0));
+    // Calculate interpolated pan and volume
+    uint8_t pan, volume;
+    calculateInterpolatedPanVolume(panFraction, baseVolume, pan, volume);
     
-    // Update pan for this channel
+    // Apply calculated values
     sendPan(midiChannel, pan);
+    sendVolume(midiChannel, volume);
     
     // Check if we need to change the note
     NoteState& noteState = channelNotes[curveIndex];
@@ -494,10 +503,12 @@ void MIDIEngine::generateAudio(
         
         if (!noteState.active) {
             // First time activating this curve - play the reference note
-            sendNoteOn(midiChannel, referenceNote, velocity);
+            // In gliding mode, we use a fixed velocity and control volume via CC7
+            // This ensures consistent attack and allows smooth volume modulation
+            sendNoteOn(midiChannel, referenceNote, GLIDING_MODE_VELOCITY);
             noteState.active = true;
             noteState.note = referenceNote;
-            noteState.velocity = velocity;
+            noteState.velocity = GLIDING_MODE_VELOCITY;
             
             if (logger) {
                 char msg[512];
@@ -530,10 +541,12 @@ void MIDIEngine::generateAudio(
         }
         
         // Start new note
-        sendNoteOn(midiChannel, note, velocity);
+        // In dotted mode, we use the modulated volume as velocity for dynamic attack
+        // This creates percussive articulation where both attack and sustain respond to volume
+        sendNoteOn(midiChannel, note, volume);
         noteState.active = true;
         noteState.note = note;
-        noteState.velocity = velocity;
+        noteState.velocity = volume;
         
         // Update pitch bend for fine-tuning
         sendPitchBend(midiChannel, bend);
@@ -665,5 +678,71 @@ void MIDIEngine::reset() {
             sendPitchBend(midiChannel, 0);
         }
 #endif
+    }
+}
+
+void MIDIEngine::calculateInterpolatedPanVolume(
+    double panFraction, 
+    uint8_t baseVolume,
+    uint8_t& outPan, 
+    uint8_t& outVolume)
+{
+    if (!interpolatedPanMode) {
+        // Standard mode: direct pan conversion
+        outPan = static_cast<uint8_t>(std::clamp(panFraction * 127.0, 0.0, 127.0));
+        outVolume = baseVolume;
+        return;
+    }
+    
+    // Interpolated mode: calculate fractional pan position
+    double panFloat = panFraction * 127.0;
+    uint8_t panLow = static_cast<uint8_t>(std::floor(panFloat));
+    double fraction = panFloat - panLow;
+    
+    // Handle edge case: if panLow is already at maximum (127), no interpolation needed
+    if (panLow >= 127) {
+        outPan = 127;
+        outVolume = baseVolume;
+        return;
+    }
+    
+    // Choose nearest discrete pan position
+    outPan = (fraction < 0.5) ? panLow : (panLow + 1);
+    
+    // Adjust volume based on distance to chosen pan position
+    double volumeModulation = 1.0;
+    if (fraction < 0.5) {
+        // Using lower pan, modulate based on distance to higher pan
+        volumeModulation = 1.0 - (fraction * interpolationStrength);
+    } else {
+        // Using higher pan, modulate based on distance from lower pan
+        volumeModulation = 1.0 - ((1.0 - fraction) * interpolationStrength);
+    }
+    
+    outVolume = static_cast<uint8_t>(
+        std::clamp(baseVolume * volumeModulation, 0.0, 127.0)
+    );
+}
+
+void MIDIEngine::setInterpolatedPanMode(bool enable) {
+    std::lock_guard<std::mutex> l(mtx);
+    interpolatedPanMode = enable;
+    
+    if (logger) {
+        logger->log("MIDI", enable ? 
+            "Interpolated pan mode ENABLED" : 
+            "Interpolated pan mode DISABLED");
+    }
+}
+
+void MIDIEngine::setInterpolationStrength(double strength) {
+    std::lock_guard<std::mutex> l(mtx);
+    interpolationStrength = std::clamp(strength, 0.0, 1.0);
+    
+    if (logger) {
+        char msg[256];
+        snprintf(msg, sizeof(msg), 
+            "Pan interpolation strength set to %.2f", interpolationStrength);
+        logger->log("MIDI", msg);
     }
 }

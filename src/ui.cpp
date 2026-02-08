@@ -1699,6 +1699,10 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             // Set synth frequency range for pitch bend calculations
             midiEngine->setSynthFrequencyRange(cfg.synth_min_freq_hz, cfg.synth_max_freq_hz);
             
+            // Set interpolated panning mode and strength
+            midiEngine->setInterpolatedPanMode(cfg.midi_interpolated_pan_mode);
+            midiEngine->setInterpolationStrength(cfg.midi_interpolation_strength);
+            
             // Set custom ruler instruments
             midiEngine->setRulerCustomInstruments(cfg.ruler_custom_sound_midi_gliding, cfg.ruler_custom_sound_midi_dotted);
             
@@ -2287,6 +2291,11 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
                                 if (midiEngine) {
                                     midiEngine->setGlidingMode(cfg.midi_playback_mode == MIDIPlaybackMode::GLIDING);
+                                    
+                                    // Set interpolated panning mode and strength
+                                    midiEngine->setInterpolatedPanMode(cfg.midi_interpolated_pan_mode);
+                                    midiEngine->setInterpolationStrength(cfg.midi_interpolation_strength);
+                                    
                                     // Update instruments
                                     for (int i = 0; i < 5; i++) {
                                         midiEngine->setCurveInstrument(i, cfg.midi_instruments[i]);
@@ -2502,6 +2511,10 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                         
                                         // Set synth frequency range for pitch bend calculations
                                         midiEngine->setSynthFrequencyRange(cfg.synth_min_freq_hz, cfg.synth_max_freq_hz);
+                                        
+                                        // Set interpolated panning mode and strength
+                                        midiEngine->setInterpolatedPanMode(cfg.midi_interpolated_pan_mode);
+                                        midiEngine->setInterpolationStrength(cfg.midi_interpolation_strength);
                                         
                                         // Set custom ruler instruments
                                         midiEngine->setRulerCustomInstruments(cfg.ruler_custom_sound_midi_gliding, cfg.ruler_custom_sound_midi_dotted);
@@ -2955,6 +2968,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     if (cfg.audio_engine == AudioEngineType::MIDI) {
         const char* modeText = (cfg.midi_playback_mode == MIDIPlaybackMode::GLIDING) ? "GLIDING" : "DOTTED";
         print(translation.format("AUDIO_CONFIG_MIDI_MODE_CURRENT", "MIDI playback mode: {0}", modeText) + "\n");
+        
+        // Show MIDI interpolated panning status
+        const char* panModeText = cfg.midi_interpolated_pan_mode ? "ON" : "OFF";
+        print(translation.format("AUDIO_CONFIG_MIDI_INTERP_PAN_STATUS", "Interpolated panning: {0}", panModeText) + "\n");
+        print(translation.format("AUDIO_CONFIG_MIDI_INTERP_STRENGTH_STATUS", "Interpolation strength: {0}", cfg.midi_interpolation_strength) + "\n");
     }
     print("\n");
     
@@ -2977,6 +2995,12 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     print(translation.get("AUDIO_CONFIG_RULER_CMD", "  A - Configure Y-Axis Ruler settings") + "\n");
     print(translation.get("AUDIO_CONFIG_X_RULER_CMD", "  X - Configure X-Axis Ruler settings") + "\n");
     print(translation.get("AUDIO_CONFIG_STATUS_LINE_CMD", "  N - Configure Status Line settings") + "\n");
+    
+    // MIDI-specific commands for interpolated panning
+    if (cfg.audio_engine == AudioEngineType::MIDI) {
+        print(translation.get("AUDIO_CONFIG_MIDI_INTERP_PAN_CMD", "  I - Toggle MIDI interpolated panning") + "\n");
+        print(translation.get("AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD", "  S - Set MIDI interpolation strength") + "\n");
+    }
     
     // Context-sensitive preview message
     if (cfg.audio_engine == AudioEngineType::MIDI) {
@@ -4307,6 +4331,127 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             }
                             
                             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        }
+                    }
+                    break;
+                
+                case 'i':  // Toggle MIDI interpolated panning
+                    {
+                        if (cfg.audio_engine == AudioEngineType::MIDI) {
+                            cfg.midi_interpolated_pan_mode = !cfg.midi_interpolated_pan_mode;
+                            const char* statusText = cfg.midi_interpolated_pan_mode ? "ON" : "OFF";
+                            print("I\n" + translation.format("MIDI_INTERP_PAN_TOGGLED", 
+                                "[MIDI interpolated panning: {0}]", statusText) + "\n");
+                            
+                            if (logger) {
+                                char msg[256];
+                                snprintf(msg, sizeof(msg), "MIDI interpolated panning toggled to %s", statusText);
+                                logger->log("MIDI", msg);
+                            }
+                            
+                            saveSettings();
+                            
+                            // Apply immediately to active MIDI engine
+                            if (analyzer) {
+                                auto engine = analyzer->getAudioEngine();
+                                if (engine && std::string(engine->getName()) == "MIDI") {
+                                    auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(engine);
+                                    if (midiEngine) {
+                                        midiEngine->setInterpolatedPanMode(cfg.midi_interpolated_pan_mode);
+                                    }
+                                }
+                            }
+                        } else {
+                            print("I\n" + translation.get("MIDI_INTERP_PAN_MIDI_ONLY", 
+                                "[Error: Interpolated panning is only available in MIDI mode]") + "\n");
+                        }
+                    }
+                    break;
+                
+                case 's':  // Set MIDI interpolation strength
+                    {
+                        if (cfg.audio_engine == AudioEngineType::MIDI) {
+                            print("S\n\n" + translation.get("MIDI_INTERP_STRENGTH_TITLE", 
+                                "=== Configure MIDI Interpolation Strength ===") + "\n");
+                            print(translation.format("MIDI_INTERP_STRENGTH_CURRENT", 
+                                "Current strength: {0}", cfg.midi_interpolation_strength) + "\n");
+                            print(translation.get("MIDI_INTERP_STRENGTH_DESC", 
+                                "Strength determines how much volume modulation affects perceived pan position.") + "\n");
+                            print(translation.get("MIDI_INTERP_STRENGTH_RANGE", 
+                                "Range: 0.0 (no effect) to 1.0 (maximum effect)") + "\n");
+                            print(translation.get("MIDI_INTERP_STRENGTH_RECOMMEND", 
+                                "Recommended: 0.2-0.4 for subtle effect, 0.5-0.8 for pronounced effect") + "\n\n");
+                            print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
+                                "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                            
+                            std::string input;
+                            bool inputting = true;
+                            while (inputting) {
+                                if (_kbhit()) {
+                                    int ch = _getch();
+                                    if (ch == 27) {  // ESC
+                                        print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
+                                        inputting = false;
+                                    } else if (ch == '\r' || ch == '\n') {  // Enter
+                                        if (!input.empty()) {
+                                            try {
+                                                double strength = std::stod(input);
+                                                if (strength >= 0.0 && strength <= 1.0) {
+                                                    double oldStrength = cfg.midi_interpolation_strength;
+                                                    cfg.midi_interpolation_strength = strength;
+                                                    print("\n" + translation.format("MIDI_INTERP_STRENGTH_SET", 
+                                                        "[Interpolation strength set to: {0}]", strength) + "\n");
+                                                    
+                                                    if (logger) {
+                                                        char msg[256];
+                                                        snprintf(msg, sizeof(msg), 
+                                                            "MIDI interpolation strength changed from %.2f to %.2f", 
+                                                            oldStrength, strength);
+                                                        logger->log("MIDI", msg);
+                                                    }
+                                                    
+                                                    saveSettings();
+                                                    
+                                                    // Apply immediately to active MIDI engine
+                                                    if (analyzer) {
+                                                        auto engine = analyzer->getAudioEngine();
+                                                        if (engine && std::string(engine->getName()) == "MIDI") {
+                                                            auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(engine);
+                                                            if (midiEngine) {
+                                                                midiEngine->setInterpolationStrength(strength);
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    print("\n" + translation.get("MIDI_INTERP_STRENGTH_ERROR", 
+                                                        "[Error: Strength must be between 0.0 and 1.0]") + "\n");
+                                                    print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
+                                                        "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                                                    input.clear();
+                                                    continue;
+                                                }
+                                            } catch (...) {
+                                                print("\n" + translation.get("ERROR_INVALID_NUMBER", 
+                                                    "[Error: Invalid number]") + "\n");
+                                                print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
+                                                    "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                                                input.clear();
+                                                continue;
+                                            }
+                                        }
+                                        inputting = false;
+                                    } else if ((ch >= '0' && ch <= '9') || ch == '.') {
+                                        input += static_cast<char>(ch);
+                                        print(std::string(1, ch));
+                                    } else if (ch == 8 && !input.empty()) {  // Backspace
+                                        input.pop_back();
+                                        print("\b \b");
+                                    }
+                                }
+                            }
+                        } else {
+                            print("S\n" + translation.get("MIDI_INTERP_STRENGTH_MIDI_ONLY", 
+                                "[Error: Interpolation strength is only available in MIDI mode]") + "\n");
                         }
                     }
                     break;

@@ -146,6 +146,31 @@ public:
      */
     int getXAxisRulerDrum() const { return xAxisRulerDrum; }
     
+    /**
+     * Enable/disable interpolated panning mode
+     * Uses volume modulation to create perceived pan positions between MIDI's 128 discrete steps
+     * @param enable true to enable volume-based pan interpolation
+     */
+    void setInterpolatedPanMode(bool enable);
+    
+    /**
+     * Get current interpolated panning mode state
+     * @return true if interpolated panning is enabled
+     */
+    bool isInterpolatedPanMode() const { return interpolatedPanMode; }
+    
+    /**
+     * Set interpolation strength (how much volume affects perceived pan)
+     * @param strength 0.0 (no effect) to 1.0 (maximum effect)
+     */
+    void setInterpolationStrength(double strength);
+    
+    /**
+     * Get current interpolation strength
+     * @return interpolation strength (0.0-1.0)
+     */
+    double getInterpolationStrength() const { return interpolationStrength; }
+    
     // Number of curves/channels supported
     static constexpr int NUM_CURVES = 5;
 
@@ -159,6 +184,10 @@ private:
     int synthMinFreqHz = 100;   // Minimum synth frequency (Hz)
     int synthMaxFreqHz = 1000;  // Maximum synth frequency (Hz)
     uint8_t referenceNote = 60; // Reference MIDI note (middle C by default)
+    
+    // Interpolated panning mode (Mischtechniken)
+    bool interpolatedPanMode = false;      // Enable volume-based pan interpolation
+    double interpolationStrength = 0.3;    // Default: 30% volume modulation
     
 #if defined(_WIN32)
     HMIDIOUT hMidiOut;  // MIDI output device handle
@@ -259,4 +288,17 @@ private:
      * Stop all notes on all channels
      */
     void allNotesOff();
+    
+    /**
+     * Calculate interpolated pan and volume values
+     * @param panFraction Desired pan position (0.0 = left, 1.0 = right)
+     * @param baseVolume Base volume level (0-127)
+     * @param outPan Output pan value
+     * @param outVolume Output volume value
+     */
+    void calculateInterpolatedPanVolume(
+        double panFraction, 
+        uint8_t baseVolume,
+        uint8_t& outPan, 
+        uint8_t& outVolume);
 };

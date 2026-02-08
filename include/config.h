@@ -87,6 +87,10 @@ struct AppConfig {
     int synth_min_freq_hz = SYNTH_DEFAULT_MIN_FREQ_HZ;   // Minimum frequency (100-20000 Hz)
     int synth_max_freq_hz = SYNTH_DEFAULT_MAX_FREQ_HZ;   // Maximum frequency (100-20000 Hz)
     
+    // MIDI interpolated panning (Mischtechniken) settings
+    bool midi_interpolated_pan_mode = false;      // Enable volume-based pan interpolation for higher spatial resolution
+    double midi_interpolation_strength = 0.3;     // Interpolation strength (0.0-1.0, default 0.3 = 30% volume modulation)
+    
     // Dotted mode settings
     int dotted_duration_ms = 30;  // Duration of each dot in milliseconds (30-500ms)
     int dotted_pause_ms = 60;      // Duration of pause between dots in milliseconds (10-500ms)

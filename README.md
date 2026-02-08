@@ -119,12 +119,6 @@ Access the application from any browser on your local network:
 
 **Security Note:** Web interface is HTTP-only, intended for local network use only.
 
-# Prebuilt Beta (ZIP)
-
-A precompiled beta build is included right in the repository root. If you just want to try it without building from source, download it here:
-
-[nanovna-cli-accessible-beta.zip](./nanovna-cli-accessible-beta.zip)
-
 ## Quick Start
 
 ### Installation
@@ -245,33 +239,3 @@ This is a Windows-native application using:
 
 Cross-platform compilation is not supported due to these dependencies.
 
-### Testing Workflow Script
-
-The `test-workflow.sh` script automates the workflow for testing new branches and merging them into main:
-
-**Usage:**
-```bash
-./test-workflow.sh
-```
-
-**Workflow:**
-1. Shows current branch and fetches latest changes
-2. Lists available testing branches (branches starting with `*` or `new`) with numbers
-3. Prompts to select a branch by number
-4. Switches to the selected testing branch
-5. Deletes build directory and runs `./build.sh`
-6. On build success, asks if you're satisfied with the results
-7. If satisfied, merges testing branch into main and pushes
-8. Offers to delete the testing branch (local and remote)
-9. Optionally cleans up other branches (local and/or remote)
-
-**Features:**
-- Interactive prompts at each step
-- Keeps error messages visible if build fails
-- Color-coded output for better readability
-- Safe branch cleanup with confirmation prompts
-
-## Ham Radio
-**73 DE DO9RE**
-
-NanoVNA-CLI-Accessible QRT

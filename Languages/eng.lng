@@ -1141,3 +1141,22 @@ ACOUSTIC_MIDI_MODE_DOTTED=[MIDI: Switched to DOTTED mode with percussive instrum
 HELP_ACOUSTIC_X_RULER=  X           Toggle X-axis ruler (blips at each measurement point)
 HELP_ACOUSTIC_STATUS_LINE=  N           Toggle status line (shows detailed info during playback)
 HELP_ACOUSTIC_GOTO=  G           Go To specific frequency/position
+
+
+# MIDI Interpolated Panning (Mischtechniken)
+AUDIO_CONFIG_MIDI_INTERP_PAN_STATUS=Interpolated panning: {0}
+AUDIO_CONFIG_MIDI_INTERP_STRENGTH_STATUS=Interpolation strength: {0}
+AUDIO_CONFIG_MIDI_INTERP_PAN_CMD=  I - Toggle MIDI interpolated panning
+AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  S - Set MIDI interpolation strength
+MIDI_INTERP_PAN_TOGGLED=[MIDI interpolated panning: {0}]
+MIDI_INTERP_PAN_MIDI_ONLY=[Error: Interpolated panning is only available in MIDI mode]
+MIDI_INTERP_STRENGTH_TITLE==== Configure MIDI Interpolation Strength ===
+MIDI_INTERP_STRENGTH_CURRENT=Current strength: {0}
+MIDI_INTERP_STRENGTH_DESC=Strength determines how much volume modulation affects perceived pan position.
+MIDI_INTERP_STRENGTH_RANGE=Range: 0.0 (no effect) to 1.0 (maximum effect)
+MIDI_INTERP_STRENGTH_RECOMMEND=Recommended: 0.2-0.4 for subtle effect, 0.5-0.8 for pronounced effect
+MIDI_INTERP_STRENGTH_PROMPT=Enter interpolation strength (0.0-1.0), or press ESC to cancel:
+MIDI_INTERP_STRENGTH_SET=[Interpolation strength set to: {0}]
+MIDI_INTERP_STRENGTH_ERROR=[Error: Strength must be between 0.0 and 1.0]
+MIDI_INTERP_STRENGTH_MIDI_ONLY=[Error: Interpolation strength is only available in MIDI mode]
+ERROR_INVALID_NUMBER=[Error: Invalid number]
