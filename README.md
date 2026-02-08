@@ -119,6 +119,12 @@ Access the application from any browser on your local network:
 
 **Security Note:** Web interface is HTTP-only, intended for local network use only.
 
+# Prebuilt Beta (ZIP)
+
+A precompiled beta build is included right in the repository root. If you just want to try it without building from source, download it here:
+
+[nanovna-cli-accessible-beta.zip](./nanovna-cli-accessible-beta.zip)
+
 ## Quick Start
 
 ### Installation
