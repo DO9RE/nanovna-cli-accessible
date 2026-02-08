@@ -1,7 +1,6 @@
 # nanoVNA-cli-accessible
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
-Barrierefreie Konsolenanwendung zur Steuerung, Messung und auditiven Darstellung des NanoVNA-H4.
 
 > **⚠️ WINDOWS-ONLY APPLICATION**  
 > This application requires Windows and cannot be built on Linux/macOS.  
@@ -239,3 +238,10 @@ This is a Windows-native application using:
 
 Cross-platform compilation is not supported due to these dependencies.
 
+# Beta Version Download
+
+The current beta is available as a ZIP file directly in this repository.
+
+Download: `nanovna-cli-accessible-beta.zip` (located in the repository root)
+
+Open the file `nanovna-cli-accessible-beta.zip` and click “Download”, or use the “Download raw file” option.

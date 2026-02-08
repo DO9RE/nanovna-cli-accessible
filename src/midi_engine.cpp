@@ -327,14 +327,18 @@ void MIDIEngine::generateRulerAudio(
     // Use dedicated ruler channel (channel 6) to avoid conflicts with curve channels 0,1,2,3,5
     const int rulerMidiChannel = 6;
     
-    // Convert volume percent to MIDI velocity (0-127)
-    int velocity = static_cast<int>(std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0));
+    // Convert volume percent to MIDI base volume (0-127)
+    uint8_t baseVolume = static_cast<uint8_t>(
+        std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0)
+    );
     
-    // Convert pan fraction to MIDI pan (0-127, 64 = center)
-    uint8_t pan = static_cast<uint8_t>(std::clamp(panFraction * 127.0, 0.0, 127.0));
+    // Calculate interpolated pan and volume using the same model as curve sounds
+    uint8_t pan, volume;
+    calculateInterpolatedPanVolume(panFraction, baseVolume, pan, volume);
     
-    // Update pan for ruler channel
+    // Update pan and volume for ruler channel
     sendPan(rulerMidiChannel, pan);
+    sendVolume(rulerMidiChannel, volume);
     
     // Set instrument for ruler (use waveformIndex to determine instrument)
     // Map waveform to appropriate MIDI instrument
@@ -356,11 +360,11 @@ void MIDIEngine::generateRulerAudio(
     // This creates smooth transitions between ruler blips
     
     if (!rulerNote.active) {
-        // First blip: Start the reference note
-        sendNoteOn(rulerMidiChannel, referenceNote, velocity);
+        // First blip: Start the reference note with calculated volume as velocity
+        sendNoteOn(rulerMidiChannel, referenceNote, volume);
         rulerNote.active = true;
         rulerNote.note = referenceNote;
-        rulerNote.velocity = velocity;
+        rulerNote.velocity = volume;
         
         if (logger) {
             char msg[512];
@@ -370,7 +374,9 @@ void MIDIEngine::generateRulerAudio(
     } else {
         // Subsequent blips: Update volume using expression controller (CC 11)
         // Expression allows dynamic volume changes without retriggering
-        uint8_t expression = static_cast<uint8_t>(std::clamp(velocity * 1.0, 0.0, 127.0));
+        // Use the interpolated volume directly (already calculated by calculateInterpolatedPanVolume)
+        // This ensures consistent volume modulation with the panning model
+        uint8_t expression = volume;
         sendMIDIMessage(0xB0 | rulerMidiChannel, 11, expression);  // CC 11 = Expression
     }
     
@@ -432,14 +438,18 @@ void MIDIEngine::generateXAxisRulerAudio(
     // Use MIDI channel 9 (drum channel, 0-indexed)
     const int drumChannel = 9;
     
-    // Convert volume percent to MIDI velocity (0-127)
-    int velocity = static_cast<int>(std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0));
+    // Convert volume percent to MIDI base volume (0-127)
+    uint8_t baseVolume = static_cast<uint8_t>(
+        std::clamp(volumePercent * 127.0 / 100.0, 0.0, 127.0)
+    );
     
-    // Convert pan fraction to MIDI pan (0-127, 64 = center)
-    uint8_t pan = static_cast<uint8_t>(std::clamp(panFraction * 127.0, 0.0, 127.0));
+    // Calculate interpolated pan and volume using the same model as curve sounds
+    uint8_t pan, volume;
+    calculateInterpolatedPanVolume(panFraction, baseVolume, pan, volume);
     
-    // Update pan for drum channel
+    // Update pan and volume for drum channel
     sendPan(drumChannel, pan);
+    sendVolume(drumChannel, volume);
     
     // Stop previous X-axis ruler note if any (for protection against hanging notes)
     if (xAxisRulerNote.active) {
@@ -447,11 +457,11 @@ void MIDIEngine::generateXAxisRulerAudio(
         xAxisRulerNote.active = false;
     }
     
-    // Play drum sound
-    sendNoteOn(drumChannel, static_cast<uint8_t>(xAxisRulerDrum), static_cast<uint8_t>(velocity));
+    // Play drum sound with calculated volume as velocity
+    sendNoteOn(drumChannel, static_cast<uint8_t>(xAxisRulerDrum), volume);
     xAxisRulerNote.active = true;
     xAxisRulerNote.note = static_cast<uint8_t>(xAxisRulerDrum);
-    xAxisRulerNote.velocity = static_cast<uint8_t>(velocity);
+    xAxisRulerNote.velocity = volume;
     
     // Ensure buffer is properly sized (MIDI plays through OS, not directly in buffer)
     if (buffer.size() < static_cast<size_t>(samples * 2)) {
