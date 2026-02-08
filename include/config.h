@@ -1,0 +1,222 @@
+#pragma once
+#include <string>
+#include <cstdint>
+#include <array>
+#include <vector>
+#include "waveform.h"  // Include waveform enum
+
+// Audio engine types
+enum class AudioEngineType {
+    SYNTHESIZER = 0,  // Waveform-based synthesis (default)
+    MIDI = 1          // MIDI-based synthesis
+};
+
+// MIDI playback mode types
+enum class MIDIPlaybackMode {
+    GLIDING = 0,  // Smooth/gliding mode - for sustained instruments, no retriggering
+    DOTTED = 1    // Dotted mode - for percussive instruments, with retriggering
+};
+
+// Frequency range constants for synthesizer audio
+constexpr int SYNTH_MIN_FREQ_HZ_LIMIT = 100;    // Minimum allowed frequency
+constexpr int SYNTH_MAX_FREQ_HZ_LIMIT = 20000;  // Maximum allowed frequency (human hearing limit)
+
+// Default frequency range for synthesizer audio (user-configurable)
+constexpr int SYNTH_DEFAULT_MIN_FREQ_HZ = 100;   // Default minimum frequency
+constexpr int SYNTH_DEFAULT_MAX_FREQ_HZ = 1000;  // Default maximum frequency
+
+struct AppConfig {
+    bool debug = false;
+    std::string serial_port; // e.g., "COM4"
+    unsigned int baud = 9600;
+    uint64_t start_freq = 0ULL;  // 0 indicates not set by user yet
+    uint64_t end_freq = 0ULL;    // 0 indicates not set by user yet
+    uint64_t step = 0ULL;        // 0 indicates not set by user yet
+    bool autostart = false;
+    bool audio = true;
+    std::string command_templates_file = "config/command_templates.cfg";
+    
+    // Language and display settings
+    std::string language = "eng";  // Language code (eng, deu, etc.)
+    std::string bandplan = "deu";  // Band plan code (usa, deu, etc.)
+    bool first_start = true;  // Flag to indicate first start of the program
+    
+    // Acoustic analysis settings
+    bool acoustic_smooth_mode = false;  // false = dotted, true = smooth
+    int acoustic_time_seconds = 5;      // Time in seconds for complete sweep (default 5)
+    bool continuous_replay = true;      // Continuous replay enabled by default
+    std::array<bool, 5> curve_enabled = {true, false, false, false, false};  // SWR, RL, |Z|, X, Phase
+    
+    // Volume settings - separate for Synth and MIDI modes
+    // Synth mode volumes: balanced based on waveform energy (sine=100%, others reduced based on harmonic content)
+    std::array<int, 5> curve_volume_synth = {100, 50, 70, 50, 50};  // SWR(sine), RL(square), |Z|(triangle), X(sawtooth), Phase(pulse)
+    // MIDI mode volumes: all at 100% as MIDI instruments are pre-balanced
+    std::array<int, 5> curve_volume_midi = {100, 100, 100, 100, 100};  // All curves at full volume
+    // Legacy volume array for backward compatibility (deprecated, will be removed in future)
+    std::array<int, 5> curve_volume = {100, 100, 100, 100, 100};  // Volume percent per curve (legacy)
+    
+    // Master volume control (0-100%)
+    int master_volume = 100;  // Global volume control for all audio output
+    
+    // Audio engine configuration
+    AudioEngineType audio_engine = AudioEngineType::SYNTHESIZER;  // Default to synthesizer
+    std::array<int, 5> midi_instruments = {19, 16, 81, 80, 48};  // MIDI program numbers for each curve
+    // Default instruments: Church Organ, Drawbar Organ, Lead 2 (sawtooth), Lead 1 (square), String Ensemble
+    // All selected for sustained, non-percussive tones suitable for continuous audio analysis
+    
+    // Synthesizer waveforms for each curve (0=SWR, 1=RL, 2=|Z|, 3=X, 4=Phase)
+    std::array<Waveform, 5> synth_waveforms = {
+        Waveform::SINE,          // SWR
+        Waveform::SQUARE,        // Return Loss
+        Waveform::TRIANGLE,      // Impedance Mag
+        Waveform::SAWTOOTH,      // Reactance
+        Waveform::PULSE          // Phase
+    };
+    
+    // MIDI playback mode configuration
+    MIDIPlaybackMode midi_playback_mode = MIDIPlaybackMode::GLIDING;  // Default to gliding mode for sustained instruments
+    
+    // MIDI instrument presets for different playback modes
+    // Gliding mode preset: sustained instruments (strings, organs, pads, synth leads)
+    std::array<int, 5> midi_instruments_gliding = {48, 19, 16, 40, 81};  // String Ensemble, Church Organ, Drawbar Organ, Violin, Lead 2
+    
+    // Dotted mode preset: percussive and articulated instruments
+    std::array<int, 5> midi_instruments_dotted = {11, 12, 13, 14, 8};  // Vibraphone, Marimba, Xylophone, Tubular Bells, Celesta
+    
+    // Frequency range for synthesizer audio (Hz)
+    int synth_min_freq_hz = SYNTH_DEFAULT_MIN_FREQ_HZ;   // Minimum frequency (100-20000 Hz)
+    int synth_max_freq_hz = SYNTH_DEFAULT_MAX_FREQ_HZ;   // Maximum frequency (100-20000 Hz)
+    
+    // Dotted mode settings
+    int dotted_duration_ms = 30;  // Duration of each dot in milliseconds (30-500ms)
+    int dotted_pause_ms = 60;      // Duration of pause between dots in milliseconds (10-500ms)
+    int freeze_point_pause_ms = 200;  // Duration of pause between repeated points in freeze mode with dotted playback (50-2000ms)
+    int loop_pause_ms = 0;  // Duration of pause before loop repeats in continuous replay mode (0-5000ms, 0 = no pause)
+    int inverted_loop_gap_ms = 0;  // Duration of silent gap when skipping inverted loop section (0-5000ms, 0 = no gap)
+    
+    // Table view preferences
+    std::vector<std::string> table_columns = {"FREQ", "SWR", "RL", "R", "X", "Z", "PHASE"};  // Default: all columns enabled
+    
+    // Continuous sweep settings
+    bool continuous_sweep_enabled = false;  // Continuous sweep mode toggle
+    double last_measurement_duration_seconds = 0.0;  // Duration of last measurement
+    
+    // Navigation jump width for acoustic analyzer
+    int navigation_jump_width = 1;  // Current jump width (1, 10, 100, 500, 1000)
+    
+    // Calibration settings
+    int calibration_bank = 0;  // Calibration bank number (0 is auto-loaded on device startup)
+    
+    // Y-Axis Ruler (Lineal) settings
+    enum class RulerSoundMode {
+        FOLLOW_LAST_CURVE = 0,  // Use sound of last activated curve
+        CUSTOM_SOUND = 1         // Use custom sound setting
+    };
+    
+    RulerSoundMode ruler_sound_mode = RulerSoundMode::FOLLOW_LAST_CURVE;  // Default to follow last curve
+    int ruler_custom_sound_synth = 0;  // Custom waveform index for synth mode (0-5)
+    int ruler_custom_sound_midi_gliding = 48;  // Custom MIDI instrument for gliding mode (default: String Ensemble)
+    int ruler_custom_sound_midi_dotted = 11;   // Custom MIDI instrument for dotted mode (default: Vibraphone)
+    int ruler_blip_duration_ms = 80;  // Duration of shortest blip (half integers) in milliseconds (30-500ms)
+    int ruler_volume = 100;  // Volume for ruler sounds (0-100%)
+    int ruler_lengthening_factor_percent = 150;  // Lengthening factor in % for longer tones (100-500%, default 150%)
+    
+    // X-Axis Ruler settings
+    bool x_axis_ruler_enabled = false;  // X-axis ruler enabled by default?
+    int x_axis_ruler_volume = 70;  // Volume for X-axis ruler (0-100%, default 70%)
+    int x_axis_ruler_blip_duration_ms = 50;  // Duration of X-axis ruler blips (30-200ms, default 50ms)
+    int x_axis_ruler_noise_type = 0;  // Noise type for synthesizer mode (0=White, 1=Pink, 2=Click)
+    int x_axis_ruler_midi_drum = 42;  // MIDI drum note for X-axis ruler (35-81, default 42 = Closed Hi-Hat)
+    
+    // Status line settings
+    bool status_line_enabled = false;  // Status line enabled by default?
+    int status_line_content = 3;  // Status line content (0=Position, 1=Frequency, 2=SWR, 3=All)
+    // Status line individual toggles (for flexible configuration)
+    bool status_line_show_position = true;  // Show position in status line
+    bool status_line_show_frequency = true;  // Show frequency in status line
+    bool status_line_show_swr = true;  // Show SWR value in status line
+    bool status_line_show_rl = false;  // Show Return Loss value in status line
+    bool status_line_show_impedance = false;  // Show Impedance magnitude value in status line
+    bool status_line_show_reactance = false;  // Show Reactance value in status line
+    bool status_line_show_phase = false;  // Show Phase value in status line
+    
+    // Braille printer settings
+    enum class BrailleProtocol {
+        INDEX_V4 = 0,  // Index Everest V4 protocol (raster graphics)
+        INDEX_V5 = 1   // Index Everest V5 protocol (floating dot area)
+    };
+    
+    enum class BraillePaperSize {
+        A4 = 0,           // A4 paper (210mm x 297mm)
+        LETTER = 1,       // US Letter (215.9mm x 279.4mm)
+        A3 = 2,           // A3 paper (297mm x 420mm)
+        LEGAL = 3,        // US Legal (215.9mm x 355.6mm)
+        BLISTA_260x305 = 4,  // Blista Brailletec (260mm x 305mm)
+        BLISTA_270x340 = 5,  // Blista Brailletec (270mm x 340mm)
+        BLISTA_297x304 = 6   // Blista Brailletec (297mm x 304mm)
+    };
+    
+    enum class BrailleOrientation {
+        PORTRAIT = 0,   // Portrait orientation
+        LANDSCAPE = 1   // Landscape orientation
+    };
+    
+    BrailleProtocol braille_protocol = BrailleProtocol::INDEX_V5;  // Default to V5 (floating dot area)
+    BraillePaperSize braille_paper_size = BraillePaperSize::BLISTA_260x305;    // Default to Blista 260x305
+    BrailleOrientation braille_orientation = BrailleOrientation::PORTRAIT;  // Default to portrait
+    
+    // Braille grid options (axes are always shown)
+    enum class BrailleCoordinateGrid {
+        NONE = 0,        // No coordinate grid
+        DOTS = 1,        // Individual dots at integer coordinates
+        GRID_LINES = 2   // Full grid lines
+    };
+    
+    BrailleCoordinateGrid braille_coordinate_grid = BrailleCoordinateGrid::DOTS;  // Default: dots at integers
+    
+    // Phase discontinuity display mode (for phase curve jumps at ±180°)
+    enum class BraillePhaseDiscontinuityMode {
+        ARROWS = 0,        // Show small directional arrows (default, compact)
+        VERTICAL_LINE = 1  // Draw vertical line with curve pattern applied
+    };
+    
+    BraillePhaseDiscontinuityMode braille_phase_discontinuity = BraillePhaseDiscontinuityMode::VERTICAL_LINE;  // Default: vertical line
+    
+    // Curve pattern definitions (for tactile differentiation)
+    // Format: alternating draw-pause segments, numbers indicate count of dots/pauses
+    // Pattern alternates: first number = draw, second = pause, third = draw, etc.
+    // Examples: "0" or empty = solid line (all dots)
+    //           "2-1" = draw 2 dots, pause 1 dot, repeat
+    //           "3-1" = draw 3 dots, pause 1 dot, repeat
+    std::array<std::string, 5> braille_curve_patterns = {"1-1", "2-1", "3-1", "4-1", "5-1"};
+    // Defaults: SWR=1-1, RL=2-1, |Z|=3-1, X=4-1, Phase=5-1
+    
+    // Braille DPI setting (dots per inch)
+    // Controls the minimum spacing between dots
+    // Default: 25 DPI = 1 dot per mm (25/25.4 ≈ 0.984 mm)
+    // Range: 10-40 DPI (2.54mm - 0.635mm spacing)
+    double braille_dpi = 18.0;  // Default: 18 DPI
+    
+    // Advanced Braille Printer Parameters (Index Protocol)
+    // These control low-level printer behavior for fine-tuning output
+    
+    // Document parameters (ESC D command)
+    int braille_top_margin = 0;        // TM: Top margin in lines (0-10, default 0 for max space)
+    int braille_binding_indent = 2;    // BI: Binding margin/indent (0-10, default 2)
+    int braille_chars_per_line = 29;   // CH: Characters per line (depends on paper width)
+    int braille_line_spacing = 50;     // LS: Line spacing in 0.1mm (50=5.0mm, 100=10.0mm)
+    
+    // Floating dot area layout parameters (for V5 protocol)
+    // These control how much of the paper is used for graphics
+    double braille_graph_width_percent_portrait = 0.95;   // Portrait: % of paper width for graph (0.8-0.99)
+    double braille_graph_width_percent_landscape = 0.98;  // Landscape: % of paper width for graph (0.8-0.99)
+    double braille_graph_height_percent_portrait = 0.70;  // Portrait: % of paper height for graph (0.6-0.9)
+    double braille_graph_height_percent_landscape = 0.85; // Landscape: % of paper height for graph (0.6-0.9)
+    
+    // Origin offsets for floating dot area (in mm from margins)
+    double braille_origin_x_mm = 3.0;  // Horizontal offset from left margin (0-10mm)
+    double braille_origin_y_mm = 0.0;  // Vertical offset from text insertion point (0-20mm)
+    
+    // Y-axis space reservation (in mm, subtracted from graph width for axis labels)
+    double braille_y_axis_space_mm = 2.0;  // Space reserved for Y-axis (1-5mm)
+};

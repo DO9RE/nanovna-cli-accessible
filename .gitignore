@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+*.exe
+*.obj
+*.o
+*.a
+
+# Test files
+test_braille
+test_braille_export.cpp
+
+# Logs
+*.txt
+!CMakeLists.txt
+logs/*
+!logs/.gitkeep
+
+# Export files
+Export/*
+!Export/.gitkeep
+
+# IDE files
+.vscode/
+.vs/
+*.suo
+*.user
+
+# OS files
+.DS_Store
+Thumbs.db
