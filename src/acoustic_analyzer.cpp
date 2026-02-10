@@ -52,12 +52,17 @@ AcousticAnalyzer::AcousticAnalyzer(Logger* logger_, MathLogger* mathLogger_, Tra
       statusLineShowRL(false), statusLineShowImpedance(false), statusLineShowReactance(false), statusLineShowPhase(false),
       rulerSoundMode(RulerSoundMode::FOLLOW_LAST_CURVE),
       rulerCustomSoundSynth(0), rulerCustomSoundMidiGliding(48), rulerCustomSoundMidiDotted(11),
-      lastEnabledCurve(0)
+      lastEnabledCurve(0),
+      lastAxisCrossingCheckPos(0),
+      pendingAxisEventOffset(0)
 #if defined(_WIN32)
       , hWaveOut(nullptr), audioDeviceOpen(false),
       nextBufferToQueue(0), nextBufferToCheck(0), buffersInFlight(0)
 #endif
 {
+    
+    // Initialize Smith visualizer
+    smithVisualizer = std::make_unique<SmithVisualizer>(logger, translation);
     
     // Initialize curves with translation keys (actual names will be retrieved via getCurveName)
     curves[0].name = "CURVE_NAME_SWR";
@@ -265,6 +270,13 @@ void AcousticAnalyzer::play() {
 void AcousticAnalyzer::pause() {
     state = PlaybackState::PAUSED;
     
+    // Clear pending axis event buffer
+    {
+        std::lock_guard<std::mutex> lock(axisEventBufferMutex);
+        pendingAxisEventBuffer.clear();
+        pendingAxisEventOffset = 0;
+    }
+    
     // Stop all active notes to prevent hanging notes
     if (audioEngine) {
         audioEngine->stopAllNotes();
@@ -281,6 +293,13 @@ void AcousticAnalyzer::freeze() {
 void AcousticAnalyzer::stop() {
     state = PlaybackState::STOPPED;
     shouldStop = true;
+    
+    // Clear pending axis event buffer to prevent crackling on restart
+    {
+        std::lock_guard<std::mutex> lock(axisEventBufferMutex);
+        pendingAxisEventBuffer.clear();
+        pendingAxisEventOffset = 0;
+    }
     
     // Stop all active notes to prevent hanging notes
     if (audioEngine) {
@@ -1381,6 +1400,23 @@ void AcousticAnalyzer::playCurrentPosition(int durationMs) {
         }
     }
     
+    // Smith Visualization: Add ambient spatial cues if enabled
+    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isSmithCuesEnabled()) {
+        smithVisualizer->generateSmithAmbientAudio(pt, mixBuffer, samples);
+    }
+    
+    // Center pulse generation (reference signal for Smith chart center)
+    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isCenterPulseEnabled()) {
+        // Calculate time delta: samples / sample rate
+        double deltaTimeSeconds = static_cast<double>(samples) / SAMPLE_RATE;
+        smithVisualizer->generateCenterPulse(mixBuffer, samples, deltaTimeSeconds);
+    }
+    
+    // Axis crossing events (check full dataset range for crossings)
+    // This ensures we detect crossings even when points are skipped
+    size_t prevPos = (pos > 0) ? (pos - 1) : 0;
+    checkAxisCrossingsInRange(prevPos, pos, mixBuffer, samples);
+    
 #if defined(_WIN32)
     // Play the mixed buffer using persistent audio device
     playAudioBuffer(mixBuffer);
@@ -1576,6 +1612,24 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
             mixBuffer[bufferStartIdx + i] = static_cast<int16_t>(mixed);
         }
     }
+    
+    // Smith Visualization: Add ambient spatial cues if enabled (interpolated between pt1 and pt2)
+    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isSmithCuesEnabled()) {
+        // For smooth mode, we interpolate between two points
+        // Use the first point for ambient (could be enhanced to interpolate later)
+        smithVisualizer->generateSmithAmbientAudio(pt1, mixBuffer, samples);
+    }
+    
+    // Center pulse generation (reference signal for Smith chart center)
+    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isCenterPulseEnabled()) {
+        // Calculate time delta: samples / sample rate
+        double deltaTimeSeconds = static_cast<double>(samples) / SAMPLE_RATE;
+        smithVisualizer->generateCenterPulse(mixBuffer, samples, deltaTimeSeconds);
+    }
+    
+    // Axis crossing events (check full dataset range for crossings)
+    // This ensures we detect crossings even when points are skipped in smooth mode
+    checkAxisCrossingsInRange(pos, nextPos, mixBuffer, samples);
     
 #if defined(_WIN32)
     // Play the mixed buffer using persistent audio device
@@ -3351,3 +3405,137 @@ void AcousticAnalyzer::rulerThreadFunc() {
         logger->log("ACOUSTIC", "Y-axis ruler playback complete");
     }
 }
+
+// Smith Visualization methods
+void AcousticAnalyzer::enableSmithVisualization(bool enable) {
+    if (smithVisualizer) {
+        smithVisualizer->setEnabled(enable);
+        smithVisualizer->setSmithCuesEnabled(enable);  // Enable cues when enabling visualization
+        smithVisualizer->setAudioEngine(audioEngine);
+        
+        if (logger) {
+            std::string modeInfo = smithVisualizer->getCurrentModeName();
+            std::string volumeInfo = std::to_string(smithVisualizer->getSmithCuesVolume());
+            logger->log("SMITH", std::string("Smith visualization ") + 
+                       (enable ? "ENABLED" : "DISABLED") + 
+                       " | Mode: " + modeInfo + 
+                       " | Cues Volume: " + volumeInfo + "%");
+        }
+    }
+}
+
+bool AcousticAnalyzer::isSmithVisualizationEnabled() const {
+    return smithVisualizer && smithVisualizer->isEnabled();
+}
+
+// Check for axis crossings in the full dataset range and generate sounds
+// This ensures crossings are detected even when points are skipped in smooth/dotted mode
+void AcousticAnalyzer::checkAxisCrossingsInRange(size_t prevPos, size_t currentPos, 
+                                                 std::vector<int16_t>& buffer, int samples) {
+    if (!smithVisualizer || !smithVisualizer->isEnabled() || !smithVisualizer->isAxisEventsEnabled()) {
+        return;
+    }
+    
+    if (measurementData.empty() || currentPos >= measurementData.size()) {
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(axisEventBufferMutex);
+    
+    // First, mix any pending axis event audio from previous frames
+    if (!pendingAxisEventBuffer.empty() && pendingAxisEventOffset < pendingAxisEventBuffer.size()) {
+        size_t remainingSamples = pendingAxisEventBuffer.size() - pendingAxisEventOffset;
+        size_t samplesToMix = std::min(static_cast<size_t>(samples * CHANNELS), remainingSamples);
+        
+        for (size_t i = 0; i < samplesToMix; ++i) {
+            int mixed = buffer[i] + pendingAxisEventBuffer[pendingAxisEventOffset + i];
+            buffer[i] = static_cast<int16_t>(std::clamp(mixed, -32768, 32767));
+        }
+        
+        pendingAxisEventOffset += samplesToMix;
+        
+        // If we've consumed all pending audio, clear the buffer
+        if (pendingAxisEventOffset >= pendingAxisEventBuffer.size()) {
+            pendingAxisEventBuffer.clear();
+            pendingAxisEventOffset = 0;
+        }
+    }
+    
+    // Ensure we have valid positions
+    size_t startPos = std::min(prevPos, currentPos);
+    size_t endPos = std::max(prevPos, currentPos);
+    
+    // Clamp to valid range
+    startPos = std::min(startPos, measurementData.size() - 1);
+    endPos = std::min(endPos, measurementData.size() - 1);
+    
+    // If positions are the same, check with previous checked position
+    if (startPos == endPos && lastAxisCrossingCheckPos < measurementData.size()) {
+        startPos = lastAxisCrossingCheckPos;
+        // Ensure startPos <= endPos after adjustment
+        if (startPos > endPos) {
+            startPos = endPos;  // Just check the current position
+        }
+    }
+    
+    // Don't check if no movement (startPos >= endPos after adjustments)
+    if (startPos >= endPos) {
+        return;
+    }
+    
+    // Check for crossings in the full range
+    bool isHorizontal = false;
+    bool isUpward = false;
+    size_t crossingPos = 0;
+    
+    if (smithVisualizer->detectAxisCrossingInRange(measurementData, startPos, endPos, 
+                                                    isHorizontal, isUpward, crossingPos)) {
+        // Found a crossing - generate the event sound
+        if (crossingPos < measurementData.size()) {
+            const MeasurementPoint& crossingPt = measurementData[crossingPos];
+            double posX = std::clamp(crossingPt.s11_re, -1.0, 1.0);
+            double posY = std::clamp(crossingPt.s11_im, -1.0, 1.0);
+            
+            // Generate axis event sound in a separate buffer with its configured duration
+            int axisEventDurationMs = smithVisualizer->getAxisEventsDuration();
+            // Prevent overflow: cast both operands to size_t before multiplication
+            size_t axisEventSamples = (static_cast<size_t>(SAMPLE_RATE) * static_cast<size_t>(axisEventDurationMs)) / 1000;
+            
+            // Validate that axisEventSamples fits in int range for the API
+            if (axisEventSamples > static_cast<size_t>(INT_MAX)) {
+                // Duration too large - clamp to max safe value
+                axisEventSamples = INT_MAX;
+            }
+            
+            std::vector<int16_t> axisEventBuffer(axisEventSamples * CHANNELS, 0);
+            
+            // Generate the full axis event sound (safe cast after validation)
+            smithVisualizer->generateAxisEventSound(axisEventBuffer, static_cast<int>(axisEventSamples), 
+                                                    isHorizontal, isUpward, posX, posY);
+            
+            // Mix what fits into the current buffer
+            size_t currentBufferSize = static_cast<size_t>(samples) * CHANNELS;
+            size_t axisEventSize = axisEventSamples * CHANNELS;
+            size_t samplesToMixNow = std::min(currentBufferSize, axisEventSize);
+            
+            for (size_t i = 0; i < samplesToMixNow; ++i) {
+                int mixed = buffer[i] + axisEventBuffer[i];
+                buffer[i] = static_cast<int16_t>(std::clamp(mixed, -32768, 32767));
+            }
+            
+            // If there's remaining audio, store it for next frames
+            if (axisEventSize > samplesToMixNow) {
+                pendingAxisEventBuffer.assign(
+                    axisEventBuffer.begin() + samplesToMixNow, 
+                    axisEventBuffer.end()
+                );
+                pendingAxisEventOffset = 0;
+            }
+        }
+    }
+    
+    // Update last checked position
+    lastAxisCrossingCheckPos = endPos;
+}
+
+

@@ -5,6 +5,7 @@
 #include "logger.h"
 #include "math_logger.h"
 #include "translation.h"
+#include "smith_visualizer.h"
 #include <vector>
 #include <thread>
 #include <atomic>
@@ -125,6 +126,12 @@ public:
     // Get translated curve name
     std::string getCurveName(int curveIndex) const;
     
+    // Smith Chart Visualization
+    SmithVisualizer* getSmithVisualizer() { return smithVisualizer.get(); }
+    const SmithVisualizer* getSmithVisualizer() const { return smithVisualizer.get(); }
+    void enableSmithVisualization(bool enable);
+    bool isSmithVisualizationEnabled() const;
+    
     // Y-axis ruler - plays ascending tones to indicate Y-axis scale
     void playYAxisRuler();
     void stopYAxisRuler();  // Stop ruler playback
@@ -214,6 +221,9 @@ private:
     
     // Audio engine (can be SynthesizerEngine or MIDIEngine)
     std::shared_ptr<IAudioEngine> audioEngine;
+    
+    // Smith Chart Visualizer
+    std::unique_ptr<SmithVisualizer> smithVisualizer;
     
     // Playback state
     std::atomic<PlaybackState> state;
@@ -394,4 +404,15 @@ private:
     
     // Helper to mix audio into buffer
     void mixIntoBuffer(std::vector<int16_t>& buffer, const std::vector<int16_t>& source);
+    
+    // Check and generate axis crossing sounds for range (handles skipped points)
+    void checkAxisCrossingsInRange(size_t prevPos, size_t currentPos, std::vector<int16_t>& buffer, int samples);
+    
+    // Track last position for axis crossing detection
+    size_t lastAxisCrossingCheckPos;
+    
+    // Buffer for ongoing axis event sound that spans multiple frames
+    std::vector<int16_t> pendingAxisEventBuffer;
+    size_t pendingAxisEventOffset;  // Current offset in the pending buffer
+    std::mutex axisEventBufferMutex;
 };

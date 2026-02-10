@@ -2,6 +2,32 @@
 # NanoVNA CLI Accessible - Deutsche Übersetzung
 # Format: KEY=Value
 
+# ========================================
+# Menu Keys (Consolidated)
+# All menu key bindings are defined here for easy maintenance
+# ========================================
+
+# Main menu keys
+MENU_KEY_SUMMARY=z
+MENU_KEY_TABLE=t
+MENU_KEY_ACOUSTIC=a
+MENU_KEY_EXPORT=e
+MENU_KEY_LOAD=l
+MENU_KEY_CALIBRATE=k
+MENU_KEY_PORT=p
+MENU_KEY_RANGE=r
+MENU_KEY_DEVICE_INFO=g
+MENU_KEY_MANUAL=m
+MENU_KEY_OPTIONS=o
+MENU_KEY_SWEEP=w
+MENU_KEY_HELP=h
+MENU_KEY_QUIT=q
+
+# Special menu keys
+MENU_KEY_COMFORT=u
+MENU_KEY_WEB_INTERFACE=i
+MENU_KEY_DOCS=?
+
 # Technische Begriffe (Einheitenbeschriftungen)
 OHM_TEXT=Ohm
 DEGREE_TEXT=Grad
@@ -22,20 +48,6 @@ DEVICE_INFO_PROMPT=Geräteinformationen
 # HINWEIS: Die Tasten sind an die deutsche Sprache angepasst
 # z = Zusammenfassung (Summary), g = Gerät (Device)
 # Dies ist beabsichtigt für bessere Merkfähigkeit in der jeweiligen Sprache
-MENU_KEY_SUMMARY=z
-MENU_KEY_TABLE=t
-MENU_KEY_ACOUSTIC=a
-MENU_KEY_EXPORT=e
-MENU_KEY_LOAD=l
-MENU_KEY_CALIBRATE=k
-MENU_KEY_PORT=p
-MENU_KEY_RANGE=r
-MENU_KEY_DEVICE_INFO=g
-MENU_KEY_MANUAL=m
-MENU_KEY_OPTIONS=o
-MENU_KEY_SWEEP=w
-MENU_KEY_HELP=h
-MENU_KEY_QUIT=q
 
 # Ja/Nein Eingabe Tasten
 YES_KEY=j
@@ -389,88 +401,12 @@ MSG_UNKNOWN_COMMAND=Unbekannter Befehl. H für Hilfe drücken.
 # Hilfetexte
 HELP_CMD_LINE=NanoVNA-CLI-Accessible - Barrierefreie Konsolenanwendung für NanoVNA-H4\n\nVerwendung: nanovna-cli.exe [OPTIONEN]\n\nKommandozeilen-Optionen:\n  -h, --help              Diese Hilfemeldung anzeigen\n  -d                      Debug-Logging aktivieren (Logs im logs/ Verzeichnis)\n  -p, --port PORT         Seriellen Port angeben (z.B. COM4)\n  --baud RATE             Baudrate festlegen (Standard: 9600)\n  --start FREQ            Startfrequenz (z.B. 144M oder 144000000)\n  --end FREQ              Endfrequenz (z.B. 146M oder 146000000)\n  --step FREQ             Frequenzschritt (z.B. 1K oder 1000)\n  --autostart             Messung automatisch beim Start durchführen\n  --no-audio              Audioausgabe deaktivieren\n  --config FILE           Konfigurationsdatei-Pfad angeben (Standard: config/command_templates.cfg)\n\nBeispiele:\n  Interaktiver Modus:\n    nanovna-cli.exe -d\n\n  Direkte Messung:\n    nanovna-cli.exe -d -p COM4 --start 144M --end 146M --step 1K --autostart\n    nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autostart\n\nKonfiguration:\n  Einstellungen gespeichert in: config/app_settings.cfg\n  Befehlsvorlagen in: config/command_templates.cfg\n  Debug-Logs in: logs/\n  Export-Dateien in: Export/\n\nHauptmenü-Befehle:\n  Drücken Sie 'H' in jedem Bildschirm für kontextsensitive Hilfe.
 
-HELP_MAIN_MENU_TITLE=== Hauptmenü Hilfe ===
-HELP_MAIN_MENU_COMMANDS=Verfügbare Befehle:
-HELP_MAIN_MENU_CMD_SUMMARY=  Z - Zusammenfassung  Messwert-Zusammenfassung anzeigen (Min/Max/Durchschn. SWR)
-HELP_MAIN_MENU_CMD_TABLE=  T - Tabelle          Messdaten in Tabellenformat mit Seitenumbruch anzeigen
-HELP_MAIN_MENU_CMD_ACOUSTIC=  A - Akustisch        Akustischen Analysemodus für Audiodarstellung betreten
-HELP_MAIN_MENU_CMD_EXPORT=  E - Export           Messdaten in CSV oder TXT Format exportieren
-HELP_MAIN_MENU_CMD_LOAD=  L - Laden            Zuvor exportierte Messdaten laden
-HELP_MAIN_MENU_CMD_CALIBRATE=  K - Kalibrieren      Kalibrierungsablauf starten (Offen/Kurz/Last)
-HELP_MAIN_MENU_CMD_PORT=  P - Port             Seriellen Port auswählen und konfigurieren
-HELP_MAIN_MENU_CMD_RANGE=  R - Range            Frequenzbereich festlegen und Scan durchführen
-HELP_MAIN_MENU_CMD_DEVICE=  G - Gerät Info      Geräteinformationen und Batteriestatus anzeigen
-HELP_MAIN_MENU_CMD_MANUAL=  M - Messung          Manuelle Messung mit aktuellen Einstellungen durchführen
-HELP_MAIN_MENU_CMD_HELP=  H - Hilfe            Diese Hilfemeldung anzeigen
-HELP_MAIN_MENU_CMD_QUIT=  Q - Quit             Anwendung beenden
-HELP_MAIN_MENU_TIPS=Tipps:\n  - Verwenden Sie 'R' um Frequenzbereich vor Messungen festzulegen\n  - Verwenden Sie 'T' dann 'C' um Tabellenspalten anzupassen\n  - Verwenden Sie 'A' für akustische Analyse nach Messungen\n  - Verwenden Sie 'E' zum Exportieren, 'L' zum später Laden\n  - Drücken Sie 'H' in jedem Bildschirm für kontextspezifische Hilfe
 
-HELP_ACOUSTIC_TITLE=== Akustische Analyse Hilfe ===
-HELP_ACOUSTIC_PLAYBACK=Wiedergabesteuerung:
-HELP_ACOUSTIC_PLAY=  LEERTASTE   Abspielen / Pause (harte Pause - Stille)
-HELP_ACOUSTIC_FREEZE=  F           Einfrieren (statisches Audio an aktueller Position)
-HELP_ACOUSTIC_STOP=  S           Stoppen und auf Start zurücksetzen
-HELP_ACOUSTIC_TOGGLE_MODE=  T           Glatte/gepunktete Wiedergabe umschalten
-HELP_ACOUSTIC_TIME=  +/-         Wiedergabezeit erhöhen/verringern (in Sekunden)
-HELP_ACOUSTIC_NAVIGATION=Navigation:
-HELP_ACOUSTIC_NAV_LR=  Links/Rechts       Bewege ±1 Punkt
-HELP_ACOUSTIC_NAV_CTRL=  Strg+Links/Rechts  Bewege ±10 Punkte
-HELP_ACOUSTIC_NAV_SHIFT=  Strg+Umsch+L/R     Bewege ±100 Punkte
-HELP_ACOUSTIC_LOOP=Loop-Steuerung:
-HELP_ACOUSTIC_LOOP_LEFT=  L           Linke Loop-Markierung setzen
-HELP_ACOUSTIC_LOOP_RIGHT=  R           Rechte Loop-Markierung setzen
-HELP_ACOUSTIC_LOOP_TOGGLE=  O           Loop-Wiedergabe umschalten
-HELP_ACOUSTIC_LOOP_ZOOM=  Z           Loop-Zoom umschalten (zentriert Loop in Stereo, wendet volle Zeit auf Loop an)
-HELP_ACOUSTIC_CONTINUOUS=  C           Kontinuierliche Wiederholung umschalten
-HELP_ACOUSTIC_CURVES=Kurven (1-5: umschalten, Strg+Ziffer: Lautst-, Umsch+Ziffer: Lautst+):
-HELP_ACOUSTIC_CURVE1=  1           SWR (Sinuswelle, Stereo-Pan)
-HELP_ACOUSTIC_CURVE2=  2           Rückflussdämpfung (Reine Sinuswelle, Stereo-Pan)
-HELP_ACOUSTIC_CURVE3=  3           Impedanz |Z| (Dreieckswelle, Stereo-Pan)
-HELP_ACOUSTIC_CURVE4=  4           Reaktanz X (Sägezahnwelle, Stereo-Pan)
-HELP_ACOUSTIC_CURVE5=  5           Phase (Sinuswelle mit Stereo-Pan)
-HELP_ACOUSTIC_AUDIO_CONFIG=Audiokonfiguration:
-HELP_ACOUSTIC_AUDIO_Y=  A           Audio-Konfigurationsbildschirm öffnen\n              - Synthesizer/MIDI-Engine umschalten\n              - Frequenzbereich für Synthesizer konfigurieren (R)\n              - MIDI-Instrumente pro Kurve konfigurieren\n              - MIDI-Klänge vorab hören
-HELP_ACOUSTIC_OTHER=Sonstiges:
-HELP_ACOUSTIC_RULER=  Y           Akustisches Y-Achsen-Lineal abspielen (aufsteigende Skalenreferenz)
-HELP_ACOUSTIC_MEASURE=  M           Messung an aktueller Position anzeigen
-HELP_ACOUSTIC_EXPORT=  E           Messung exportieren (im Einfriermodus)
-HELP_ACOUSTIC_HELP=  H           Diese Hilfemeldung anzeigen
-HELP_ACOUSTIC_ESC=  ESC         Zurück zum Hauptmenü
-HELP_ACOUSTIC_MODES=Wiedergabemodi:\n  Glatt - Kontinuierliche gleitende Übergaenge zwischen Punkten\n  Gepunktet - Einzelne Punkte in zeitlichen Abständen
-HELP_ACOUSTIC_AUDIO_REP=Audio-Darstellung:\n  - Tonhöhe repräsentiert Y-Achsenwert (höhere Tonhöhe = höherer Wert)\n  - Stereo-Panning repräsentiert X-Achsenposition (links nach rechts)\n  - Jede Kurve hat eine einzigartige Wellenform zur Identifikation
-HELP_ACOUSTIC_LOOP_ZOOM_MODE=Loop-Zoom-Modus:\n  Wenn mit aktivem Loop aktiviert:\n  - Loop-Abschnitt wird im Stereofeld zentriert\n  - Volle Wiedergabezeit wird auf Loop-Bereich angewendet\n  - Einfacher Panning/Timing in randpositionierten Loops zu hören
-HELP_ACOUSTIC_TIPS=Praktische Tipps:\n  - Beginnen Sie mit Glattmodus für Überblick der Frequenzgang\n  - Wechseln Sie zu Punktmodus um Resonanzpunkte präzise zu zählen\n  - Nutzen Sie Loop-Marker um Problembereiche zu fokussieren (z.B. hoher SWR)\n  - Passen Sie Wiedergabezeit an: länger für Details, kürzer für schnellen Überblick\n  - Nutzen Sie Y-Achsen-Lineal (A-Taste) zur Kalibrierung Ihrer Tonhöhen-Wert-Zuordnung\n  - Freeze (F) um exakte Werte bei interessanten Audio-Features zu inspizieren\n  - Reduzieren Sie Kurven-Lautstärken wenn mehrere Kurven schwer unterscheidbar sind\n  - Blindwiderstand-Kurve (4): steigender Ton = induktiv, fallend = kapazitiv
 
-HELP_DEVICE_TITLE=== Gerät Info Hilfe ===
-HELP_DEVICE_COMMANDS=Verfügbare Befehle:
-HELP_DEVICE_INFO=  I - Info          Geräteinformationen anzeigen
-HELP_DEVICE_BATTERY=  B - Batterie      Batteriespannung abfragen und anzeigen
-HELP_DEVICE_SHELL=  S - Shell         Debug Shell für direkte Gerätekommunikation öffnen
-HELP_DEVICE_HELP=  H - Hilfe         Diese Hilfemeldung anzeigen
-HELP_DEVICE_INFO_DESC=Geräteinformationen:\n  Zeigt Firmware-Version, Hardware-Info und Gerätfaehigkeiten an.
-HELP_DEVICE_BATTERY_DESC=Batteriestatus:\n  Zeigt aktuelle Batteriespannung des NanoVNA-Geräts an.\n  Hilft, Geräteenergiestatus während Messungen zu überwachen.
-HELP_DEVICE_TIPS=Tipps:\n  - Batterie vor langen Messungen prüfen\n  - Niedrige Batterie kann Messgenauigkeit beeinträchtigen\n  - Typische NanoVNA-H4 Spannung: 3.7-4.2V wenn geladen
 HELP_DEVICE_SHELL_DESC=Debug Shell:\n  Öffnet eine direkte Kommunikationsshell zum NanoVNA.\n  Ermöglicht das Senden von Rohbefehlen zum Debuggen und Testen.\n  Verwenden Sie Pfeiltasten zur Navigation, Rücktaste zum Löschen. Drücken Sie ESC zum Beenden.
 
-HELP_TABLE_TITLE=== Tabellenansicht Hilfe ===
-HELP_TABLE_NAV_COMMANDS=Navigationsbefehle:
-HELP_TABLE_SPACE=  LEERTASTE   Nächste Seite
-HELP_TABLE_NEXT=  N           Nächste Seite
-HELP_TABLE_PREV=  P           Vorherige Seite
-HELP_TABLE_CUSTOMIZE=  C           Spalten anpassen (anzeigbare Spalten umschalten)
-HELP_TABLE_ESC=  ESC         Zurück zum Hauptmenü
-HELP_TABLE_HELP=  H           Diese Hilfemeldung anzeigen
-HELP_TABLE_COLUMNS=Tabellenspalten:
-HELP_TABLE_COL_INDEX=  Index       Messpunktindex
-HELP_TABLE_COL_FREQ=  Freq(Hz)    Frequenz in Hertz
-HELP_TABLE_COL_SWR=  SWR         Stehwellenverhältnis
-HELP_TABLE_COL_RL=  RL(dB)      Rückflussdämpfung in Dezibel
-HELP_TABLE_COL_R=  R           Widerstand (Realteil der Impedanz)
-HELP_TABLE_COL_X=  X           Reaktanz (Imaginärteil der Impedanz)
-HELP_TABLE_TIPS=Tipps:\n  - Verwenden Sie LEERTASTE oder N um Seiten vorzublättern\n  - Verwenden Sie P um zu vorherigen Seiten zurückzugehen\n  - Drücken Sie G um zu bestimmtem Punkt oder Frequenz zu springen\n  - Drücken Sie C um anzuzeigende Spalten anzupassen\n  - Blenden Sie unnötige Spalten aus um Screenreader-Ausführlichkeit zu reduzieren\n  - Verwenden Sie Gehe zu > Min SWR um Resonanz schnell zu finden
 
 # U-Menu (Komfortfunktionen)
-MENU_KEY_COMFORT=u
 MENU_COMFORT=(U) Komfortfunktionen
 
 # U-Menu Hauptbildschirm
@@ -802,75 +738,16 @@ FIRST_START_SETUP_COMPLETE=Einrichtung abgeschlossen! Ihre Einstellungen wurden 
 FIRST_START_ENTER_NUMBER=Nummer eingeben: >
 
 # Hilfe: Kalibrierungsmenü
-HELP_CAL_TITLE=== Kalibrierungsmenü Hilfe ===
-HELP_CAL_COMMANDS=Verfügbare Befehle:
-HELP_CAL_LOAD=  L - Laden         Kalibrierung aus Gerätespeicher laden
-HELP_CAL_PERFORM=  P - Durchführen   Kalibrierungs-Assistent starten (Open/Short/Load)
-HELP_CAL_HELP=  H - Hilfe         Diese Hilfemeldung anzeigen
-HELP_CAL_DESC=Kalibrierung:\n  Die Kalibrierung verbessert die Messgenauigkeit durch Kompensation\n  von Kabel- und Steckereffekten. Der Assistent führt Sie durch:\n  1. Offener Stromkreis (nichts angeschlossen)\n  2. Kurzschluss (Kurzschluss-Kalibrierstandard)\n  3. Last (50 Ohm Last)\n  Die Ergebnisse werden im Gerät für zukünftige Messungen gespeichert.
 
 # Hilfe: Optionsmenü
-HELP_OPT_TITLE=== Optionsmenü Hilfe ===
-HELP_OPT_COMMANDS=Verfügbare Befehle:
-HELP_OPT_LANGUAGE=  L - Sprache       Anzeigesprache auswählen
-HELP_OPT_BANDPLAN=  B - Bandplan      Amateurfunk-Bandplan auswählen (IARU-Regionen)
-HELP_OPT_HELP=  H - Hilfe         Diese Hilfemeldung anzeigen
-HELP_OPT_TIPS=Tipps:\n  - Sprachänderungen wirken sich auf alle Menüs und Meldungen aus\n  - Der Bandplan beeinflusst Komfortfunktionen wie die Bandeignungsprüfung\n  - Einstellungen werden automatisch gespeichert
 
 # Hilfe: Gehe zu Menü (Tabelle)
-HELP_GOTO_TITLE=== Gehe zu Menü Hilfe ===
-HELP_GOTO_COMMANDS=Verfügbare Befehle:
-HELP_GOTO_POINT=  P - Punkt         Zu bestimmtem Punktindex springen
-HELP_GOTO_FREQ=  F - Frequenz      Zu nächster Frequenz springen
-HELP_GOTO_MIN=  M - Min SWR       Zu Punkt mit minimalem SWR springen
-HELP_GOTO_MAX=  X - Max SWR       Zu Punkt mit maximalem SWR springen
-HELP_GOTO_HELP=  H - Hilfe         Diese Hilfemeldung anzeigen
-HELP_GOTO_CANCEL=  ESC - Abbrechen   Zurück zur Tabellenansicht
-HELP_GOTO_TIPS=Tipps:\n  - Punktindex beginnt bei 1\n  - Frequenzsuche findet die nächste Übereinstimmung\n  - Min/Max SWR hilft beim Finden von Resonanz- und Problembereichen
 
 # Hilfe: Gehe zu Menü (Akustisch)
-HELP_GOTO_ACOUSTIC_TITLE=== Gehe zu Menü (Akustisch) Hilfe ===
-HELP_GOTO_ACOUSTIC_COMMANDS=Verfügbare Befehle:
-HELP_GOTO_ACOUSTIC_POINT=  P - Punkt         Zu bestimmtem Punktindex springen
-HELP_GOTO_ACOUSTIC_FREQ=  F - Frequenz      Zu nächster Frequenz springen
-HELP_GOTO_ACOUSTIC_MIN=  M - Min SWR       Zu Punkt mit minimalem SWR springen
-HELP_GOTO_ACOUSTIC_MAX=  X - Max SWR       Zu Punkt mit maximalem SWR springen
-HELP_GOTO_ACOUSTIC_CROSS=  C - Kreuzpunkt    Schnittpunkt zwischen zwei Kurven finden
-HELP_GOTO_ACOUSTIC_HELP=  H - Hilfe         Diese Hilfemeldung anzeigen
-HELP_GOTO_ACOUSTIC_CANCEL=  ESC - Abbrechen   Zurück zur akustischen Analyse
-HELP_GOTO_ACOUSTIC_TIPS=Tipps:\n  - Kreuzpunkt hilft beim Finden, wo Impedanz dem Ziel entspricht\n  - Verwenden Sie dies nach dem Springen, um Audio an dieser Position zu hören\n  - Kombinieren Sie mit Schleifenmarkern, um sich auf bestimmte Bereiche zu konzentrieren
 
 # Hilfe: Komfortfunktionen Menü
-HELP_COMFORT_TITLE=== Komfortfunktionen Menü Hilfe ===
-HELP_COMFORT_DESC=Komfortfunktionen bieten praktische Werkzeuge für Antennen- und Kabelanalyse.
-HELP_COMFORT_COMMANDS=Verfügbare Funktionen:
-HELP_COMFORT_1=  1 - Bandeignung           Antennenleistung auf Amateurfunkbändern prüfen
-HELP_COMFORT_2=  2 - Resonanzfinder        Frequenzen mit minimalem SWR finden
-HELP_COMFORT_3=  3 - SWR-Bandbreite        1,5:1 und 2:1 SWR-Bandbreite berechnen
-HELP_COMFORT_4=  4 - Fußpunktimpedanz      Detaillierte Impedanz bei gewählter Frequenz
-HELP_COMFORT_5=  5 - Anpassungshinweise    Vorschläge zur Impedanzanpassung
-HELP_COMFORT_6=  6 - Kabellänge            Kabellänge aus Phase schätzen
-HELP_COMFORT_7=  7 - Kabelfehler           Kurzschlüsse, Unterbrechungen und Schäden erkennen
-HELP_COMFORT_8=  8 - Kabeldämpfung         Kabelverlust messen (benötigt S21)
-HELP_COMFORT_9=  9 - Filter-Schnelltest    Filtercharakteristiken analysieren (benötigt S21)
-HELP_COMFORT_10=  10 - Vorher/Nachher       Zwei Messungen vergleichen
-HELP_COMFORT_11=  11 - Auto-Marker (A)      Marker automatisch an Schlüsselpunkte setzen
-HELP_COMFORT_12=  12 - Konfiguration (C)    Velocity Factor, SWR-Grenzen usw. einstellen
-HELP_COMFORT_HELP=  H - Hilfe                 Diese Hilfemeldung anzeigen
-HELP_COMFORT_TIPS=Tipps:\n  - Funktionen 1-7 funktionieren mit S11 (Reflexions-)Messungen\n  - Funktionen 8-9 benötigen S21 (Transmissions-)Messungen\n  - Die meisten Funktionen fragen, ob gemessen werden soll, wenn keine Daten verfügbar sind\n  - Konfigurationseinstellungen beeinflussen das Funktionsverhalten
 
 # Hilfe: Spalten anpassen Menü
-HELP_CUSTOM_TITLE=== Spalten anpassen Hilfe ===
-HELP_CUSTOM_DESC=Passen Sie an, welche Spalten in der Tabellenansicht angezeigt werden.
-HELP_CUSTOM_COLUMNS=Verfügbare Spalten:
-HELP_CUSTOM_FREQ=  FREQ  - Frequenz in Hz
-HELP_CUSTOM_SWR=  SWR   - Stehwellenverhältnis
-HELP_CUSTOM_RL=  RL    - Rückflussdämpfung in dB
-HELP_CUSTOM_R=  R     - Widerstand (Realimpedanz)
-HELP_CUSTOM_X=  X     - Reaktanz (Imaginärimpedanz)
-HELP_CUSTOM_Z=  Z     - Impedanzbetrag |Z|
-HELP_CUSTOM_PHASE=  PHASE - Phasenwinkel in Grad
-HELP_CUSTOM_USAGE=Verwendung:\n  - Spaltennummer (1-7) eingeben, um sie ein-/auszuschalten\n  - Enter drücken, um zur Tabellenansicht zurückzukehren\n  - [X] bedeutet aktiviert, [ ] bedeutet deaktiviert\n  - Änderungen werden automatisch gespeichert
 
 # Lautstärkekonfiguration
 VOLUME_CONFIG_TITLE=Kurvenlautstärke konfigurieren
@@ -1032,7 +909,6 @@ AUDIO_HELP_FREEZE_DESC=    Bestimmt die Pause zwischen wiederholten Punkten im F
 
 # Web Interface
 MENU_WEB_INTERFACE=(I) Web-Interface
-MENU_KEY_WEB_INTERFACE=i
 WEB_INTERFACE_TITLE=Web-Interface
 WEB_INTERFACE_RUNNING=Web-Interface ist AKTIV
 WEB_INTERFACE_NOT_RUNNING=Web-Interface ist derzeit AUS
@@ -1151,7 +1027,7 @@ HELP_ACOUSTIC_GOTO=  G           Gehe zu spezifischer Frequenz/Position
 AUDIO_CONFIG_MIDI_INTERP_PAN_STATUS=Interpoliertes Panning: {0}
 AUDIO_CONFIG_MIDI_INTERP_STRENGTH_STATUS=Interpolationsstärke: {0}
 AUDIO_CONFIG_MIDI_INTERP_PAN_CMD=  I - MIDI interpoliertes Panning umschalten
-AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  S - MIDI Interpolationsstärke einstellen
+AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  T - MIDI Interpolationsstärke einstellen
 MIDI_INTERP_PAN_TOGGLED=[MIDI interpoliertes Panning: {0}]
 MIDI_INTERP_PAN_MIDI_ONLY=[Fehler: Interpoliertes Panning ist nur im MIDI-Modus verfügbar]
 MIDI_INTERP_STRENGTH_TITLE==== MIDI Interpolationsstärke konfigurieren ===
@@ -1164,3 +1040,415 @@ MIDI_INTERP_STRENGTH_SET=[Interpolationsstärke gesetzt auf: {0}]
 MIDI_INTERP_STRENGTH_ERROR=[Fehler: Stärke muss zwischen 0.0 und 1.0 liegen]
 MIDI_INTERP_STRENGTH_MIDI_ONLY=[Fehler: Interpolationsstärke ist nur im MIDI-Modus verfügbar]
 ERROR_INVALID_NUMBER=[Fehler: Ungültige Zahl]
+
+# Smith Diagramm Visualisierung
+SMITH_MODE_CARTESIAN=Kartesisch (3D Raum)
+SMITH_MODE_POLAR=Polar (Rotation)
+SMITH_MODE_IMPEDANCE=Impedanz Direkt
+SMITH_MODE_SWR=SWR-Kreise
+SMITH_MODE_TIME=Zeitdomäne + Smith-Hinweise
+SMITH_MODE_HYBRID=Hybrid Multi-Layer
+SMITH_VISUALIZATION_TITLE=Smith Diagramm Visualisierung
+SMITH_ENABLE_PROMPT=Smith-Visualisierung aktivieren? (j/n):
+SMITH_MODE_PROMPT=Visualisierungsmodus wählen:
+SMITH_MODE_1=1 - Kartesisch: Position im 3D-Raum (Re(Γ) → L/R, Im(Γ) → V/H)
+SMITH_MODE_2=2 - Polar: Rotation um Benutzer (∠Γ → Winkel, |Γ| → Entfernung)
+SMITH_MODE_3=3 - Impedanz Direkt: R → L/R, X → V/H (einfacher)
+SMITH_MODE_4=4 - SWR-Kreise: Fokus auf konstante SWR-Werte
+SMITH_MODE_5=5 - Zeitdomäne: Akustische Analyse mit Smith-Hinweisen
+SMITH_MODE_6=6 - Hybrid Multi: Mehrere Ebenen gleichzeitig
+SMITH_CUES_ENABLED=[Smith räumliche Hinweise AKTIVIERT]
+SMITH_CUES_DISABLED=[Smith räumliche Hinweise DEAKTIVIERT]
+SMITH_MARKERS_ENABLED=[Smith-Marker AKTIVIERT]
+SMITH_MARKERS_DISABLED=[Smith-Marker DEAKTIVIERT]
+SMITH_CUES_VOLUME=Smith-Hinweise Lautstärke: {0}%
+SMITH_MODE_SWITCHED=[Smith-Modus gewechselt zu: {0}]
+SMITH_HELP_TITLE==== Smith Diagramm Visualisierung Hilfe ====
+SMITH_HELP_INTRO=Smith Diagramm zeigt Impedanzanpassung akustisch.
+SMITH_HELP_CENTER=Zentrum = Perfekte Anpassung (50Ω, SWR 1.0)
+SMITH_HELP_EDGE=Rand = Schlechte Anpassung (hohes SWR)
+SMITH_HELP_HORIZONTAL=Horizontal (L-R) = Widerstandsniveau
+SMITH_HELP_VERTICAL=Vertikal (V-H) = Reaktanz (induktiv/kapazitiv)
+HELP_ACOUSTIC_SMITH=  V           Smith Diagramm Visualisierung umschalten
+HELP_ACOUSTIC_SMITH_MODE=  B           Smith-Visualisierungsmodus ändern (6 Modi verfügbar)
+SMITH_ENABLE_FIRST=[Aktivieren Sie zuerst die Smith-Visualisierung mit 'v']
+SMITH_MODE_HINT=[Drücke 'b' für Moduswechsel, 'h' für Smith-Hilfe]
+SMITH_MODE_SELECTION=Smith Visualisierungsmodus Auswahl
+
+# Smith Visualisierung Hilfe
+
+# Smith Audio Konfiguration
+AUDIO_CONFIG_SMITH_CMD=  S - Smith-Diagramm-Audio-Einstellungen konfigurieren
+SMITH_AUDIO_CONFIG_TITLE=Smith-Diagramm Audio-Konfiguration
+SMITH_CONFIG_NO_VISUALIZER=[Fehler: Smith-Visualisierung nicht verfügbar]
+SMITH_CONFIG_VOLUME_CURRENT=Aktuelle Lautstärke: {0}%
+SMITH_CONFIG_NOISE_TYPE_CURRENT=Aktueller Soundtyp: {0}
+SMITH_CONFIG_COMMANDS=Befehle:
+SMITH_CONFIG_VOLUME_CMD=  V - Lautstärke konfigurieren (10-100%)
+SMITH_CONFIG_NOISE_TYPE_CMD=  N - Soundtyp konfigurieren (Rosa/Weiß/Braun/Sinus)
+SMITH_CONFIG_PREVIEW_CMD=  P - Vorschau des aktuellen Smith-Sounds
+SMITH_CONFIG_PROMPT=Smith-Konfig
+SMITH_CONFIG_ENTER_VOLUME=Smith-Hinweise Lautstärke eingeben (10-100%, aktuell: {0}%), oder ESC zum Abbrechen:
+SMITH_CONFIG_VOLUME_SET=[Smith-Hinweise Lautstärke gesetzt auf: {0}%]
+SMITH_CONFIG_VOLUME_ERROR=[Fehler: Lautstärke muss zwischen 10 und 100 liegen]
+SMITH_CONFIG_NOISE_TYPE_MENU=== Soundtyp auswählen ===
+SMITH_CONFIG_NOISE_TYPE_1=  1 - Rosa Rauschen (warm, gefiltert - Standard)
+SMITH_CONFIG_NOISE_TYPE_2=  2 - Weißes Rauschen (hell, volles Spektrum)
+SMITH_CONFIG_NOISE_TYPE_3=  3 - Braunes Rauschen (dunkel, tiefe Frequenzen)
+SMITH_CONFIG_NOISE_TYPE_4=  4 - Sinuswelle (reiner Ton, sauberer)
+SMITH_CONFIG_NOISE_TYPE_SET=[Soundtyp geändert zu: {0}]
+SMITH_CONFIG_PREVIEW_MSG=[Vorschau wird abgespielt... Beliebige Taste zum Stoppen]
+SMITH_CONFIG_PREVIEW_TODO=[Vorschau noch nicht in diesem Bildschirm implementiert]
+SMITH_CONFIG_HELP_TITLE=
+=== Smith Audio-Konfiguration Hilfe ===
+SMITH_CONFIG_HELP_VOLUME=V - Lautstärke für Smith-Umgebungshinweise setzen (10-100%)
+SMITH_CONFIG_HELP_NOISE=N - Soundtyp ändern (Rosa/Weiß/Braun/Sinus)
+SMITH_CONFIG_HELP_PINK=    Rosa: Warm, gefiltert (Standard, empfohlen)
+SMITH_CONFIG_HELP_WHITE=    Weiß: Hell, volles Spektrum
+SMITH_CONFIG_HELP_BROWN=    Braun: Dunkel, tiefe Frequenzen
+SMITH_CONFIG_HELP_SINE=    Sinus: Reiner Ton, musikalisch
+SMITH_CONFIG_HELP_PREVIEW=P - Aktuelle Einstellungen vorhören
+
+# Konsolidierte Hilfe-Einträge (Mehrzeiliges Format)
+HELP_MAIN_MENU_FULL="
+=== Hauptmenü Hilfe ===
+
+Verfügbare Befehle:
+  S - Zusammenfassung       Messübersicht anzeigen (min/max/durchschn. SWR)
+  T - Tabelle               Messdaten in Tabellenformat mit Paginierung anzeigen
+  A - Akustisch             Akustische Analysemodus für Audio-Darstellung starten
+  E - Exportieren           Messdaten in CSV- oder TXT-Format exportieren
+  L - Laden                 Zuvor exportierte Messdaten laden
+  K - Kalibrieren           Kalibrierungsablauf starten (Open/Short/Load)
+  P - Port                  Serielle Schnittstelle auswählen und konfigurieren
+  R - Bereich               Frequenzbereich einstellen und Scan durchführen
+  D - Geräteinfo            Geräteinformationen und Batteriestatus anzeigen
+  M - Manuell               Manuelle Messung mit aktuellen Einstellungen durchführen
+  H - Hilfe                 Diese Hilfemeldung anzeigen
+  Q - Beenden               Anwendung verlassen
+
+Tipps:
+  - Verwenden Sie 'R', um den Frequenzbereich vor Messungen einzustellen
+  - Verwenden Sie 'T' dann 'C', um Tabellenspalten anzupassen
+  - Verwenden Sie 'A' für akustische Analyse nach Messungen
+  - Verwenden Sie 'E' zum Exportieren, 'L' zum späteren Laden
+  - Drücken Sie 'H' in jedem Bildschirm für kontextspezifische Hilfe
+"
+
+HELP_ACOUSTIC_FULL="
+=== Akustische Analyse Hilfe ===
+
+Wiedergabesteuerung:
+  LEERTASTE   Abspielen / Pause (harte Pause - Stille)
+  F           Einfrieren (statischer Ton an aktueller Position)
+  S           Stoppen und zum Anfang zurücksetzen
+  T           Zwischen glatter/gepunkteter Wiedergabe umschalten
+  +/-         Wiedergabezeit erhöhen/verringern (in Sekunden)
+
+Navigation:
+  Links/Rechts       ±1 Punkt bewegen
+  Strg+Links/Rechts  ±10 Punkte bewegen
+  Strg+Shift+L/R     ±100 Punkte bewegen
+
+Schleifensteuerung:
+  L           Linke Schleifenmarkierung setzen
+  R           Rechte Schleifenmarkierung setzen
+  O           Schleifenwiedergabe umschalten
+  Z           Schleifenzoom umschalten (zentriert Schleife im Stereo, wendet volle Zeit auf Schleife an)
+  I           Schleife invertieren (außerhalb der Schleifenmarkierungen abspielen)
+  C           Kontinuierliche Wiederholung umschalten
+
+Kurven (1-5: umschalten, Strg+Ziffer: Lautstärke-, Shift+Ziffer: Lautstärke+):
+  1           SWR (Sinuswelle, Stereo-Pan)
+  2           Rückflussdämpfung (Reine Sinuswelle, Stereo-Pan)
+  3           Impedanz |Z| (Dreieckswelle, Stereo-Pan)
+  4           Reaktanz X (Sägezahn, Stereo-Pan)
+  5           Phase (Sinus mit Stereo-Pan)
+
+Audiokonfiguration:
+  A           Audiokonfigurationsbildschirm öffnen
+              - Synthesizer/MIDI-Engine umschalten
+              - Frequenzbereich für Synthesizer konfigurieren (R)
+              - MIDI-Instrumente pro Kurve konfigurieren
+              - MIDI-Klänge voranhören
+
+Sonstiges:
+  Y           Akustisches Y-Achsen-Lineal abspielen (aufsteigende Skala-Referenz)
+  X           X-Achsen-Lineal umschalten (Pieptöne an jedem Messpunkt)
+  N           Statuszeile umschalten (zeigt detaillierte Infos während Wiedergabe)
+  V           Smith-Diagramm-Visualisierung umschalten
+  B           Smith-Visualisierungsmodus ändern (6 Modi verfügbar)
+  G           Zu bestimmter Frequenz/Position gehen
+  M           Messung an aktueller Position anzeigen
+  E           Messung exportieren (im Freeze-Modus)
+  H           Diese Hilfemeldung anzeigen
+  ESC         Zurück zum Hauptmenü
+
+Wiedergabemodi:
+  Glatt - Kontinuierliche gleitende Übergänge zwischen Punkten
+  Gepunktet - Einzelne Punkte in zeitlichen Abständen
+
+Audio-Darstellung:
+  - Tonhöhe repräsentiert Y-Achsen-Wert (höhere Tonhöhe = höherer Wert)
+  - Stereo-Panning repräsentiert X-Achsen-Position (links nach rechts)
+  - Jede Kurve hat eine einzigartige Wellenform zur Identifikation
+
+Schleifenzoom-Modus:
+  Wenn bei aktiver Schleife aktiviert:
+  - Schleifenbereich ist im Stereofeld zentriert
+  - Volle Wiedergabezeit wird auf Schleifenbereich angewendet
+  - Einfacher, Panning/Timing in randpositionierten Schleifen zu hören
+
+Praktische Tipps:
+  - Beginnen Sie mit glattem Modus für Übersicht
+  - Wechseln Sie zu gepunktetem Modus zum Zählen von Punkten
+  - Verwenden Sie Schleifenmarkierungen, um sich auf Problembereiche zu konzentrieren
+"
+
+HELP_DEVICE_FULL="
+=== Geräteinfo Hilfe ===
+
+Verfügbare Befehle:
+  I - Info          Geräteinformationen anzeigen
+  B - Batterie      Batteriespannung abfragen und anzeigen
+  H - Hilfe         Diese Hilfemeldung anzeigen
+  ESC - Zurück      Zurück zum Hauptmenü
+
+Geräteinformationen:
+  Zeigt Firmware-Version, Hardware-Infos und Gerätefunktionen an.
+
+Batteriestatus:
+  Zeigt aktuelle Batteriespannung des NanoVNA-Geräts an.
+  Hilft, Geräteleistungsstatus während Messungen zu überwachen.
+
+Tipps:
+  - Überprüfen Sie die Batterie vor langen Messsitzungen
+  - Niedrige Batterie kann Messgenauigkeit beeinträchtigen
+"
+
+HELP_TABLE_FULL="
+=== Tabellenansicht Hilfe ===
+
+Navigationsbefehle:
+  LEERTASTE   Nächste Seite
+  N           Nächste Seite
+  P           Vorherige Seite
+  C           Spalten anpassen (Spalten zum Anzeigen umschalten)
+  ESC         Zurück zum Hauptmenü
+  H           Diese Hilfemeldung anzeigen
+
+Tabellenspalten:
+  Index       Messpunkt-Index
+  Freq(Hz)    Frequenz in Hertz
+  SWR         Stehwellenverhältnis
+  RL(dB)      Rückflussdämpfung in Dezibel
+  R           Widerstand (Realteil der Impedanz)
+  X           Reaktanz (Imaginärteil der Impedanz)
+
+Tipps:
+  - Verwenden Sie LEERTASTE oder N, um durch Seiten vorzurücken
+  - Verwenden Sie P, um zu vorherigen Seiten zurückzukehren
+  - Drücken Sie G, um zu bestimmtem Punkt oder Frequenz zu springen
+  - Drücken Sie C, um anzupassende Spalten auszuwählen
+  - Blenden Sie nicht benötigte Spalten aus, um Screen-Reader-Weitschweifigkeit zu reduzieren
+  - Verwenden Sie Gehe zu > Min SWR, um Resonanz schnell zu finden
+"
+
+HELP_CAL_FULL="
+=== Kalibrierungsmenü Hilfe ===
+
+Verfügbare Befehle:
+  L - Laden         Kalibrierung aus Gerätespeicherbank laden
+  P - Durchführen   Kalibrierungsassistent starten (Open/Short/Load)
+  H - Hilfe         Diese Hilfemeldung anzeigen
+  ESC - Zurück      Zurück zum Hauptmenü
+
+Kalibrierung:
+  Kalibrierung verbessert die Messgenauigkeit durch Kompensation von
+  Kabel- und Verbindungseffekten. Der Assistent führt Sie durch:
+  1. Offener Stromkreis (nichts angeschlossen)
+  2. Kurzschluss (Kurzschluss-Kalibrierstandard)
+  3. Last (50 Ohm Last)
+  Ergebnisse werden im Gerät für zukünftige Messungen gespeichert.
+"
+
+HELP_OPT_FULL="
+=== Optionsmenü Hilfe ===
+
+Verfügbare Befehle:
+  L - Sprache       Anzeigesprache auswählen
+  B - Bandplan      Amateurfunk-Bandplan auswählen (IARU-Regionen)
+  H - Hilfe         Diese Hilfemeldung anzeigen
+  ESC - Zurück      Zurück zum Hauptmenü
+
+Tipps:
+  - Sprachänderungen betreffen alle Menüs und Meldungen
+  - Bandplan beeinflusst Komfortfunktionen wie Band-Eignungsprüfung
+  - Einstellungen werden automatisch gespeichert
+"
+
+HELP_GOTO_FULL="
+=== Gehe zu Menü Hilfe ===
+
+Verfügbare Befehle:
+  P - Punkt         Zu bestimmtem Punkt-Index springen
+  F - Frequenz      Zur nächstgelegenen Frequenz springen
+  M - Min SWR       Zum Punkt mit minimalem SWR springen
+  X - Max SWR       Zum Punkt mit maximalem SWR springen
+  H - Hilfe         Diese Hilfemeldung anzeigen
+  ESC - Abbrechen   Zurück zur Tabellenansicht
+
+Tipps:
+  - Punkt-Index beginnt bei 1
+  - Frequenzsuche findet die nächstgelegene Übereinstimmung
+  - Min/Max SWR hilft, Resonanz und Problembereiche zu finden
+"
+
+HELP_GOTO_ACOUSTIC_FULL="
+=== Gehe zu Menü (Akustisch) Hilfe ===
+
+Verfügbare Befehle:
+  P - Punkt         Zu bestimmtem Punkt-Index springen
+  F - Frequenz      Zur nächstgelegenen Frequenz springen
+  M - Min SWR       Zum Punkt mit minimalem SWR springen
+  X - Max SWR       Zum Punkt mit maximalem SWR springen
+  C - Kreuzungspunkt   Schnittpunkt zwischen zwei Kurven finden
+  H - Hilfe         Diese Hilfemeldung anzeigen
+  ESC - Abbrechen   Zurück zur akustischen Analyse
+
+Tipps:
+  - Kreuzungspunkt hilft zu finden, wo Impedanz mit Ziel übereinstimmt
+  - Verwenden Sie nach dem Springen, um Audio an dieser Position zu hören
+  - Kombinieren Sie mit Schleifenmarkierungen, um sich auf bestimmte Bereiche zu konzentrieren
+"
+
+HELP_COMFORT_FULL="
+=== Komfortfunktionen Menü Hilfe ===
+
+Komfortfunktionen bieten praktische Werkzeuge für Antennen- und Kabelanalyse.
+
+Verfügbare Funktionen:
+  1 - Band-Eignung              Antennenleistung auf Amateurfunkbändern prüfen
+  2 - Resonanzfinder            Frequenzen mit minimalem SWR finden
+  3 - SWR-Bandbreite            1.5:1 und 2:1 SWR-Bandbreite berechnen
+  4 - Fußpunktimpedanz          Detaillierte Impedanz an ausgewählter Frequenz
+  5 - Anpassungshinweise        Vorschläge für Impedanzanpassung
+  6 - Kabellänge                Kabellänge aus Phase schätzen
+  7 - Kabelfehler               Kurzschlüsse, offene Enden und Schäden erkennen
+  8 - Kabeldämpfung             Kabelverlust messen (erfordert S21)
+  9 - Filter-Schnellprüfung     Filtereigenschaften analysieren (erfordert S21)
+  10 - Vorher/Nachher           Zwei Messungen vergleichen
+  11 - Auto-Markierung (A)      Markierungen automatisch an Schlüsselpunkten setzen
+  12 - Konfiguration (C)        Geschwindigkeitsfaktor, SWR-Grenzen usw. einstellen
+  H - Hilfe                     Diese Hilfemeldung anzeigen
+  ESC - Zurück          Zurück zum Hauptmenü
+
+Tipps:
+  - Funktionen 1-7 arbeiten mit S11 (Reflexions-) Messungen
+  - Funktionen 8-9 erfordern S21 (Übertragungs-) Messungen
+  - Die meisten Funktionen fordern zum Messen auf, wenn keine Daten verfügbar sind
+  - Konfigurationseinstellungen beeinflussen Funktionsverhalten
+"
+
+HELP_CUSTOM_FULL="
+=== Spalten anpassen Hilfe ===
+
+Anpassen, welche Spalten in der Tabellenansicht angezeigt werden.
+
+Verfügbare Spalten:
+  FREQ  - Frequenz in Hz
+  SWR   - Stehwellenverhältnis
+  RL    - Rückflussdämpfung in dB
+  R     - Widerstand (reale Impedanz)
+  X     - Reaktanz (imaginäre Impedanz)
+  Z     - Impedanzbetrag |Z|
+  PHASE - Phasenwinkel in Grad
+
+Verwendung:
+  - Spaltennummer (1-7) eingeben, um sie ein-/auszuschalten
+  - Enter drücken, um zur Tabellenansicht zurückzukehren
+  - [X] zeigt aktiviert an, [ ] zeigt deaktiviert an
+  - Änderungen werden automatisch gespeichert
+"
+
+HELP_SMITH_FULL="
+=== Smith-Diagramm Visualisierung Hilfe ===
+
+Smith-Diagramm zeigt Impedanzanpassung akustisch mit Raumklang.
+
+Schlüsselkonzepte:
+  Mitte = Perfekte Anpassung (50Ω, SWR 1.0)
+  Rand  = Schlechte Anpassung (hohes SWR)
+  Links-Rechts  = Widerstandsniveau (Re des Reflexionskoeffizienten)
+  Vorne-Hinten  = Reaktanz (Im des Reflexionskoeffizienten)
+    Vorne = Induktiv (Antenne zu kurz)
+    Hinten = Kapazitiv (Antenne zu lang)
+
+Visualisierungsmodi:
+  1 - Kartesisch: Position im 3D-Raum
+      Re(Γ) → Links/Rechts, Im(Γ) → Vorne/Hinten
+  2 - Polar: Rotation um Benutzer
+      Winkel → Richtung, Betrag → Entfernung
+  3 - Impedanz Direkt: R und X direkt abgebildet
+      R → Links/Rechts, X → Vorne/Hinten (einfacher)
+  4 - SWR-Kreise: Fokus auf konstante SWR-Niveaus
+  5 - Zeitbereich: Akustische Analyse + Smith-Hinweise
+  6 - Hybrid: Mehrere Audio-Ebenen gleichzeitig
+
+Steuerung:
+  V - Smith-Visualisierung ein-/ausschalten
+  B - Visualisierungsmodus ändern (1-6)
+  H - Diese Smith-Hilfe anzeigen
+
+Audio-Darstellung:
+  - Räumliche Position zeigt Impedanzposition im Smith-Diagramm
+  - Subtiles Umgebungsgeräusch zeigt Position an
+  - Standardlautstärke: 30% (konfigurierbar)
+
+Tipps:
+  - Beginnen Sie mit kartesischem Modus (am einfachsten zu verstehen)
+  - Verwenden Sie Kopfhörer für beste Raumklangerfahrung
+  - Smith-Hinweise funktionieren am besten mit glattem Wiedergabemodus
+  - Ton bewegt sich zur Mitte, wenn Resonanz genähert wird
+  - Vorne/Hinten-Position zeigt induktiv/kapazitiv an
+
+Beispielinterpretationen:
+  Zentraler Ton = Perfekte 50Ω-Anpassung
+  Ton bewegt sich zur Mitte = Resonanz wird genähert
+  Ton vorne = Induktive Reaktanz (zu kurz)
+  Ton hinten = Kapazitive Reaktanz (zu lang)
+  Ton am Rand = Hohes SWR, schlechte Anpassung
+"
+
+# ========================================
+# Handbücher und Training Menü (? Taste)
+# ========================================
+MENU_DOCS=(?) Handbücher und Training
+DOCS_MENU_TITLE=Handbücher und Training
+DOCS_MENU_MANUAL=1. Benutzerhandbuch öffnen
+DOCS_MENU_TRAINING=2. Training Suite öffnen
+DOCS_MENU_BETA=3. Beta Test Anweisungen öffnen
+DOCS_MENU_FEEDBACK=4. Feedback an Entwickler
+DOCS_MENU_BACK=ESC - Zurück zum Hauptmenü
+DOCS_MENU_PROMPT=Wählen Sie eine Option (1-4, oder ESC zum Zurück):
+
+# Feedback Menü
+FEEDBACK_MENU_TITLE=Feedback an Entwickler
+FEEDBACK_ATTACH_QUESTION=Möchten Sie Logs und Konfigurationsdateien anhängen? (j/n):
+FEEDBACK_PREPARING=E-Mail wird vorbereitet...
+FEEDBACK_EMAIL_PREPARED=E-Mail-Client wurde geöffnet. Bitte fügen Sie Ihre Nachricht hinzu und senden Sie die E-Mail ab.
+FEEDBACK_ERROR=Fehler beim Öffnen des E-Mail-Clients.
+FEEDBACK_ATTACHMENTS_WARNING=WICHTIG: E-Mail-Clients können Dateien nicht automatisch anhängen.\nSie müssen die folgenden Ordner manuell anhängen, nachdem die E-Mail geöffnet wurde:
+FEEDBACK_ATTACHMENTS_INFO=Die folgenden Dateien sollten angehängt werden:\n  - config/*\n  - logs/*\n  - Export/*\n\nBitte hängen Sie diese Ordner manuell an Ihre E-Mail an.
+
+# Dokumentationspfade
+DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_DE.html
+DOC_PATH_TRAINING=doc/training/de/Training_Index.html
+DOC_PATH_BETA=doc/beta-testing/BETA_TESTING_DE.html
+DOC_PATH_MAIN_INDEX=doc/README.html
+
+# Fehlermeldungen für Dokumentation
+ERROR_DOC_NOT_FOUND=Fehler: Dokumentationsdatei nicht gefunden: {0}
+ERROR_BROWSER_FAILED=Fehler: Konnte Browser nicht öffnen.
+DOC_OPENED=Dokumentation wird im Browser geöffnet...
+

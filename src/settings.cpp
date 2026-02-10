@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+#include <iomanip>
 
 static void trim(std::string &s) {
     while(!s.empty() && isspace((unsigned char)s.front())) s.erase(s.begin());
@@ -376,6 +377,28 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         else if (k == "last_measurement_duration_seconds") cfg.last_measurement_duration_seconds = std::stod(v);
         else if (k == "navigation_jump_width") cfg.navigation_jump_width = std::stoi(v);
         else if (k == "calibration_bank") cfg.calibration_bank = std::stoi(v);
+        
+        // Spatial Audio Calibration settings
+        else if (k == "spatial_audio_calibrated") cfg.spatial_audio_calibrated = (v == "1" || v == "true");
+        else if (k == "spatial_front_back_accuracy") cfg.spatial_calibration.front_back_accuracy = std::stod(v);
+        else if (k == "spatial_left_right_accuracy") cfg.spatial_calibration.left_right_accuracy = std::stod(v);
+        else if (k == "spatial_diagonal_accuracy") cfg.spatial_calibration.diagonal_accuracy = std::stod(v);
+        else if (k == "spatial_near_threshold") cfg.spatial_calibration.near_threshold = std::stod(v);
+        else if (k == "spatial_far_threshold") cfg.spatial_calibration.far_threshold = std::stod(v);
+        else if (k == "spatial_distance_sensitivity") cfg.spatial_calibration.distance_sensitivity = std::stod(v);
+        else if (k == "spatial_preferred_curve_volume") cfg.spatial_calibration.preferred_curve_volume = std::stod(v);
+        else if (k == "spatial_preferred_event_volume") cfg.spatial_calibration.preferred_event_volume = std::stod(v);
+        else if (k == "spatial_preferred_ambient_volume") cfg.spatial_calibration.preferred_ambient_volume = std::stod(v);
+        else if (k == "spatial_preferred_axis_crossing_sound") cfg.spatial_calibration.preferred_axis_crossing_sound = std::stoi(v);
+        else if (k == "spatial_preferred_center_pulse_waveform") cfg.spatial_calibration.preferred_center_pulse_waveform = std::stoi(v);
+        else if (k == "spatial_crossfeed_amount") cfg.spatial_calibration.crossfeed_amount = std::stod(v);
+        else if (k == "spatial_back_attenuation") cfg.spatial_calibration.back_attenuation = std::stod(v);
+        else if (k == "spatial_side_emphasis") cfg.spatial_calibration.side_emphasis = std::stod(v);
+        else if (k == "spatial_surround_available") cfg.spatial_calibration.surround_available = (v == "1" || v == "true");
+        else if (k == "spatial_front_speaker_distance") cfg.spatial_calibration.front_speaker_distance = std::stod(v);
+        else if (k == "spatial_back_speaker_distance") cfg.spatial_calibration.back_speaker_distance = std::stod(v);
+        else if (k == "spatial_side_speaker_distance") cfg.spatial_calibration.side_speaker_distance = std::stod(v);
+        
         else if (k == "table_columns") {
             // Parse comma-separated list of columns
             cfg.table_columns.clear();
@@ -387,6 +410,147 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
                     cfg.table_columns.push_back(col);
                 }
             }
+        }
+        // Smith diagram audio configuration
+        else if (k == "smith_cues_volume") {
+            try {
+                int vol = std::stoi(v);
+                if (vol >= 10 && vol <= 100) {
+                    cfg.smith_cues_volume = vol;
+                }
+            } catch (...) {}
+        }
+        else if (k == "smith_noise_type") {
+            try {
+                int type = std::stoi(v);
+                if (type >= 0 && type <= 3) {
+                    cfg.smith_noise_type = static_cast<AppConfig::SmithNoiseType>(type);
+                }
+            } catch (...) {}
+        }
+        else if (k == "center_pulse_enabled") cfg.center_pulse_enabled = (v == "1" || v == "true");
+        else if (k == "center_pulse_volume") {
+            try {
+                int vol = std::stoi(v);
+                if (vol >= 10 && vol <= 100) {
+                    cfg.center_pulse_volume = vol;
+                }
+            } catch (...) {}
+        }
+        else if (k == "center_pulse_interval") {
+            try {
+                double interval = std::stod(v);
+                if (interval >= 0.5 && interval <= 2.0) {
+                    cfg.center_pulse_interval = interval;
+                }
+            } catch (...) {}
+        }
+        else if (k == "center_pulse_waveform") {
+            try {
+                int waveform = std::stoi(v);
+                if (waveform >= 0 && waveform <= 5) {
+                    cfg.center_pulse_waveform = static_cast<AppConfig::CenterPulseWaveform>(waveform);
+                }
+            } catch (...) {}
+        }
+        else if (k == "axis_events_enabled") cfg.axis_events_enabled = (v == "1" || v == "true");
+        else if (k == "axis_events_volume") {
+            try {
+                int vol = std::stoi(v);
+                if (vol >= 10 && vol <= 100) {
+                    cfg.axis_events_volume = vol;
+                }
+            } catch (...) {}
+        }
+        else if (k == "axis_events_duration_ms") {
+            try {
+                int duration = std::stoi(v);
+                if (duration >= 50 && duration <= 500) {
+                    cfg.axis_events_duration_ms = duration;
+                }
+            } catch (...) {}
+        }
+        else if (k == "axis_events_pitch_min") {
+            try {
+                double pitch = std::stod(v);
+                if (pitch >= 200.0 && pitch <= 1000.0) {
+                    cfg.axis_events_pitch_min = pitch;
+                }
+            } catch (...) {}
+        }
+        else if (k == "axis_events_pitch_max") {
+            try {
+                double pitch = std::stod(v);
+                if (pitch >= 400.0 && pitch <= 2000.0) {
+                    cfg.axis_events_pitch_max = pitch;
+                }
+            } catch (...) {}
+        }
+        else if (k == "axis_crossing_sound") {
+            try {
+                int sound = std::stoi(v);
+                if (sound >= 0 && sound <= 4) {
+                    cfg.axis_crossing_sound = static_cast<AppConfig::AxisCrossingSound>(sound);
+                }
+            } catch (...) {}
+        }
+        // Surround sound configuration
+        else if (k == "surround_enabled") cfg.surround_enabled = (v == "1" || v == "true");
+        else if (k == "surround_front_distance") {
+            try {
+                int dist = std::stoi(v);
+                if (dist >= 50 && dist <= 200) {
+                    cfg.surround_front_distance = dist;
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_back_distance") {
+            try {
+                int dist = std::stoi(v);
+                if (dist >= 50 && dist <= 200) {
+                    cfg.surround_back_distance = dist;
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_side_distance") {
+            try {
+                int dist = std::stoi(v);
+                if (dist >= 50 && dist <= 200) {
+                    cfg.surround_side_distance = dist;
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_center_strength") {
+            try {
+                int strength = std::stoi(v);
+                if (strength >= 0 && strength <= 100) {
+                    cfg.surround_center_strength = strength;
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_fading_curve") {
+            try {
+                int curve = std::stoi(v);
+                if (curve >= 0 && curve <= 3) {
+                    cfg.surround_fading_curve = static_cast<AppConfig::SurroundFadingCurve>(curve);
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_fb_separation") {
+            try {
+                int sep = std::stoi(v);
+                if (sep >= 50 && sep <= 200) {
+                    cfg.surround_fb_separation = sep;
+                }
+            } catch (...) {}
+        }
+        else if (k == "surround_side_emphasis") {
+            try {
+                int emph = std::stoi(v);
+                if (emph >= 50 && emph <= 200) {
+                    cfg.surround_side_emphasis = emph;
+                }
+            } catch (...) {}
         }
     }
     return true;
@@ -457,6 +621,30 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "status_line_show_impedance=" << (cfg.status_line_show_impedance ? "1" : "0") << "  # Show Impedance magnitude value in status line\n";
     ofs << "status_line_show_reactance=" << (cfg.status_line_show_reactance ? "1" : "0") << "  # Show Reactance value in status line\n";
     ofs << "status_line_show_phase=" << (cfg.status_line_show_phase ? "1" : "0") << "  # Show Phase value in status line\n";
+    
+    ofs << "\n# Smith diagram audio configuration\n";
+    ofs << "smith_cues_volume=" << cfg.smith_cues_volume << "  # Smith ambient cues volume (10-100%, default 30%)\n";
+    ofs << "smith_noise_type=" << static_cast<int>(cfg.smith_noise_type) << "  # Smith noise type (0=Pink, 1=White, 2=Brown, 3=Sine Wave, default 0)\n";
+    ofs << "center_pulse_enabled=" << (cfg.center_pulse_enabled ? "1" : "0") << "  # Center pulse reference signal enabled\n";
+    ofs << "center_pulse_volume=" << cfg.center_pulse_volume << "  # Center pulse volume (10-100%, default 40%)\n";
+    ofs << "center_pulse_interval=" << std::fixed << std::setprecision(1) << cfg.center_pulse_interval << "  # Pulse interval in seconds (0.5-2.0, default 1.0)\n";
+    ofs << "center_pulse_waveform=" << static_cast<int>(cfg.center_pulse_waveform) << "  # Center pulse waveform (0=Click, 1=Sine, 2=Square, 3=Triangle, 4=Sawtooth, 5=Pulse)\n";
+    ofs << "axis_events_enabled=" << (cfg.axis_events_enabled ? "1" : "0") << "  # Axis crossing events enabled\n";
+    ofs << "axis_events_volume=" << cfg.axis_events_volume << "  # Axis events volume (10-100%, default 60%)\n";
+    ofs << "axis_events_duration_ms=" << cfg.axis_events_duration_ms << "  # Axis events sound duration in ms (50-500, default 100)\n";
+    ofs << "axis_events_pitch_min=" << std::fixed << std::setprecision(1) << cfg.axis_events_pitch_min << "  # Minimum pitch for gestures in Hz (200-1000, default 300)\n";
+    ofs << "axis_events_pitch_max=" << std::fixed << std::setprecision(1) << cfg.axis_events_pitch_max << "  # Maximum pitch for gestures in Hz (400-2000, default 800)\n";
+    ofs << "axis_crossing_sound=" << static_cast<int>(cfg.axis_crossing_sound) << "  # Axis crossing sound type (0=Pluck, 1=Sweep, 2=Chirp, 3=Bell, 4=Percussion)\n";
+    
+    ofs << "\n# Surround sound configuration\n";
+    ofs << "surround_enabled=" << (cfg.surround_enabled ? "1" : "0") << "  # Enable surround sound if available\n";
+    ofs << "surround_front_distance=" << cfg.surround_front_distance << "  # Distance factor for front speakers (50-200%, default 100%)\n";
+    ofs << "surround_back_distance=" << cfg.surround_back_distance << "  # Distance factor for back speakers (50-200%, default 100%)\n";
+    ofs << "surround_side_distance=" << cfg.surround_side_distance << "  # Distance factor for side speakers (50-200%, default 100%)\n";
+    ofs << "surround_center_strength=" << cfg.surround_center_strength << "  # Center channel strength (0-100%, default 50%)\n";
+    ofs << "surround_fading_curve=" << static_cast<int>(cfg.surround_fading_curve) << "  # Fading curve (0=Linear, 1=Logarithmic, 2=Exponential, 3=Sine, default 0)\n";
+    ofs << "surround_fb_separation=" << cfg.surround_fb_separation << "  # Front/back separation strength (50-200%, default 100%)\n";
+    ofs << "surround_side_emphasis=" << cfg.surround_side_emphasis << "  # Side channel emphasis (50-200%, default 100%)\n";
     
     ofs << "\n# Braille printer settings\n";
     ofs << "braille_protocol=" << static_cast<int>(cfg.braille_protocol) << "  # 0=Index V4 (Raster), 1=Index V5 (Floating Dot Area)\n";
@@ -535,6 +723,34 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "navigation_jump_width=" << cfg.navigation_jump_width << "\n";
     ofs << "\n# Calibration settings\n";
     ofs << "calibration_bank=" << cfg.calibration_bank << "\n";
+    
+    ofs << "\n# Spatial Audio Calibration\n";
+    ofs << "spatial_audio_calibrated=" << (cfg.spatial_audio_calibrated ? "1" : "0") << "  # Whether spatial audio wizard has been completed\n";
+    ofs << "\n# User hearing characteristics (from calibration wizard)\n";
+    ofs << "spatial_front_back_accuracy=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.front_back_accuracy << "  # Front/back perception accuracy (0.0-1.0)\n";
+    ofs << "spatial_left_right_accuracy=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.left_right_accuracy << "  # Left/right perception accuracy (0.0-1.0)\n";
+    ofs << "spatial_diagonal_accuracy=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.diagonal_accuracy << "  # Diagonal perception accuracy (0.0-1.0)\n";
+    ofs << "\n# Distance perception\n";
+    ofs << "spatial_near_threshold=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.near_threshold << "  # Near threshold (0.0-0.5)\n";
+    ofs << "spatial_far_threshold=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.far_threshold << "  # Far threshold (0.5-1.0)\n";
+    ofs << "spatial_distance_sensitivity=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.distance_sensitivity << "  # Distance sensitivity (0.0-1.0)\n";
+    ofs << "\n# Volume preferences\n";
+    ofs << "spatial_preferred_curve_volume=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.preferred_curve_volume << "  # Curve sounds volume (0.0-1.0)\n";
+    ofs << "spatial_preferred_event_volume=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.preferred_event_volume << "  # Event sounds volume (0.0-1.0)\n";
+    ofs << "spatial_preferred_ambient_volume=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.preferred_ambient_volume << "  # Ambient cues volume (0.0-1.0)\n";
+    ofs << "\n# Sound type preferences\n";
+    ofs << "spatial_preferred_axis_crossing_sound=" << cfg.spatial_calibration.preferred_axis_crossing_sound << "  # Axis crossing sound index (0-4)\n";
+    ofs << "spatial_preferred_center_pulse_waveform=" << cfg.spatial_calibration.preferred_center_pulse_waveform << "  # Center pulse waveform index (0-5)\n";
+    ofs << "\n# Psychoacoustic parameters (stereo mode)\n";
+    ofs << "spatial_crossfeed_amount=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.crossfeed_amount << "  # Crossfeed amount (0.0-0.5)\n";
+    ofs << "spatial_back_attenuation=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.back_attenuation << "  # Back sound attenuation (0.5-1.0)\n";
+    ofs << "spatial_side_emphasis=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.side_emphasis << "  # Side channel emphasis (0.5-1.0)\n";
+    ofs << "\n# Surround-specific parameters\n";
+    ofs << "spatial_surround_available=" << (cfg.spatial_calibration.surround_available ? "1" : "0") << "  # Surround detected during calibration\n";
+    ofs << "spatial_front_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.front_speaker_distance << "  # Front speaker distance (0.5-2.0)\n";
+    ofs << "spatial_back_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.back_speaker_distance << "  # Back speaker distance (0.5-2.0)\n";
+    ofs << "spatial_side_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.side_speaker_distance << "  # Side speaker distance (0.5-2.0)\n";
+    
     ofs << "\n# Table view preferences\n";
     ofs << "table_columns=";
     for (size_t i = 0; i < cfg.table_columns.size(); i++) {

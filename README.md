@@ -52,6 +52,22 @@ Transform measurements into interactive multi-channel audio:
 4. **Reactance X** - Sawtooth / Violin (rising=inductive, falling=capacitive)
 5. **Phase** - Sine / Synth Lead
 
+**Smith Diagram Visualization (NEW!):**
+Experience impedance matching through 3D spatial audio:
+- **V** - Toggle Smith visualization on/off
+- **B** - Select visualization mode (6 modes)
+- **Six visualization modes:**
+  1. **Cartesian**: Position in 3D space (Re(Γ) → L/R, Im(Γ) → F/B)
+  2. **Polar**: Rotation around user (∠Γ → angle, |Γ| → distance)
+  3. **Impedance Direct**: R → L/R, X → F/B (simpler)
+  4. **SWR Circles**: Focus on constant SWR levels
+  5. **Time Domain**: Acoustic analysis + Smith spatial cues
+  6. **Hybrid**: Multiple audio layers simultaneously
+- **Spatial Audio**: Ambient noise positioned in stereo field shows impedance location
+- **Center = 50Ω match**, **Edge = poor match**, **Front = inductive**, **Back = capacitive**
+- Press **H** while Smith active for detailed mode help
+- Optimized for headphones (stereo/5.1/7.1 surround supported)
+
 **Playback Features:**
 - Stereo panning: left=start frequency, right=end frequency
 - Pitch mapping: higher pitch = higher value
@@ -178,10 +194,15 @@ nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autos
 - **1-5** - Toggle curve on/off
 - **Ctrl+1-5** - Decrease volume | **Shift+1-5** - Increase volume
 
+**Smith Visualization:**
+- **V** - Toggle Smith diagram visualization
+- **B** - Change Smith mode (6 modes: Cartesian/Polar/Direct/SWR/Time/Hybrid)
+- **H** - Show help (Smith-specific when Smith active)
+
 **Other:**
 - **Y** - Audio configuration (engine/MIDI instruments)
 - **M** - Show current measurement
-- **E** - Export | **H** - Help | **B** - Back
+- **E** - Export | **ESC** - Back
 
 ### Continuous Sweep Mode
 1. Configure frequency range (**R** or **M**)

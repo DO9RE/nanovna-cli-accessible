@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Scenario 7: Coaxial Cable with Attenuation (S21 Analysis)">
+    <title>Training Scenario 7: Coaxial Cable with Attenuation (S21 Analysis)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header role="banner">
+        <h1>Training Scenario 7: Coaxial Cable with Attenuation (S21 Analysis)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_06_Multiband_Antenne.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_08_Kurzschluss.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Scenario 7: Coaxial Cable with Attenuation (S21 Analysis)</h1>
+<p><strong>Training File:</strong> <code>Training/07_kabel_mit_daempfung.csv</code> <strong>Frequency Range:</strong> 144.000 - 146.000 MHz (2m amateur radio band) <strong>Difficulty Level:</strong> ⭐⭐ Medium <strong>Learning Objective:</strong> Understanding cable attenuation through S21 measurement and recognizing frequency-dependent losses</p>
+<hr>
+<h2>📋 Scenario Description</h2>
+<h3>Fictional Component</h3>
+<p>You are measuring a <strong>20 meter long RG-58 coaxial cable</strong> across the 2m band. The cable has a perfectly matched 50Ω load at the end (simulating perfect antenna). The cable itself shows <strong>typical attenuation characteristics</strong>: Perfect matching (S11), but <strong>measurable loss</strong> (S21).</p>
+<h3>Technical Properties</h3>
+<ul>
+    <li><strong>Cable Length:</strong> 20 meters</li>
+    <li><strong>Cable Type:</strong> RG-58 (5mm diameter, solid PE)</li>
+    <li><strong>Impedance (S11):</strong> 50.1Ω + j0.1Ω (constant, perfect!)</li>
+    <li><strong>SWR:</strong> 1.00 (ideal across entire band!)</li>
+    <li><strong>Return Loss (S11):</strong> 54.10 dB (virtually no reflection)</li>
+    <li><strong>Transmission (S21):</strong></li>
+    <li>144.0 MHz: -0.005 dB (99.9% = ~5W loss at 100W)</li>
+    <li>146.0 MHz: -0.015 dB (99.7% = ~15W loss at 100W)</li>
+    <li><strong>Special Feature:</strong> S21 becomes <strong>worse with increasing frequency</strong> (typical for cables!)</li>
+</ul>
+<h3>Physical Meaning</h3>
+<p><strong>Coaxial cable losses</strong> arise from:</p>
+<ol>
+    <li><strong>Dielectric losses:</strong> RF energy heats insulation (PE, PTFE)</li>
+    <li><strong>Ohmic losses:</strong> Resistance of center conductor and braid</li>
+    <li><strong>Skin effect:</strong> Current flows only in surface (frequency-dependent!)</li>
+    <li><strong>Radiation losses:</strong> Minimal RF radiation through braid gaps</li>
+</ol>
+<p><strong>Frequency Dependence:</strong></p>
+<ul>
+    <li><strong>Attenuation increases with √f</strong> (rough approximation)</li>
+    <li><strong>Higher frequencies:</strong> More attenuated</li>
+    <li><strong>Skin effect:</strong> Resistance increases with frequency</li>
+</ul>
+<p><strong>Typical Attenuation Values (per 100m):</strong></p>
+<pre><code class="language-">Cable Type  | 144 MHz | 432 MHz | 1296 MHz
+<p>------------|---------|---------|---------- RG-58       | 3.5 dB  | 6.5 dB  | 12 dB RG-213      | 2.0 dB  | 3.8 dB  | 7.5 dB Aircom+     | 0.9 dB  | 1.7 dB  | 3.2 dB Ecoflex 10  | 0.5 dB  | 1.0 dB  | 2.0 dB</p>
+</code></pre>
+<p><strong>Practical Significance:</strong></p>
+<ul>
+    <li>At <strong>UHF/SHF:</strong> Cable selection critical!</li>
+    <li>At <strong>HF/VHF:</strong> Even RG-58 acceptable (short lengths)</li>
+    <li><strong>Rule of thumb:</strong> Maximum cable length at <3 dB loss</li>
+</ul>
+<hr>
+<h2>🎧 Acoustic Analysis</h2>
+<h3>Import and Load File</h3>
+<ol>
+    <li><strong>Main Menu:</strong> Press <strong>L</strong> (Load)</li>
+    <li>List of files appears - navigate with <strong>arrow keys</strong></li>
+    <li>Select <strong>07_kabel_mit_daempfung.csv</strong></li>
+    <li>Press <strong>Enter</strong> to load</li>
+    <li>Confirmation: "41 measurement points successfully loaded"</li>
+    <li><strong>Note:</strong> File contains S11 + S21 data</li>
+</ol>
+<h3>Start Acoustic Mode</h3>
+<ol>
+    <li><strong>Main Menu:</strong> Press <strong>A</strong> (Acoustic Analysis)</li>
+    <li>You are now in acoustic analysis mode</li>
+    <li>Press <strong>SPACE</strong> to start playback</li>
+</ol>
+<hr>
+<h2>🎵 Expected Audio Events</h2>
+<h3>Reflection Parameters (S11) - Cable Matching</h3>
+<h4>1. SWR Curve (Key 1 - Sine Wave)</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Extremely quiet, very low constant tone</strong> (SWR = 1.00)</li>
+    <li><strong>Absolutely constant</strong> across entire band</li>
+    <li><strong>No variation</strong> perceptible</li>
+    <li>Identical to Scenario 1 (perfect resonance)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Cable is <strong>perfectly terminated</strong> (50Ω load at end)</li>
+    <li><strong>No reflections</strong> from cable end</li>
+    <li>SWR=1.0 does NOT mean "no loss"! (common mistake)</li>
+    <li><strong>S11 says nothing about losses!</strong> → Need S21!</li>
+</ul>
+<p><strong>Position in Stereo Field:</strong></p>
+<ul>
+    <li>Sound remains <strong>exactly centered</strong></li>
+    <li>No movement</li>
+</ul>
+<h4>2. Return Loss Curve (Key 2 - Pure Sine Wave)</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Very high, constant tone</strong> (54 dB)</li>
+    <li>Minimally audible "flutter" (numerical noise)</li>
+    <li>Virtually no variation</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Extremely high return loss = Virtually no reflection</li>
+    <li>Cable behaves like <strong>ideal 50Ω load</strong></li>
+    <li><strong>BUT:</strong> Says nothing about transmission!</li>
+</ul>
+<h4>3. Impedance |Z| (Key 3 - Triangle Wave)</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Constant medium tone</strong> exactly at 50Ω</li>
+    <li>Minimally audible "tremor" around 50.1Ω</li>
+    <li>No perceptible pitch change</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Cable does <strong>not</strong> transform impedance</li>
+    <li>Load impedance (50Ω) appears <strong>unchanged</strong> at cable input</li>
+    <li>Perfect behavior for 50Ω system</li>
+</ul>
+<h4>4. Reactance X (Key 4 - Sawtooth)</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Extremely quiet tone</strong> around zero line (±0.1Ω)</li>
+    <li>Tone "hovers" around center</li>
+    <li>Practically inaudible</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>No reactance = Purely resistive</li>
+    <li>Cable is <strong>resonance-free</strong> (no line resonances in measurement range)</li>
+    <li>50Ω termination works perfectly</li>
+</ul>
+<h4>5. Phase (Key 5 - Sine Wave)</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Very quiet tone</strong> near zero point</li>
+    <li>Minimal fluctuations</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Zero phase = Resistive load</li>
+    <li>Cable behaves like resistor (from S11 perspective)</li>
+</ul>
+<hr>
+<h3>Transmission Parameters (S21) - Cable Losses ⭐ IMPORTANT!</h3>
+<h4>6. S21 Magnitude (Transmission Loss)</h4>
+<p><strong>Activate:</strong></p>
+<ul>
+    <li>In acoustic mode: <strong>Key 6</strong> or <strong>Key T</strong></li>
+</ul>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Very high, but slowly descending tone</strong></li>
+    <li>Starts at <strong>extremely high level</strong> (-0.005 dB at 144 MHz)</li>
+    <li>Drops <strong>slightly</strong> over frequency</li>
+    <li>Ends at <strong>still high, but lower tone</strong> (-0.015 dB at 146 MHz)</li>
+    <li><strong>Continuous downward trend</strong> (lowpass-like)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li><strong>S21 = Transmission</strong> (how much signal gets through cable?)</li>
+    <li>High tone (close to 0 dB) = Low attenuation = Little loss</li>
+    <li><strong>Decreasing with frequency</strong> = Typical cable characteristic!</li>
+    <li>Higher frequency → More loss (skin effect + dielectric losses)</li>
+</ul>
+<p><strong>Loss Calculation:</strong></p>
+<pre><code class="language-">At 144 MHz: -0.005 dB
+<p>→ Transmission = 10^(-0.005/20) = 0.9994 = 99.94% → Loss = 0.06% ≈ 60 mW at 100W  At 146 MHz: -0.015 dB → Transmission = 10^(-0.015/20) = 0.9983 = 99.83% → Loss = 0.17% ≈ 170 mW at 100W</p>
+</code></pre>
+<p><strong>Comparison with Scenario 5 (Lowpass Filter):</strong></p>
+<ul>
+    <li><strong>Filter:</strong> S21 drops more steeply (intentional - attenuate harmonics)</li>
+    <li><strong>Cable:</strong> S21 drops minimally (undesired - loss!)</li>
+    <li><strong>Both:</strong> Lowpass characteristic, but different magnitude</li>
+</ul>
+<p><strong>Stereo Position:</strong></p>
+<ul>
+    <li>Sound moves <strong>slightly downward</strong> (attenuation increases)</li>
+    <li>Shows frequency dependence spatially</li>
+</ul>
+<h4>7. S21 Phase (Transmission Phase)</h4>
+<p><strong>Activate:</strong></p>
+<ul>
+    <li>In acoustic mode: <strong>Key 7</strong> or <strong>Key P</strong></li>
+</ul>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Strongly descending tone</strong> (phase becomes strongly negative)</li>
+    <li>Starts at approximately <strong>-1°</strong> to <strong>-2°</strong></li>
+    <li>Drops to approximately <strong>-50°</strong> to <strong>-60°</strong> at 146 MHz</li>
+    <li><strong>Linear downward trend</strong></li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li><strong>S21 Phase = Propagation delay</strong> through cable</li>
+    <li>Negative phase = Signal takes time through cable (normal!)</li>
+    <li><strong>Linear phase</strong> = Constant Group Delay = Good!</li>
+    <li><strong>Group Delay τ = Δφ / Δω</strong> (slope of phase curve)</li>
+</ul>
+<p><strong>Propagation Time Calculation:</strong></p>
+<pre><code class="language-">Cable length: 20m
+<p>Velocity factor (RG-58): v = 0.66 Signal speed: c × 0.66 = 198,000 km/s  Propagation time: t = 20m / (198,000 km/s) = 101 ns  Phase shift at 145 MHz: φ = 360° × 145 MHz × 101 ns = 5270° = 14.6 full circles + 230°  In Smith chart: 14× full rotation + partial rotation</p>
+</code></pre>
+<p><strong>Practical Significance:</strong></p>
+<ul>
+    <li>Linear phase = <strong>No signal distortion</strong></li>
+    <li>Important for digital modes (RTTY, FT8, etc.)</li>
+    <li>SSB telephony: Usually not critical</li>
+</ul>
+<hr>
+<h2>🎯 Smith Chart Audio Visualization</h2>
+<h3>Activate Smith Visualization (for S11)</h3>
+<ol>
+    <li>In acoustic mode: Press <strong>V</strong> (Smith visualization on/off)</li>
+    <li>Press <strong>B</strong> to select mode:</li>
+</ol>
+<ul>
+    <li><strong>Recommended: Mode 1 (Cartesian)</strong></li>
+    <li>Alternative: <strong>Mode 3 (Impedance Direct)</strong></li>
+</ul>
+<h3>Expected Smith Audio Cues</h3>
+<h4>Mode 1: Cartesian</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Sound stays EXACTLY AT CENTER</strong> (identical to Scenario 1!)</li>
+    <li><strong>Absolutely no movement</strong></li>
+    <li>Position: <strong>Directly in front of you, at medium height</strong></li>
+    <li>Like <strong>"glued"</strong> to center</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Central position = Perfect 50Ω matching</li>
+    <li>No movement = No reflections from cable</li>
+    <li><strong>Cable is "invisible"</strong> from S11 perspective (perfectly terminated)</li>
+</ul>
+<h4>Mode 2: Polar/Radius</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Slight, continuous rotation</strong> around center</li>
+    <li>Radius remains <strong>minimal</strong> (close to center)</li>
+    <li><strong>Multiple full rotations</strong> possible (20m cable = many λ/4 at VHF!)</li>
+    <li>Sound <strong>rotates</strong>, but stays <strong>close</strong></li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Rotation = <strong>Electrical length</strong> of cable (see Scenario 4)</li>
+    <li>20m at 145 MHz ≈ 14× λ/2 = <strong>14 full rotations</strong>!</li>
+    <li>Small radius = Perfect termination (little reflection)</li>
+    <li><strong>Combination:</strong> Rotation (length) + Central position (matching)</li>
+</ul>
+<p><strong>Caution:</strong></p>
+<ul>
+    <li>In this scenario: <strong>VERY fast rotation</strong> (long cable!)</li>
+    <li>Can be disorienting</li>
+    <li><strong>Reduce frequency span</strong> for slower rotation (loop markers!)</li>
+</ul>
+<h4>Mode 3: Impedance Direct</h4>
+<p><strong>What You Should Hear:</strong></p>
+<ul>
+    <li><strong>Sound exactly in the MIDDLE</strong> (R = 50Ω, X = 0Ω)</li>
+    <li><strong>No movement</strong> horizontally or vertically</li>
+    <li>Position remains <strong>perfectly static</strong></li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Cable shows <strong>constant 50Ω impedance</strong> at input</li>
+    <li>Perfect transformation of load impedance (50Ω → 50Ω)</li>
+</ul>
+<h3>Center Pulse (Reference Signal)</h3>
+<p><strong>Activate:</strong></p>
+<ol>
+    <li>Key <strong>A</strong> in acoustic mode → Audio configuration</li>
+    <li>Menu: <strong>C</strong> → <strong>Smith Audio</strong> → Enable Center Pulse</li>
+</ol>
+<p><strong>What You Hear:</strong></p>
+<ul>
+    <li><strong>Periodic pulse from the CENTER</strong></li>
+    <li>Your measurement <strong>overlaps perfectly</strong> with pulse!</li>
+    <li>If rotation active (Mode 2): Sound rotates <strong>AROUND the pulse</strong>, very close</li>
+</ul>
+<hr>
+<h2>🔧 Exercises and Learning Tasks</h2>
+<h3>Exercise 1: S11 vs. S21 - Critical Difference!</h3>
+<p><strong>Goal:</strong> Understand that SWR=1.0 does NOT mean "lossless"</p>
+<ol>
+    <li><strong>Turn off all curves</strong></li>
+    <li><strong>Turn on only SWR</strong> (Key 1)</li>
+</ol>
+<ul>
+    <li><strong>SPACE</strong> → Hear: <strong>Perfect! (SWR=1.0)</strong></li>
+    <li><strong>Conclusion (WRONG):</strong> "Cable is perfect, no loss!"</li>
+</ul>
+<ol>
+    <li><strong>Turn off SWR</strong></li>
+    <li><strong>Turn on only S21 Magnitude</strong> (Key 6)</li>
+</ol>
+<ul>
+    <li><strong>SPACE</strong> → Hear: <strong>Slightly descending (-0.005 to -0.015 dB)</strong></li>
+    <li><strong>Conclusion (CORRECT):</strong> "Cable has measurable losses!"</li>
+</ul>
+<p><strong>Important Insight:</strong></p>
+<ul>
+    <li><strong>S11 (SWR):</strong> Shows only reflection/matching</li>
+    <li><strong>S21 (Transmission):</strong> Shows actual insertion loss</li>
+    <li><strong>Perfect matching</strong> (SWR=1.0) can have <strong>high losses</strong>!</li>
+    <li>Example: 50Ω attenuator: SWR=1.0, but S21=-10dB or more!</li>
+</ul>
+<h3>Exercise 2: Frequency Dependence of Attenuation</h3>
+<p><strong>Goal:</strong> Understand that higher frequencies are attenuated more</p>
+<ol>
+    <li><strong>Turn on only S21 Magnitude</strong> (Key 6)</li>
+    <li>Press <strong>SPACE</strong></li>
+    <li><strong>Focus</strong> on pitch trend</li>
+    <li><strong>Question:</strong> Does tone go higher or lower? → <strong>Lower! (More attenuation)</strong></li>
+    <li><strong>Interpretation:</strong></li>
+</ol>
+<ul>
+    <li>144 MHz (left): Highest tone = Lowest attenuation</li>
+    <li>146 MHz (right): Lower tone = Higher attenuation</li>
+    <li><strong>Trend:</strong> Higher frequency → More loss</li>
+</ul>
+<h3>Exercise 3: Estimate Cable Length from S21 Phase</h3>
+<p><strong>Goal:</strong> Understand group delay and cable length</p>
+<ol>
+    <li><strong>Turn on only S21 Phase</strong> (Key 7)</li>
+    <li>Press <strong>SPACE</strong></li>
+    <li><strong>Hear</strong> the strong downward trend</li>
+    <li><strong>Interpretation:</strong></li>
+</ol>
+<ul>
+    <li>Strong phase gradient = Long propagation time = Long cable</li>
+    <li>Vs. Scenario 5 (filter): Less steep phase = Short element</li>
+</ul>
+<ol>
+    <li><strong>Rough calculation:</strong></li>
+</ol>
+<ul>
+    <li>Phase change ~50° over 2 MHz</li>
+    <li>At 145 MHz: 360° = λ = 2.07m (electrical)</li>
+    <li>50° ≈ 0.14× λ ≈ 0.29m per 2 MHz</li>
+    <li>But: Cable makes many full rotations → Total phase >> 360°!</li>
+</ul>
+<h3>Exercise 4: Losses in dB to Percent</h3>
+<p><strong>Goal:</strong> Practically evaluate attenuation values</p>
+<ol>
+    <li>Press <strong>Y</strong> (Y-axis ruler)</li>
+    <li><strong>Key 6</strong> (select S21 Magnitude)</li>
+    <li>You hear <strong>ascending scale</strong> from min to max dB value</li>
+    <li><strong>SPACE</strong> for measurement</li>
+    <li>Compare: Measurement = <strong>very high tone</strong> (near 0 dB)</li>
+</ol>
+<p><strong>Evaluation:</strong></p>
+<pre><code class="language-">S21 (dB)  | Transmission | Loss | Rating
+<p>----------|--------------|------|------------ -0.01 dB  | 99.9%        | 0.1% | Excellent -0.1 dB   | 99%          | 1%   | Very good (this cable ~here) -1 dB     | 89%          | 11%  | Acceptable (short cables) -3 dB     | 50%          | 50%  | Limit (max for QRO) -6 dB     | 25%          | 75%  | Poor (only for receive) -10 dB    | 10%          | 90%  | Very poor</p>
+</code></pre>
+<h3>Exercise 5: Comparison with Lowpass Filter (Scenario 5)</h3>
+<p><strong>Goal:</strong> Understand difference between cable vs. filter</p>
+<ol>
+    <li><strong>Scenario 7</strong> listen (cable)</li>
+</ol>
+<ul>
+    <li>S11: Perfect (SWR=1.0)</li>
+    <li>S21: Minimally falling (-0.015 dB)</li>
+</ul>
+<ol>
+    <li><strong>Scenario 5</strong> load (lowpass filter)</li>
+</ol>
+<ul>
+    <li>S11: Also perfect (SWR~1.0)</li>
+    <li>S21: Also falling, but similar magnitude</li>
+</ul>
+<ol>
+    <li><strong>Comparison:</strong></li>
+</ol>
+<ul>
+    <li><strong>Both:</strong> Well matched, slight attenuation</li>
+    <li><strong>Cable:</strong> Attenuation undesired (loss!)</li>
+    <li><strong>Filter:</strong> Attenuation in passband minimal, in stopband desired</li>
+</ul>
+<h3>Exercise 6: Smith Rotation with Long Cable</h3>
+<p><strong>Goal:</strong> Visualize electrical length through rotation</p>
+<ol>
+    <li><strong>Smith Mode 2 (Polar)</strong> activate</li>
+    <li><strong>Smith visualization on</strong> (Key <strong>V</strong>)</li>
+    <li>Press <strong>SPACE</strong></li>
+    <li><strong>Observe (hear!)</strong> the rotation</li>
+    <li><strong>Question:</strong> How many rotations do you hear?</li>
+</ol>
+<ul>
+    <li>Answer: <strong>Many! (approx. 14 full rotations over 2 MHz)</strong></li>
+</ul>
+<ol>
+    <li><strong>Interpretation:</strong> 20m cable = 14× λ/2 at 145 MHz</li>
+</ol>
+<hr>
+<h2>📊 U-Menu Analysis Functions</h2>
+<h3>Recommended Analyses for this Scenario</h3>
+<h4>1. Band Suitability Check (U-Menu → Key 1)</h4>
+<p><strong>What You See:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ✓ Excellent suitability (SWR = 1.0)</li>
+    <li><strong>Transmission (S21):</strong> > 99.8% across entire band</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Cable is <strong>perfect</strong> for 2m band</li>
+    <li>Minimal losses (< 0.02 dB)</li>
+    <li>For this scenario: 20m RG-58 at VHF is <strong>acceptable</strong></li>
+</ul>
+<p><strong>But CAUTION:</strong></p>
+<ul>
+    <li>At <strong>UHF (70cm):</strong> Attenuation would be approx. 3× higher (~0.05 dB)!</li>
+    <li>At <strong>1296 MHz:</strong> Attenuation would be approx. 10× higher (~0.2 dB)!</li>
+    <li><strong>Rule of thumb:</strong> The higher the frequency, the more critical cable choice</li>
+</ul>
+<h4>2. Resonance Search (U-Menu → Key 2)</h4>
+<p><strong>What You See:</strong></p>
+<ul>
+    <li><strong>All points show SWR ≈ 1.00</strong> (no single minimum)</li>
+    <li>Impedance consistently 50.1Ω + j0.1Ω</li>
+    <li><strong>"No classical resonance"</strong> (broadband perfect)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Cable with perfect termination has <strong>no resonance</strong></li>
+    <li>Difference from antennas: Cable is <strong>transmission element</strong>, not radiator</li>
+    <li>Broadband perfect = Sign of good termination</li>
+</ul>
+<h4>3. SWR Bandwidth (U-Menu → Key 3)</h4>
+<p><strong>What You See:</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 Bandwidth:</strong> >> 2 MHz (entire measurement range + more)</li>
+    <li><strong>SWR < 2.0:1 Bandwidth:</strong> >> 2 MHz</li>
+    <li>Practically <strong>infinite bandwidth</strong> (in measurement range)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Cable is <strong>ultra-broadband</strong> (typical for 50Ω coax)</li>
+    <li>Usable from DC to several GHz (depending on cable type)</li>
+    <li>RG-58: Typically up to 1 GHz, thereafter losses increase sharply</li>
+</ul>
+<h4>4. Feedpoint Impedance Analysis (U-Menu → Key 4)</h4>
+<p><strong>Enter frequency:</strong> 145.0 MHz (band center)  <strong>What You See:</strong></p>
+<ul>
+    <li><strong>R (Resistance):</strong> 50.1Ω ✓</li>
+    <li><strong>X (Reactance):</strong> 0.1Ω ✓</li>
+    <li><strong>|Z| (Impedance Magnitude):</strong> 50.1Ω ✓</li>
+    <li><strong>Phase:</strong> ~0.1° ✓</li>
+    <li><strong>Classification:</strong> Perfectly resistive</li>
+    <li><strong>S21 Magnitude:</strong> -0.010 dB (99.9% transmission)</li>
+    <li><strong>S21 Phase:</strong> ~-30° (propagation delay)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Cable transforms impedance <strong>perfectly</strong> (50Ω → 50Ω)</li>
+    <li>Minimal attenuation</li>
+    <li>Phase delay shows <strong>electrical length</strong></li>
+</ul>
+<h4>5. Matching Recommendations (U-Menu → Key 5)</h4>
+<p><strong>What You See:</strong></p>
+<ul>
+    <li><strong>"No matching required"</strong> ✓</li>
+    <li>Cable + load already optimal</li>
+    <li>Recommendation: Use as-is</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>System is <strong>ready to use</strong></li>
+    <li>No modifications necessary</li>
+    <li>Losses are <strong>acceptable</strong> for this length/frequency</li>
+</ul>
+<hr>
+<h2>🎓 Learning Objectives and Interpretation</h2>
+<h3>What You Learn from this Scenario</h3>
+<h4>1. Critical Difference S11 vs. S21</h4>
+<ul>
+    <li><strong>S11 = Reflection:</strong> Shows matching (SWR, Return Loss)</li>
+    <li><strong>S21 = Transmission:</strong> Shows insertion loss</li>
+    <li><strong>Important:</strong> Perfect matching ≠ Lossless!</li>
+    <li><strong>Both parameters</strong> are essential for complete assessment</li>
+</ul>
+<h4>2. Cable Attenuation Characteristics</h4>
+<ul>
+    <li><strong>Frequency-dependent:</strong> Higher frequency → More attenuation</li>
+    <li><strong>Length-dependent:</strong> Double length ≈ Double attenuation (dB)</li>
+    <li><strong>Cable-type dependent:</strong> Thicker/better = Less attenuation</li>
+    <li><strong>Approximation:</strong> Attenuation ∝ √f (roughly)</li>
+</ul>
+<h4>3. Acoustic Signatures for Cables</h4>
+<ul>
+    <li><strong>S11 (SWR):</strong> Perfectly constant (when well terminated)</li>
+    <li><strong>S21 Magnitude:</strong> Slightly descending with frequency</li>
+    <li><strong>S21 Phase:</strong> Strongly linear descending (Group Delay)</li>
+    <li><strong>Smith (S11):</strong> Central (when terminated), rotating (electrical length)</li>
+</ul>
+<h4>4. Group Delay and Propagation Time</h4>
+<ul>
+    <li><strong>Phase slope</strong> = Group Delay = Signal propagation time</li>
+    <li><strong>Linear phase</strong> = Constant Group Delay = Good</li>
+    <li><strong>Non-linear phase</strong> = Frequency-dependent Delay = Dispersion (bad)</li>
+    <li>Coax cables usually have <strong>very good</strong> Group Delay (linear)</li>
+</ul>
+<h4>5. Practical Reference</h4>
+<ul>
+    <li><strong>Cable Selection:</strong></li>
+    <li><strong>VHF:</strong> RG-58 OK for <30m, RG-213 for longer</li>
+    <li><strong>UHF:</strong> RG-213 or Aircom+, not RG-58!</li>
+    <li><strong>SHF (>1 GHz):</strong> Only high-quality cables (Ecoflex, LMR, Aircom)</li>
+    <li><strong>Length Minimization:</strong> Shortest path transmitter → antenna</li>
+    <li><strong>Connector Quality:</strong> Poor connectors = More loss than cable!</li>
+</ul>
+<hr>
+<h2>⚠️ Important Notes</h2>
+<h3>Reality Check: Cable Losses in Practice</h3>
+<p><strong>Loss Table for 20m Cable:</strong></p>
+<pre><code class="language-">Cable     | 144 MHz | 432 MHz | 1296 MHz | 2.4 GHz
+<p>----------|---------|---------|----------|-------- RG-58     | 0.7 dB  | 1.3 dB  | 2.4 dB   | 4.5 dB RG-213    | 0.4 dB  | 0.76 dB | 1.5 dB   | 2.8 dB Aircom+   | 0.18 dB | 0.34 dB | 0.64 dB  | 1.2 dB Ecoflex10 | 0.1 dB  | 0.2 dB  | 0.4 dB   | 0.75 dB</p>
+</code></pre>
+<p><strong>Power Losses at 100W (20m Cable):</strong></p>
+<pre><code class="language-">Cable @ 144 MHz | Attenuation | Power at Antenna | Loss
+<p>----------------|-------------|------------------|------ RG-58           | 0.7 dB      | 85 W             | 15 W RG-213          | 0.4 dB      | 91 W             | 9 W Aircom+         | 0.18 dB     | 96 W             | 4 W Ecoflex 10      | 0.1 dB      | 98 W             | 2 W</p>
+</code></pre>
+<p><strong>Practical Recommendations:</strong></p>
+<ul>
+    <li><strong>VHF (2m):</strong> RG-58 up to 20m OK, longer: RG-213</li>
+    <li><strong>UHF (70cm):</strong> RG-213 standard, Aircom+ for >30m</li>
+    <li><strong>SHF (23cm):</strong> Only Aircom+ or Ecoflex</li>
+    <li><strong>Microwave (>2 GHz):</strong> Only premium cables (Ecoflex, LMR-400+)</li>
+</ul>
+<h3>Cable Measurement with VNA</h3>
+<p><strong>Best Practices:</strong></p>
+<ol>
+    <li><strong>Calibration:</strong> At <strong>cable end</strong> (if possible), not at VNA!</li>
+    <li><strong>Load:</strong> High-quality 50Ω termination (not open connector!)</li>
+    <li><strong>Frequency Range:</strong> Measure widely (shows frequency dependence)</li>
+    <li><strong>S11 + S21:</strong> Measure both parameters for complete characterization</li>
+</ol>
+<p><strong>Typical Problems:</strong></p>
+<ul>
+    <li><strong>Poor Termination:</strong> S11 shows reflections (SWR > 1.1)</li>
+    <li><strong>Poor Connectors:</strong> High S21 attenuation (more than cable spec)</li>
+    <li><strong>Cable Damage:</strong> Jumps in S11/S21 (kink, water ingress)</li>
+</ul>
+<h3>Cable Aging</h3>
+<p><strong>Aging Effects:</strong></p>
+<ol>
+    <li><strong>Oxidation:</strong> Braid/center conductor oxidizes → Higher resistance</li>
+    <li><strong>Water Ingress:</strong> Moist dielectric → Higher losses</li>
+    <li><strong>UV Damage:</strong> Outer jacket becomes brittle → Water ingress</li>
+    <li><strong>Mechanical Damage:</strong> Kinks, crushing → Impedance discontinuities</li>
+</ol>
+<p><strong>Lifespan:</strong></p>
+<ul>
+    <li><strong>Indoor:</strong> 20-30 years (if dry)</li>
+    <li><strong>Outdoor without UV protection:</strong> 5-10 years</li>
+    <li><strong>Outdoor with UV protection:</strong> 10-20 years</li>
+    <li><strong>Marine/Salt:</strong> 3-5 years (aggressive!)</li>
+</ul>
+<p><strong>Maintenance:</strong></p>
+<ul>
+    <li><strong>Annually:</strong> S11 sweep (VNA) for condition monitoring</li>
+    <li><strong>When abnormalities:</strong> S21 measurement (attenuation increased?)</li>
+    <li><strong>Prevention:</strong> Connector sealing (self-amalgamating tape)</li>
+</ul>
+<hr>
+<h2>🔊 Audio Engine Comparison</h2>
+<h3>Synthesizer Engine (Standard)</h3>
+<p><strong>Recommended for:</strong> Precise S21 analysis  <strong>Sound Character:</strong></p>
+<ul>
+    <li>S21 Magnitude: Sine wave - <strong>Slight downward trend</strong> perceptible</li>
+    <li>S21 Phase: Sine wave - <strong>Strong downward trend</strong> clear</li>
+    <li>S11: Extremely constant (like Scenario 1)</li>
+</ul>
+<h3>MIDI Engine</h3>
+<p><strong>Recommended for:</strong> Musical perception  <strong>Sound Character:</strong></p>
+<ul>
+    <li>S21 Magnitude: Strings - <strong>Gentle diminuendo</strong></li>
+    <li>S21 Phase: Violin - <strong>Glissando downward</strong></li>
+    <li>S11: Piano - <strong>Constant bass notes</strong></li>
+</ul>
+<p><strong>Switch:</strong></p>
+<ul>
+    <li>In acoustic mode: <strong>Key A</strong> → Audio configuration</li>
+    <li>Select <strong>MIDI Engine</strong></li>
+</ul>
+<p><strong>Recommendation for Scenario 7:</strong></p>
+<ul>
+    <li><strong>Synthesizer</strong> for quantitative attenuation analysis</li>
+    <li><strong>MIDI</strong> for "feeling" of cable characteristics</li>
+</ul>
+<hr>
+<h2>📝 Checklist: Did You Hear Everything?</h2>
+<h3>S11 Parameters:</h3>
+<ul>
+    <li>[ ] SWR: Extremely low, constant tone (SWR=1.0)</li>
+    <li>[ ] Return Loss: Very high, constant tone (54 dB)</li>
+    <li>[ ] Impedance |Z|: Constant medium tone (50Ω)</li>
+    <li>[ ] Reactance X: Almost inaudible tone around zero</li>
+    <li>[ ] Phase: Minimal fluctuations near 0°</li>
+</ul>
+<h3>S21 Parameters (Important!):</h3>
+<ul>
+    <li>[ ] S21 Magnitude: <strong>Slightly descending tone</strong> (-0.005 to -0.015 dB)</li>
+    <li>[ ] S21 Phase: <strong>Strongly descending tone</strong> (~-5° to ~-60°)</li>
+    <li>[ ] Frequency dependence: Higher frequency → More attenuation (recognized)</li>
+</ul>
+<h3>Smith Visualization:</h3>
+<ul>
+    <li>[ ] Smith Position: Exactly central (perfect matching)</li>
+    <li>[ ] Smith Polar: <strong>Fast rotation</strong> (long cable, many λ/4)</li>
+    <li>[ ] Center Pulse: Measurement overlaps perfectly (or rotates close to pulse)</li>
+</ul>
+<h3>U-Menu:</h3>
+<ul>
+    <li>[ ] Band suitability: Excellent (SWR=1.0, S21>99.8%)</li>
+    <li>[ ] SWR bandwidth: Ultra-broadband (>> 2 MHz)</li>
+    <li>[ ] Impedance: 50.1Ω + j0.1Ω (constant)</li>
+    <li>[ ] S21 at 145 MHz: ~-0.01 dB (99.9% transmission)</li>
+</ul>
+<h3>Understanding:</h3>
+<ul>
+    <li>[ ] S11 vs. S21 difference understood (Matching ≠ Lossless)</li>
+    <li>[ ] Frequency dependence of attenuation recognized</li>
+    <li>[ ] Group delay from S21 phase understood</li>
+    <li>[ ] Practical cable selection criteria internalized</li>
+</ul>
+<hr>
+<h2>🎯 Next Steps</h2>
+<p>After this training you should:</p>
+<ol>
+    <li><strong>Have recognized S21 measurement as essential</strong></li>
+</ol>
+<ul>
+    <li>S11 alone is NOT enough!</li>
+    <li>S21 shows actual losses</li>
+    <li>Both together = Complete characterization</li>
+</ul>
+<ol>
+    <li><strong>Work through Scenario 8 (Short circuit at 10m)</strong></li>
+</ol>
+<ul>
+    <li>Extreme mismatch (SWR >> 10)</li>
+    <li>TDR concept (Time Domain Reflectometry)</li>
+    <li>Fault finding in coax lines</li>
+</ul>
+<ol>
+    <li><strong>Work through Scenario 9 (Open circuit at 5m)</strong></li>
+</ol>
+<ul>
+    <li>Other extreme mismatch</li>
+    <li>Comparison with short circuit</li>
+    <li>TDR interpretation</li>
+</ul>
+<ol>
+    <li><strong>Measure Your Own Cables</strong></li>
+</ol>
+<ul>
+    <li>Measure your coax cables with VNA</li>
+    <li><strong>S11:</strong> Cable with 50Ω termination</li>
+    <li><strong>S21:</strong> Cable between VNA ports</li>
+    <li>Compare attenuation with datasheet</li>
+</ul>
+<ol>
+    <li><strong>Cable Comparison Test</strong></li>
+</ol>
+<ul>
+    <li>Measure RG-58 vs. RG-213 vs. Aircom+</li>
+    <li><strong>Hear</strong> the difference in S21!</li>
+    <li>Decide for your application</li>
+</ul>
+<hr>
+<h2>🔬 Deep Dive: Skin Effect and Attenuation</h2>
+<h3>Why Does Attenuation Increase with Frequency?</h3>
+<p><strong>Skin Effect:</strong></p>
+<pre><code class="language-">At DC: Current flows uniformly through entire conductor
+<p>At RF: Current flows only in "skin" of conductor  Skin depth δ = √(ρ / (π × f × μ)) ρ = specific resistance (Copper: 1.7×10⁻⁸ Ωm) f = frequency μ = permeability  At 145 MHz (Copper): δ ≈ 5.5 μm (only 0.0055 mm!) → Effective conductor cross-section shrinks → Resistance increases → Attenuation increases</p>
+</code></pre>
+<p><strong>Dielectric Losses:</strong></p>
+<ul>
+    <li>RF field in dielectric (PE, PTFE)</li>
+    <li>Molecular friction → Heat</li>
+    <li><strong>Loss factor tan(δ):</strong> PE ≈ 0.0002, PTFE ≈ 0.0001</li>
+    <li>Increases with frequency</li>
+</ul>
+<p><strong>Total Attenuation:</strong></p>
+<pre><code class="language-">α (dB/m) ≈ α_Conductor + α_Dielectric
+<p>α_Conductor ∝ √f  (skin effect) α_Dielectric ∝ f  (dielectric losses)  At VHF: α_Conductor dominates At UHF/SHF: Both significant At microwave: α_Dielectric dominates</p>
+</code></pre>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Good luck with your training! Properly measuring and evaluating cable attenuation is essential for efficient radio stations - master S21 analysis!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_06_Multiband_Antenne.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_08_Kurzschluss.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

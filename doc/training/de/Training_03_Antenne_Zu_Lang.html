@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Szenario 3: Antenne zu lang (Kapazitiv)">
+    <title>Training Szenario 3: Antenne zu lang (Kapazitiv)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>Training Szenario 3: Antenne zu lang (Kapazitiv)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_02_Antenne_Zu_Kurz.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_04_Lambda_Viertel_Kabel.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Szenario 3: Antenne zu lang (Kapazitiv)</h1>
+<p><strong>Trainingsdatei:</strong> <code>Training/03_antenne_zu_lang_kapazitiv.csv</code> <strong>Frequenzbereich:</strong> 144.000 - 146.000 MHz (2m Amateurfunkband) <strong>Schwierigkeitsgrad:</strong> ⭐⭐ Mittel (Fortgeschrittene Anfänger) <strong>Lernziel:</strong> Verstehen, wie kapazitive Fehlanpassung klingt - Gegenteil von Szenario 2</p>
+<hr>
+<h2>📋 Szenario-Beschreibung</h2>
+<h3>Fiktive Komponente</h3>
+<p>Sie messen eine <strong>zu lange 2m-Yagi-Antenne</strong>. Der Strahler ist ca. 3-5 cm länger als optimal. Dies führt zu <strong>kapazitivem Verhalten</strong> - die Antenne wirkt wie ein Kondensator mit in Serie geschaltetem Widerstand.</p>
+<h3>Technische Eigenschaften (bei 144 MHz)</h3>
+<ul>
+    <li><strong>Impedanz:</strong> 52.8Ω - j0.5Ω (fast perfekt!)</li>
+    <li><strong>SWR:</strong> 1.01 (exzellent)</li>
+    <li><strong>Bei 146 MHz:</strong> 35.2Ω - j28.5Ω (kapazitiv!)</li>
+    <li><strong>Reaktanz (X):</strong> -0.5Ω bei 144 MHz → <strong>abnehmend</strong> → -28.5Ω bei 146 MHz</li>
+    <li><strong>Widerstand (R):</strong> 52.8Ω bei 144 MHz → sinkend → 35.2Ω bei 146 MHz</li>
+    <li><strong>Physikalisches Verhalten:</strong> Antenne wird "elektrisch kürzer" mit steigender Frequenz</li>
+</ul>
+<h3>Physikalische Bedeutung</h3>
+<p><strong>Negative Reaktanz (X < 0) = Kapazitiv:</strong></p>
+<ul>
+    <li>Antenne zu lang = Zu viel "elektrische Länge"</li>
+    <li>Spannung hinkt Strom nach (wie bei Kondensator)</li>
+    <li>Mit steigender Frequenz wird Antenne elektrisch noch länger → Reaktanz wird noch negativer</li>
+    <li>Resonanz lag bereits bei ca. 144 MHz (X ≈ 0)</li>
+</ul>
+<p><strong>Typische Ursachen:</strong></p>
+<ul>
+    <li>Strahler mechanisch zu lang geschnitten</li>
+    <li>Frequenz nach unten gewandert durch kapazitive Ladung</li>
+    <li>Umgebungseinflüsse (Gebäude, Bäume nahe Antenne)</li>
+    <li>Feuchtigkeit in Isolation</li>
+</ul>
+<p><strong>⚠️ WICHTIG - Spiegelverkehrt zu Szenario 2:</strong> Diese Messung ist <strong>exakt das Gegenteil</strong> von Szenario 2! Die Werte bei 144 MHz hier entsprechen den Werten bei 146 MHz dort, und umgekehrt.</p>
+<hr>
+<h2>🎧 Akustische Analyse</h2>
+<h3>Datei importieren</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>L</strong> (Laden)</li>
+    <li>Wählen Sie <strong>03_antenne_zu_lang_kapazitiv.csv</strong></li>
+    <li><strong>Enter</strong> drücken</li>
+    <li><strong>Hauptmenü:</strong> Taste <strong>A</strong> (Akustische Analyse)</li>
+    <li><strong>LEERTASTE</strong> zum Starten</li>
+</ol>
+<hr>
+<h2>🎵 Erwartete Audio-Ereignisse</h2>
+<h3>1. SWR-Kurve (Taste 1) - Gegenteil von Szenario 2!</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Niedriger Ton bei 144 MHz</strong> (SWR 1.01 - exzellent!)</li>
+    <li>Ton wird <strong>kontinuierlich höher</strong> über Frequenz</li>
+    <li><strong>Deutlicher Aufwärtstrend</strong> von links nach rechts</li>
+    <li>Bei 146 MHz: Hoher Ton (SWR 1.95)</li>
+</ul>
+<p><strong>Stereo-Position:</strong></p>
+<ul>
+    <li><strong>Links (144 MHz):</strong> Sehr leise, niedrige Tonhöhe (gut!)</li>
+    <li><strong>Rechts (146 MHz):</strong> Deutlich hörbar, höhere Tonhöhe (schlechter)</li>
+    <li><strong>Bewegung:</strong> Klar nach oben (schlechter werdend)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>SWR steigt mit steigender Frequenz ⚠️ <strong>UMGEKEHRT zu Szenario 2!</strong></li>
+    <li>Resonanzfrequenz liegt <strong>unterhalb</strong> von 144 MHz</li>
+    <li>Antenne wird bei höheren Frequenzen schlechter angepasst</li>
+    <li><strong>Diagnose:</strong> Antenne zu lang → muss gekürzt werden</li>
+</ul>
+<p><strong>Vergleich mit Szenario 2:</strong></p>
+<ul>
+    <li>Szenario 2: SWR <strong>fällt</strong> (wird besser) → Zu kurz</li>
+    <li>Szenario 3: SWR <strong>steigt</strong> (wird schlechter) → Zu lang</li>
+    <li><strong>Eselsbrücke:</strong> Steigend = zu lang (wird noch länger)</li>
+</ul>
+<h3>2. Return Loss Kurve (Taste 2)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr hoher Ton bei 144 MHz</strong> (120 dB = exzellent)</li>
+    <li>Ton <strong>sinkt kontinuierlich</strong> über Frequenz</li>
+    <li><strong>Starker Abwärtstrend</strong> von links nach rechts</li>
+    <li>Bei 146 MHz: Niedriger Ton (8.54 dB = mäßig)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Return Loss sinkt = Mehr Reflexion bei höheren Frequenzen</li>
+    <li>Korreliert mit SWR-Verschlechterung</li>
+    <li>Spiegelbild zu Szenario 2</li>
+</ul>
+<h3>3. Impedanz |Z| (Taste 3)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Mittlerer Ton bei 144 MHz</strong> (53Ω)</li>
+    <li>Ton <strong>sinkt leicht</strong> über Frequenz</li>
+    <li>Bei 146 MHz: Niedriger Ton (35Ω)</li>
+    <li><strong>Abwärtsbewegung</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Impedanz-Betrag sinkt von 53Ω → 35Ω</li>
+    <li>Durchquert 50Ω-Marke irgendwo im Band</li>
+    <li>Gegenteil von Szenario 2 (dort stieg es)</li>
+</ul>
+<h3>4. Reaktanz X (Taste 4 - Sägezahn) ⚡ SCHLÜSSEL-KURVE!</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Deutlich hörbarer, fallender Sägezahn-Ton</strong></li>
+    <li><strong>Starker Abwärtstrend</strong> von links nach rechts</li>
+    <li><strong>Links (144 MHz):</strong> Fast Null (-0.5Ω = nahezu resistiv)</li>
+    <li><strong>Rechts (146 MHz):</strong> Tiefer Ton (-28.5Ω = stark kapazitiv)</li>
+    <li><strong>Klare, kontinuierliche Abwärtsbewegung ins Negative</strong></li>
+</ul>
+<p><strong>Sägezahn-Charakter:</strong></p>
+<ul>
+    <li>Bei negativer Reaktanz: Sägezahn fällt <strong>nach unten</strong> (fallende Flanke)</li>
+    <li>Je negativer, desto tiefer der Ton</li>
+    <li><strong>Gegensätzlich</strong> zu Szenario 2 (dort stieg Sägezahn von hoch nach niedrig)</li>
+</ul>
+<p><strong>Bedeutung:</strong> ⭐ DIAGNOSE-SIGNAL!</p>
+<ul>
+    <li><strong>Negative Reaktanz = Kapazitiv = Antenne zu lang</strong></li>
+    <li>Fallende Reaktanz ins Negative = Antenne wird "länger" bei höherer Frequenz</li>
+    <li>Nulldurchgang unterhalb des Bands = Resonanz bei < 144 MHz</li>
+    <li><strong>Diagnose klar:</strong> Strahler kürzen!</li>
+</ul>
+<p><strong>Vergleich mit Szenario 2:</strong></p>
+<ul>
+    <li><strong>Szenario 2:</strong> Reaktanz <strong>positiv</strong>, fällt von +28.5Ω → +0.5Ω (induktiv)</li>
+    <li><strong>Szenario 3:</strong> Reaktanz <strong>negativ</strong>, fällt von -0.5Ω → -28.5Ω (kapazitiv)</li>
+    <li><strong>Eselsbrücke:</strong> Negativ = Kapazitiv = Kondensator = zu lang</li>
+</ul>
+<h3>5. Phase (Taste 5)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Leicht negative Phase bei 144 MHz</strong> (ca. -2°)</li>
+    <li>Phase sinkt über Frequenz (wird noch negativer)</li>
+    <li>Erreicht ca. -38° bei 146 MHz</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Negative Phase = Spannung hinkt nach (kapazitiv)</li>
+    <li>Sinkende Phase = Verstärkung des kapazitiven Verhaltens</li>
+    <li>Gegenteil von Szenario 2 (dort positive, sinkende Phase)</li>
+</ul>
+<hr>
+<h2>🎯 Smith-Diagramm Audio-Visualisierung</h2>
+<h3>Modus 1: Kartesisch - GEGENTEIL von Szenario 2!</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound startet FAST IM ZENTRUM, leicht HINTEN</strong></li>
+    <li><strong>Kontinuierliche Bewegung nach WEIT HINTEN-LINKS</strong></li>
+    <li>Sound wandert weg vom Zentrum während Frequenz steigt</li>
+    <li>Am Ende: Weit hinten-links von Ihnen</li>
+</ul>
+<p><strong>Position-Bedeutung:</strong></p>
+<ul>
+    <li><strong>Hinten</strong> = Im(Γ) < 0 = Negative Reaktanz = Kapazitiv</li>
+    <li><strong>Links</strong> = Re(Γ) < 0 = Widerstand unter 50Ω</li>
+    <li><strong>Bewegung nach weiter hinten</strong> = Reaktanz wird negativer</li>
+    <li><strong>Bewegung nach links</strong> = Widerstand sinkt</li>
+</ul>
+<p><strong>Akustische Landmarken:</strong></p>
+<ol>
+    <li><strong>Start (144 MHz):</strong> Fast zentral, ganz leicht hinten → "Fast perfekt"</li>
+    <li><strong>Mitte (145 MHz):</strong> Klar hinten-links → "Wird kapazitiv"</li>
+    <li><strong>Ende (146 MHz):</strong> Weit hinten-links → "Stark kapazitiv, niederohmig"</li>
+</ol>
+<p><strong>Vergleich mit Szenario 2:</strong></p>
+<ul>
+    <li><strong>Szenario 2:</strong> Startet vorne-links → bewegt nach zentral (induktiv → besser)</li>
+    <li><strong>Szenario 3:</strong> Startet zentral-hinten → bewegt nach hinten-links (kapazitiv → schlechter)</li>
+    <li><strong>Spiegelbild!</strong> Genau entgegengesetzt!</li>
+</ul>
+<p><strong>Achsenkreuzungen:</strong></p>
+<ul>
+    <li><strong>Horizontale Achse (R = 50Ω):</strong> Wird gekreuzt bei ca. 144.8 MHz</li>
+    <li><strong>Vertikale Achse (X = 0Ω):</strong> Wird gekreuzt bei ca. 144.0 MHz (am Anfang!)</li>
+    <li><strong>Bedeutung:</strong> Resonanz direkt am Bandanfang!</li>
+</ul>
+<h3>Modus 2: Polar</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound startet fast zentral bei Ihnen</strong></li>
+    <li><strong>Sound "wandert" im Uhrzeigersinn</strong> nach rechts</li>
+    <li><strong>Gleichzeitig:</strong> Sound wird <strong>lauter</strong> (weiter weg von Ihnen)</li>
+    <li><strong>Entfernung nimmt zu</strong> = SWR verschlechtert sich</li>
+</ul>
+<p><strong>Rotation-Bedeutung:</strong></p>
+<ul>
+    <li><strong>Winkel ∠Γ:</strong> Startet bei ca. -177° (fast hinten)</li>
+    <li>Winkel wird kleiner (Richtung -147°, also nach rechts-hinten)</li>
+    <li>Zeigt Phasen-Änderung des Reflexionskoeffizienten</li>
+    <li><strong>Im Uhrzeigersinn</strong> = Typisch bei kapazitiver Verstimmung</li>
+</ul>
+<p><strong>Radius-Bedeutung:</strong></p>
+<ul>
+    <li><strong>|Γ|:</strong> Startet bei ca. 0.01 (sehr nah am Zentrum)</li>
+    <li>Radius steigt auf ca. 0.32 (mäßig weit vom Zentrum)</li>
+    <li><strong>Hörbar:</strong> Sound wird lauter, entfernt sich von Ihnen</li>
+</ul>
+<p><strong>Vergleich mit Szenario 2:</strong></p>
+<ul>
+    <li><strong>Szenario 2:</strong> Gegen Uhrzeigersinn, Annäherung (induktiv, besser werdend)</li>
+    <li><strong>Szenario 3:</strong> Im Uhrzeigersinn, Entfernung (kapazitiv, schlechter werdend)</li>
+</ul>
+<h3>Modus 3: Impedanz Direkt</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound startet ZENTRAL-RECHTS und LEICHT HINTEN</strong></li>
+    <li><strong>Bewegung nach LINKS</strong> (R sinkt von 53Ω → 35Ω)</li>
+    <li><strong>Bewegung nach WEIT HINTEN</strong> (X sinkt von -0.5Ω → -28.5Ω)</li>
+    <li>Zentrum (50Ω, 0Ω) wird verlassen</li>
+</ul>
+<p><strong>Position-Mapping:</strong></p>
+<ul>
+    <li>Start: Leicht rechts (R = 53Ω) und leicht hinten (X = -0.5Ω)</li>
+    <li>Ende: Links (R = 35Ω) und weit hinten (X = -28.5Ω)</li>
+    <li>Bewegung <strong>weg vom Zentrum</strong> = Schlechter werdend</li>
+</ul>
+<p><strong>Diagnose:</strong></p>
+<ul>
+    <li>Start fast zentral = Sehr gute Anpassung am Bandanfang</li>
+    <li>Bewegung nach links-hinten = R und X verschlechtern sich</li>
+    <li><strong>Interpretation:</strong> Resonanz unterhalb des Bands, antenne zu lang</li>
+</ul>
+<h3>Modus 4: SWR-Kreise</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound startet SEHR NAH bei Ihnen</strong></li>
+    <li><strong>Kontinuierliche Entfernung</strong> von Ihnen</li>
+    <li><strong>Lautstärke nimmt zu</strong> mit schlechter werdender Anpassung</li>
+    <li>Am Ende: Sound WEIT WEG von Ihnen (hohes SWR)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Entfernung = SWR-Level</li>
+    <li>Nah bei Ihnen = SWR 1.01 (bei 144 MHz) = Perfekt!</li>
+    <li>Weit weg = SWR 1.95 (bei 146 MHz) = Mäßig</li>
+    <li><strong>Gegenteil von Szenario 2</strong> (dort Annäherung)</li>
+</ul>
+<hr>
+<h2>🔧 Übungen und Lernaufgaben</h2>
+<h3>Übung 1: Szenario 2 und 3 direkt vergleichen</h3>
+<p><strong>Ziel:</strong> Induktiv vs. Kapazitiv unterscheiden lernen</p>
+<ol>
+    <li>Szenario 2 laden und Reaktanz-Kurve (Taste 4) hören</li>
+</ol>
+<ul>
+    <li><strong>Merken:</strong> Fällt von <strong>hoch (+28.5Ω)</strong> nach <strong>niedrig (+0.5Ω)</strong></li>
+    <li>Position: <strong>Positiver Bereich</strong>, Sägezahn aufsteigend</li>
+</ul>
+<ol>
+    <li>Szenario 3 laden und Reaktanz-Kurve hören</li>
+</ol>
+<ul>
+    <li><strong>Merken:</strong> Fällt von <strong>fast Null (-0.5Ω)</strong> nach <strong>tief negativ (-28.5Ω)</strong></li>
+    <li>Position: <strong>Negativer Bereich</strong>, Sägezahn absteigend</li>
+</ul>
+<ol>
+    <li><strong>Unterschied klar hören:</strong></li>
+</ol>
+<ul>
+    <li>Szenario 2: Im positiven Bereich (induktiv)</li>
+    <li>Szenario 3: Im negativen Bereich (kapazitiv)</li>
+</ul>
+<h3>Übung 2: Smith-Bewegungsrichtung vergleichen</h3>
+<p><strong>Ziel:</strong> Vorne vs. Hinten Position verstehen</p>
+<ol>
+    <li><strong>Szenario 2:</strong> Smith Modus 1</li>
+</ol>
+<ul>
+    <li>Sound startet <strong>VORNE</strong> (induktiv)</li>
+    <li>Bewegt sich nach <strong>HINTEN</strong> (besser werdend)</li>
+</ul>
+<ol>
+    <li><strong>Szenario 3:</strong> Smith Modus 1</li>
+</ol>
+<ul>
+    <li>Sound startet <strong>HINTEN</strong> (kapazitiv)</li>
+    <li>Bewegt sich noch <strong>WEITER HINTEN</strong> (schlechter werdend)</li>
+</ul>
+<ol>
+    <li><strong>Merken:</strong></li>
+</ol>
+<ul>
+    <li><strong>VORNE</strong> = Induktiv = Positiv = Antenne zu kurz</li>
+    <li><strong>HINTEN</strong> = Kapazitiv = Negativ = Antenne zu lang</li>
+</ul>
+<h3>Übung 3: SWR-Steigung erkennen</h3>
+<p><strong>Ziel:</strong> Steigung = Diagnose</p>
+<ol>
+    <li><strong>Szenario 2:</strong> SWR-Kurve (Taste 1)</li>
+</ol>
+<ul>
+    <li>Ton <strong>fällt</strong> → Wird besser → Resonanz oberhalb Band → Zu kurz</li>
+</ul>
+<ol>
+    <li><strong>Szenario 3:</strong> SWR-Kurve</li>
+</ol>
+<ul>
+    <li>Ton <strong>steigt</strong> → Wird schlechter → Resonanz unterhalb Band → Zu lang</li>
+</ul>
+<ol>
+    <li><strong>Diagnose-Regel:</strong></li>
+</ol>
+<ul>
+    <li>SWR fällt nach rechts → <strong>Antenne verlängern</strong></li>
+    <li>SWR steigt nach rechts → <strong>Antenne kürzen</strong></li>
+</ul>
+<h3>Übung 4: Polar-Rotation-Richtung</h3>
+<p><strong>Ziel:</strong> Uhrzeigersinn vs. Gegen-Uhrzeigersinn</p>
+<ol>
+    <li><strong>Szenario 2:</strong> Smith Modus 2 (Polar)</li>
+</ol>
+<ul>
+    <li>Rotation <strong>gegen Uhrzeigersinn</strong></li>
+    <li>Sound nähert sich Ihnen</li>
+    <li><strong>Merken:</strong> Induktiv → Gegen-UZS → Besser werdend</li>
+</ul>
+<ol>
+    <li><strong>Szenario 3:</strong> Smith Modus 2</li>
+</ol>
+<ul>
+    <li>Rotation <strong>im Uhrzeigersinn</strong></li>
+    <li>Sound entfernt sich von Ihnen</li>
+    <li><strong>Merken:</strong> Kapazitiv → Im-UZS → Schlechter werdend</li>
+</ul>
+<hr>
+<h2>📊 U-Menü Analyse-Funktionen</h2>
+<h3>1. Resonanzsuche (U → 2)</h3>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Resonanzfrequenz:</strong> Nicht gefunden innerhalb 144-146 MHz!</li>
+    <li><strong>SWR-Minimum:</strong> Bei 144.0 MHz mit SWR = 1.01</li>
+    <li><strong>Hinweis:</strong> "Resonanz liegt außerhalb des Messbereichs (unterhalb)"</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Minimum am unteren Bandende = Resonanz darunter</li>
+    <li>Extrapolation: Resonanz vermutlich bei 143.0 - 143.5 MHz</li>
+    <li><strong>Diagnose:</strong> Antenne muss gekürzt werden</li>
+</ul>
+<p><strong>Gegensatz zu Szenario 2:</strong></p>
+<ul>
+    <li>Szenario 2: Minimum am <strong>oberen</strong> Ende → Verlängern</li>
+    <li>Szenario 3: Minimum am <strong>unteren</strong> Ende → Kürzen</li>
+</ul>
+<h3>2. SWR-Bandbreite (U → 3)</h3>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 Bandbreite:</strong> Nur unteres Band (ca. 144.0 - 144.5 MHz = 500 kHz)</li>
+    <li><strong>SWR < 2.0:1 Bandbreite:</strong> Gesamtes Band (144.0 - 146.0 MHz)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Nur untere Bandhälfte gut nutzbar</li>
+    <li>Obere Bandhälfte: SWR bis 1.95 (akzeptabel, nicht optimal)</li>
+    <li><strong>Handlungsempfehlung:</strong> Antenne kürzen um 3-5 cm</li>
+</ul>
+<h3>3. Fußpunktimpedanz-Analyse (U → 4)</h3>
+<p><strong>Frequenz:</strong> 145.0 MHz (Bandmitte)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> 47.2Ω (etwas unter 50Ω)</li>
+    <li><strong>X (Reaktanz):</strong> -14.5Ω (deutlich kapazitiv!) ⚠️</li>
+    <li><strong>|Z| (Impedanz):</strong> 49.4Ω</li>
+    <li><strong>Phase:</strong> -17.0° (kapazitiv)</li>
+    <li><strong>Klassifikation:</strong> Kapazitiv</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li><strong>Negative</strong> Reaktanz = Kapazitiv = Antenne zu lang</li>
+    <li>Widerstand fast OK (47.2Ω)</li>
+    <li>Hauptproblem: Kapazitive Reaktanz</li>
+    <li><strong>Lösung:</strong> Strahler kürzen</li>
+</ul>
+<p><strong>Vergleich mit Szenario 2:</strong></p>
+<ul>
+    <li>Szenario 2: X = <strong>+14.5Ω</strong> (induktiv)</li>
+    <li>Szenario 3: X = <strong>-14.5Ω</strong> (kapazitiv)</li>
+    <li><strong>Exakt gespiegelt!</strong></li>
+</ul>
+<h3>4. Anpassungshinweise (U → 5)</h3>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Vorschlag:</strong> Serien-Spule zur Kompensation</li>
+    <li><strong>L-Wert:</strong> Ca. 75-80 nH bei 145 MHz</li>
+    <li><strong>Alternative:</strong> Mechanische Kürzung um ca. 3-5 cm</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Programm schlägt Spule vor, um Kapazität zu neutralisieren</li>
+    <li><strong>Bessere Lösung:</strong> Mechanische Korrektur (Antenne kürzen)</li>
+    <li>L-Wert zeigt Größenordnung der Verstimmung</li>
+</ul>
+<p><strong>Gegensatz zu Szenario 2:</strong></p>
+<ul>
+    <li>Szenario 2: Kondensator vorgeschlagen (Induktivität kompensieren)</li>
+    <li>Szenario 3: Spule vorgeschlagen (Kapazität kompensieren)</li>
+</ul>
+<h3>5. Bandtauglichkeit (U → 1)</h3>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ⚠️ Teilweise geeignet</li>
+    <li>Untere Hälfte: SWR < 1.5 (gut)</li>
+    <li>Obere Hälfte: SWR 1.5 - 2.0 (mäßig)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Für Unteres SSB-Band (144.0 - 144.5 MHz): Gut</li>
+    <li>Für FM (145.0 - 145.8 MHz): Grenzwertig</li>
+    <li><strong>Empfehlung:</strong> Kürzung für bessere Bandmitte-Anpassung</li>
+</ul>
+<hr>
+<h2>🎓 Lernziele - Kapazitiv erkennen</h2>
+<h3>Akustische Signaturen von "Zu lang / Kapazitiv"</h3>
+<h4>1. Reaktanz-Audio-Muster</h4>
+<ul>
+    <li><strong>Fallend, aber im NEGATIVEN Bereich</strong></li>
+    <li>Startet nahe Null, endet tief negativ</li>
+    <li>Sägezahn-Ton "sinkt unter Nulllinie"</li>
+    <li><strong>Diagnose:</strong> Negativ + Fallend = Zu lang!</li>
+</ul>
+<h4>2. SWR-Audio-Muster</h4>
+<ul>
+    <li><strong>Niedriger Ton, steigend</strong> = SWR niedrig, wird schlechter</li>
+    <li>Minimum am unteren Bandende</li>
+    <li><strong>Diagnose:</strong> SWR steigt nach rechts = Kürzen!</li>
+</ul>
+<h4>3. Smith-Audio-Muster (Kartesisch)</h4>
+<ul>
+    <li><strong>Startet hinten oder zentral</strong></li>
+    <li><strong>Bewegt sich nach HINTEN</strong></li>
+    <li><strong>Entfernt sich vom Zentrum</strong></li>
+    <li><strong>Diagnose:</strong> Hinten-Position = Kapazitiv!</li>
+</ul>
+<h4>4. Smith-Audio-Muster (Polar)</h4>
+<ul>
+    <li><strong>Rotation IM Uhrzeigersinn</strong></li>
+    <li><strong>Entfernung vom Zentrum zunimmt</strong></li>
+    <li><strong>Diagnose:</strong> Im-UZS + Entfernung = Kapazitiv, schlechter werdend</li>
+</ul>
+<h3>Physikalisches Verständnis</h3>
+<p><strong>Warum ist eine zu lange Antenne kapazitiv?</strong></p>
+<ol>
+    <li><strong>Elektrische Länge > λ/4:</strong> Antenne elektrisch zu lang</li>
+    <li><strong>Strom-Maximum jenseits Speisepunkt</strong></li>
+    <li><strong>Blindwiderstand negativ:</strong> Kapazitive Reaktanz überwiegt</li>
+    <li><strong>Analogie zum Kondensator:</strong> Übergroße Resonanzstruktur wirkt kapazitiv</li>
+</ol>
+<p><strong>Warum wird es bei höherer Frequenz schlechter?</strong></p>
+<ol>
+    <li><strong>λ wird kleiner:</strong> Wellenlänge sinkt</li>
+    <li><strong>Antenne wird "elektrisch noch länger":</strong> Feste Länge / kleinere λ = größerer Bruchteil</li>
+    <li><strong>Entfernt sich von λ/4:</strong> Wird noch mehr "zu lang"</li>
+    <li><strong>Resonanz lag darunter:</strong> Bei ca. 143-143.5 MHz</li>
+</ol>
+<hr>
+<h2>⚠️ Wichtige Erinnerung: Spiegelbild!</h2>
+<h3>Szenario 2 vs. Szenario 3 - Tabelle</h3>
+<table>
+<p><thead> <tr> <th>Parameter</th> <th>Szenario 2 (Zu kurz)</th> <th>Szenario 3 (Zu lang)</th></p>
+</tr>
+</thead>
+<p><tbody> <tr> <td><strong>Reaktanz-Trend</strong></td> <td>Fällt von +28.5Ω → +0.5Ω</td> <td>Fällt von -0.5Ω → -28.5Ω</td></p>
+</tr>
+<p><tr> <td><strong>Reaktanz-Vorzeichen</strong></td> <td>Positiv (Induktiv)</td> <td>Negativ (Kapazitiv)</td></p>
+</tr>
+<p><tr> <td><strong>SWR-Trend</strong></td> <td>Fällt (wird besser)</td> <td>Steigt (wird schlechter)</td></p>
+</tr>
+<p><tr> <td><strong>Smith-Position</strong></td> <td>Startet vorne</td> <td>Startet hinten</td></p>
+</tr>
+<p><tr> <td><strong>Smith-Bewegung</strong></td> <td>Nach hinten (besser)</td> <td>Nach hinten (schlechter)</td></p>
+</tr>
+<p><tr> <td><strong>Polar-Rotation</strong></td> <td>Gegen Uhrzeigersinn</td> <td>Im Uhrzeigersinn</td></p>
+</tr>
+<p><tr> <td><strong>Resonanz</strong></td> <td>Oberhalb Band</td> <td>Unterhalb Band</td></p>
+</tr>
+<p><tr> <td><strong>Korrektur</strong></td> <td>Verlängern</td> <td>Kürzen</td></p>
+</tr>
+<p><tr> <td><strong>Elektrische Anpassung</strong></td> <td>Serien-C</td> <td>Serien-L</td></p>
+</tr>
+</tbody>
+</table>
+<p><strong>Merksatz:</strong></p>
+<ul>
+    <li><strong>Positiv / Vorne / Gegen-UZS / Fällt-SWR</strong> = Induktiv = Zu kurz → <strong>Verlängern</strong></li>
+    <li><strong>Negativ / Hinten / Im-UZS / Steigt-SWR</strong> = Kapazitiv = Zu lang → <strong>Kürzen</strong></li>
+</ul>
+<hr>
+<h2>📝 Checkliste</h2>
+<ul>
+    <li>[ ] SWR-Kurve: Steigender Ton von links nach rechts</li>
+    <li>[ ] Reaktanz-Kurve: Fallend im NEGATIVEN Bereich</li>
+    <li>[ ] Smith Kartesisch: Sound startet hinten, bewegt sich weiter nach hinten-links</li>
+    <li>[ ] Smith Polar: Rotation im Uhrzeigersinn, Entfernung nimmt zu</li>
+    <li>[ ] U-Menü Resonanzsuche: Minimum bei 144 MHz, Resonanz unterhalb Band</li>
+    <li>[ ] U-Menü Fußpunkt: X = -14.5Ω bei 145 MHz (deutlich kapazitiv)</li>
+    <li>[ ] U-Menü Anpassung: Vorschlag Serien-L oder mechanische Kürzung</li>
+    <li>[ ] Vergleich mit Szenario 2: Gegenteil hörbar</li>
+</ul>
+<hr>
+<h2>🎯 Nächste Schritte</h2>
+<ol>
+    <li><strong>Szenarien 1, 2, 3 hintereinander durchhören</strong></li>
+</ol>
+<ul>
+    <li>Perfekt → Induktiv → Kapazitiv</li>
+    <li>Unterschiede schärfen</li>
+</ul>
+<ol>
+    <li><strong>Szenario 4</strong> (Lambda/4 Kabel) durcharbeiten</li>
+</ol>
+<ul>
+    <li>Andere Art von Impedanztransformation</li>
+    <li>Rotationsmuster im Smith-Diagramm</li>
+</ul>
+<ol>
+    <li><strong>Diagnose-Training:</strong></li>
+</ol>
+<ul>
+    <li>Bei eigenen Messungen: Sofort erkennen ob induktiv oder kapazitiv</li>
+    <li>Nach Reaktanz-Vorzeichen und Smith-Position</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Merken: Negative Reaktanz + Hinten im Smith = Kapazitiv = Antenne zu lang. Das ist das Gegenteil von induktiv!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_02_Antenne_Zu_Kurz.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_04_Lambda_Viertel_Kabel.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

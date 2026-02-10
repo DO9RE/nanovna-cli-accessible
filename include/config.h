@@ -144,6 +144,74 @@ struct AppConfig {
     bool status_line_show_reactance = false;  // Show Reactance value in status line
     bool status_line_show_phase = false;  // Show Phase value in status line
     
+    // Smith Diagram Visualization settings
+    int smith_cues_volume = 30;  // Volume for Smith ambient cues (10-100%, default 30%)
+    
+    enum class SmithNoiseType {
+        PINK = 0,      // Pink noise (default, warm filtered sound)
+        WHITE = 1,     // White noise (brighter, full spectrum)
+        BROWN = 2,     // Brown noise (darker, low frequency emphasis)
+        SINE_WAVE = 3  // Sine wave (pure tone, cleaner)
+    };
+    
+    SmithNoiseType smith_noise_type = SmithNoiseType::PINK;  // Default to pink noise
+    
+    // Center pulse (reference signal) settings
+    bool center_pulse_enabled = false;  // Center pulse disabled by default
+    int center_pulse_volume = 40;  // Volume for center pulse (10-100%, default 40%)
+    double center_pulse_interval = 1.0;  // Pulse interval in seconds (0.5-2.0, default 1.0)
+    
+    enum class CenterPulseWaveform {
+        CLICK = 0,      // Filtered noise click (default, percussive)
+        SINE = 1,       // Sine wave blip (clean, musical)
+        SQUARE = 2,     // Square wave blip (bright, synthetic)
+        TRIANGLE = 3,   // Triangle wave blip (warm, mellow)
+        SAWTOOTH = 4,   // Sawtooth wave blip (bright, rich)
+        PULSE = 5       // Short pulse wave (sharp, electronic)
+    };
+    
+    CenterPulseWaveform center_pulse_waveform = CenterPulseWaveform::CLICK;  // Default to click
+    
+    // Axis crossing events settings
+    bool axis_events_enabled = false;  // Axis crossing events disabled by default
+    int axis_events_volume = 60;  // Volume for axis events (10-100%, default 60%)
+    double axis_events_pitch_min = 300.0;  // Minimum pitch for gestures in Hz (200-1000)
+    double axis_events_pitch_max = 800.0;  // Maximum pitch for gestures in Hz (400-2000)
+    int axis_events_duration_ms = 100;  // Duration of axis crossing sounds in ms (50-500, default 100)
+    
+    enum class AxisCrossingSound {
+        PLUCK = 0,      // Plucked string sound (default, natural gesture)
+        SWEEP = 1,      // Pure sine sweep (clean, directional)
+        CHIRP = 2,      // Complex chirp with harmonics (attention-grabbing)
+        BELL = 3,       // Bell-like tone (pleasant, resonant)
+        PERCUSSION = 4  // Percussive hit (sharp, distinctive)
+    };
+    
+    AxisCrossingSound axis_crossing_sound = AxisCrossingSound::PLUCK;  // Default to pluck
+    
+    // Surround sound configuration settings
+    bool surround_enabled = true;  // Enable surround sound if available
+    int surround_front_distance = 100;  // Distance factor for front speakers (50-200%, default 100%)
+    int surround_back_distance = 100;   // Distance factor for back speakers (50-200%, default 100%)
+    int surround_side_distance = 100;   // Distance factor for side speakers (50-200%, default 100%)
+    int surround_center_strength = 50;  // Center channel strength (0-100%, default 50%)
+    
+    // Fading curves for spatial audio perception
+    enum class SurroundFadingCurve {
+        LINEAR = 0,      // Linear fading (default, equal perceived movement)
+        LOGARITHMIC = 1, // Logarithmic (more emphasis on center)
+        EXPONENTIAL = 2, // Exponential (more emphasis on edges)
+        SINE = 3         // Sine curve (smooth, natural transition)
+    };
+    
+    SurroundFadingCurve surround_fading_curve = SurroundFadingCurve::LINEAR;  // Default to linear
+    
+    // Front/back separation enhancement
+    int surround_fb_separation = 100;  // Front/back separation strength (50-200%, default 100%)
+    
+    // Side channel emphasis for better 90° localization
+    int surround_side_emphasis = 100;  // Side channel emphasis (50-200%, default 100%)
+    
     // Braille printer settings
     enum class BrailleProtocol {
         INDEX_V4 = 0,  // Index Everest V4 protocol (raster graphics)
@@ -223,4 +291,41 @@ struct AppConfig {
     
     // Y-axis space reservation (in mm, subtracted from graph width for axis labels)
     double braille_y_axis_space_mm = 2.0;  // Space reserved for Y-axis (1-5mm)
+    
+    // Spatial Audio Calibration settings
+    bool spatial_audio_calibrated = false;  // Whether spatial audio has been calibrated
+    
+    // User hearing characteristics (calibrated via wizard)
+    struct SpatialAudioCalibration {
+        // Direction perception accuracy (0.0-1.0, higher = better)
+        double front_back_accuracy = 0.5;       // How well user distinguishes front from back
+        double left_right_accuracy = 0.9;       // How well user distinguishes left from right
+        double diagonal_accuracy = 0.7;         // How well user perceives diagonal positions
+        
+        // Distance perception characteristics
+        double near_threshold = 0.3;            // Position value perceived as "near" (0.0-0.5)
+        double far_threshold = 0.7;             // Position value perceived as "far" (0.5-1.0)
+        double distance_sensitivity = 0.5;      // How sensitive to distance changes (0.0-1.0)
+        
+        // Volume/loudness preferences
+        double preferred_curve_volume = 0.7;    // Preferred volume for curve sounds (0.0-1.0)
+        double preferred_event_volume = 0.6;    // Preferred volume for event sounds (0.0-1.0)
+        double preferred_ambient_volume = 0.3;  // Preferred volume for ambient cues (0.0-1.0)
+        
+        // Sound type preferences (indices into available sound types)
+        int preferred_axis_crossing_sound = 0;  // Index of preferred axis crossing sound
+        int preferred_center_pulse_waveform = 0; // Index of preferred center pulse waveform
+        
+        // Psychoacoustic parameters (for stereo mode)
+        double crossfeed_amount = 0.15;         // Amount of crossfeed for front/back (0.0-0.5)
+        double back_attenuation = 0.7;          // Attenuation for back sounds (0.5-1.0)
+        double side_emphasis = 0.8;             // Emphasis for side channels (0.5-1.0)
+        
+        // Surround-specific parameters (only used when surround is available)
+        bool surround_available = false;        // Whether surround was detected during calibration
+        double front_speaker_distance = 1.0;    // Relative front speaker distance (0.5-2.0)
+        double back_speaker_distance = 1.0;     // Relative back speaker distance (0.5-2.0)
+        double side_speaker_distance = 1.0;     // Relative side speaker distance (0.5-2.0)
+        
+    } spatial_calibration;
 };

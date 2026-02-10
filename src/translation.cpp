@@ -9,6 +9,38 @@ static void trim(std::string &s) {
     while(!s.empty() && isspace((unsigned char)s.back())) s.pop_back();
 }
 
+// Helper function to process escape sequences
+static void processEscapeSequence(char escapeChar, std::string& output, bool& inEscape) {
+    switch (escapeChar) {
+        case 'n':
+            output += '\n';
+            inEscape = false;
+            break;
+        case 't':
+            output += '\t';
+            inEscape = false;
+            break;
+        case 'r':
+            output += '\r';
+            inEscape = false;
+            break;
+        case '\\':
+            output += '\\';
+            inEscape = false;
+            break;
+        case '"':
+            output += '"';
+            inEscape = false;
+            break;
+        default:
+            // Unknown escape - keep the backslash and character
+            output += '\\';
+            output += escapeChar;
+            inEscape = false;
+            break;
+    }
+}
+
 TranslationManager::TranslationManager() : currentLanguage("eng") {
     // Default to English
 }
@@ -143,15 +175,97 @@ bool TranslationManager::parseLanguageFile(const std::string& filepath, std::str
             continue;
         }
         
-        // Unescape special characters in value
-        // Support \n for newlines
-        size_t escapePos = 0;
-        while ((escapePos = value.find("\\n", escapePos)) != std::string::npos) {
-            value.replace(escapePos, 2, "\n");
-            escapePos += 1;
+        // Check if value is quoted - if so, support multi-line quoted strings
+        if (!value.empty() && value[0] == '"') {
+            // Start of quoted string - read until closing quote (handling escapes)
+            std::string quotedValue;
+            bool inEscape = false;
+            bool foundClosingQuote = false;
+            
+            // Skip opening quote
+            for (size_t i = 1; i < value.length(); i++) {
+                if (inEscape) {
+                    processEscapeSequence(value[i], quotedValue, inEscape);
+                } else if (value[i] == '\\') {
+                    inEscape = true;
+                } else if (value[i] == '"') {
+                    // Found closing quote
+                    foundClosingQuote = true;
+                    break;
+                } else {
+                    quotedValue += value[i];
+                }
+            }
+            
+            // If we didn't find closing quote on this line, continue reading lines
+            while (!foundClosingQuote && std::getline(ifs, line)) {
+                lineNum++;
+                // Add newline for the line break (literal newline in multi-line string)
+                quotedValue += '\n';
+                
+                // Process this continuation line
+                for (size_t i = 0; i < line.length(); i++) {
+                    if (inEscape) {
+                        processEscapeSequence(line[i], quotedValue, inEscape);
+                    } else if (line[i] == '\\') {
+                        inEscape = true;
+                    } else if (line[i] == '"') {
+                        // Found closing quote
+                        foundClosingQuote = true;
+                        break;
+                    } else {
+                        quotedValue += line[i];
+                    }
+                }
+            }
+            
+            if (!foundClosingQuote) {
+                error = "Unclosed quoted string at line " + std::to_string(lineNum) + " for key: " + key;
+                return false;
+            }
+            
+            translations[key] = quotedValue;
+        } else {
+            // Unquoted value - process escape sequences for backward compatibility
+            // Use a single-pass approach with state machine to handle sequences correctly
+            std::string processed;
+            for (size_t i = 0; i < value.length(); i++) {
+                if (value[i] == '\\' && i + 1 < value.length()) {
+                    // Escape sequence
+                    char next = value[i + 1];
+                    switch (next) {
+                        case 'n':
+                            processed += '\n';
+                            i++; // Skip next character
+                            break;
+                        case 't':
+                            processed += '\t';
+                            i++;
+                            break;
+                        case 'r':
+                            processed += '\r';
+                            i++;
+                            break;
+                        case '\\':
+                            processed += '\\';
+                            i++;
+                            break;
+                        case '"':
+                            processed += '"';
+                            i++;
+                            break;
+                        default:
+                            // Unknown escape - keep the backslash
+                            processed += value[i];
+                            break;
+                    }
+                } else {
+                    processed += value[i];
+                }
+            }
+            
+            translations[key] = processed;
         }
-        
-        translations[key] = value;
     }
     
     return true;

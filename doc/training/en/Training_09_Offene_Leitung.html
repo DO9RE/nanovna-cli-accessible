@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Scenario 9: Open Line at 5m (TDR Analysis)">
+    <title>Training Scenario 9: Open Line at 5m (TDR Analysis)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header role="banner">
+        <h1>Training Scenario 9: Open Line at 5m (TDR Analysis)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_08_Kurzschluss.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_10_Bandpass_Filter.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Scenario 9: Open Line at 5m (TDR Analysis)</h1>
+<p><strong>Training File:</strong> <code>Training/09_offene_leitung_5m.csv</code> <strong>Frequency Range:</strong> 144.000 - 147.000 MHz (2m Amateur Radio Band + extended) <strong>Difficulty Level:</strong> ⭐⭐⭐ Advanced (Extreme Mismatch) <strong>Learning Objective:</strong> Recognize open circuit faults, understand difference from short circuit, TDR application</p>
+<hr>
+<h2>📋 Scenario Description</h2>
+<h3>Fictitious Component</h3>
+<p>You are measuring a <strong>5 meter long coaxial cable with open end</strong> (open circuit). This simulates another typical cable fault: inner conductor or antenna is <strong>broken</strong> (e.g., due to corrosion, mechanical break, or loose connection). This fault must also be quickly localized!</p>
+<h3>Technical Characteristics</h3>
+<ul>
+    <li><strong>Cable Length to Fault:</strong> 5 meters</li>
+    <li><strong>Fault Type:</strong> <strong>Open Circuit</strong> (R → ∞)</li>
+    <li><strong>SWR:</strong> 11.70 to 99.00 (extremely high, similar to short circuit!)</li>
+    <li><strong>Return Loss:</strong> 0.17 to 3.32 dB (very poor)</li>
+    <li><strong>Impedance:</strong> 1500Ω to 5000Ω (high impedance!) + <strong>strongly positive</strong> (X: +37Ω to +95Ω)</li>
+    <li><strong>Reflection Coefficient:</strong> |Γ| ≈ 0.98 (almost complete reflection!)</li>
+    <li><strong>Special Feature:</strong> <strong>Opposite</strong> of short circuit - Smith position <strong>right</strong> instead of left!</li>
+</ul>
+<h3>Physical Meaning</h3>
+<p><strong>Open Circuit</strong> in RF Engineering:</p>
+<ul>
+    <li><strong>Inner conductor not connected</strong> → Resistance → ∞</li>
+    <li><strong>Almost complete reflection</strong> of RF energy (like short circuit)</li>
+    <li><strong>Standing waves</strong> in cable (maximum SWR!)</li>
+    <li><strong>Line Transformation:</strong> Z_Open = -j×Z₀×cot(βl)</li>
+    <li>At λ/4 intervals: Impedance transforms between ∞ and 0Ω</li>
+    <li><strong>Inductive:</strong> X positive (typical for open circuit)</li>
+</ul>
+<p><strong>Typical Causes:</strong></p>
+<ul>
+    <li><strong>Corrosion:</strong> Inner conductor corroded through</li>
+    <li><strong>Mechanical Break:</strong> Cable kinked or overstretched</li>
+    <li><strong>Loose Connection:</strong> Connector not properly assembled</li>
+    <li><strong>Antenna Element Broken:</strong> Radiator mechanically damaged</li>
+    <li><strong>Oxidation:</strong> Contact point oxidized (high contact resistance)</li>
+</ul>
+<p><strong>Practical Significance:</strong></p>
+<ul>
+    <li><strong>Total Failure:</strong> No RF signal reaches antenna (like short circuit)</li>
+    <li><strong>Transmitter Load:</strong> High reflection (PA protection should activate)</li>
+    <li><strong>Diagnosis:</strong> VNA + TDR locates break</li>
+    <li><strong>Repair:</strong> Repair conductor, reassemble connector, replace antenna element</li>
+</ul>
+<hr>
+<h2>🎧 Acoustic Analysis</h2>
+<h3>Import and Load File</h3>
+<ol>
+    <li><strong>Main Menu:</strong> Press <strong>L</strong> key (Load)</li>
+    <li>File list appears - navigate with <strong>Arrow Keys</strong></li>
+    <li>Select <strong>09_offene_leitung_5m.csv</strong></li>
+    <li>Press <strong>Enter</strong> to load</li>
+    <li>Confirmation: "51 measurement points successfully loaded"</li>
+    <li><strong>Attention:</strong> Extreme values like Scenario 8!</li>
+</ol>
+<h3>Start Acoustic Mode</h3>
+<ol>
+    <li><strong>Main Menu:</strong> Press <strong>A</strong> key (Acoustic Analysis)</li>
+    <li>You are now in acoustic analysis mode</li>
+    <li>Press <strong>SPACEBAR</strong> to start playback</li>
+    <li><strong>WARNING:</strong> Very high tones (SWR), reduce volume if necessary!</li>
+</ol>
+<hr>
+<h2>🎵 Expected Audio Events</h2>
+<h3>1. SWR Curve (Key 1 - Sine Wave) ⚠️ EXTREME!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>VERY HIGH TONE</strong> at 144 MHz (SWR 99:1!)</li>
+    <li><strong>Identical</strong> with Scenario 8 (short circuit)!</li>
+    <li>Tone drops <strong>continuously</strong> over frequency</li>
+    <li>At 147 MHz: Still very high (SWR ~8:1)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>SWR curve <strong>alone</strong> does NOT distinguish between short circuit and open circuit!</li>
+    <li>Both show <strong>extreme mismatch</strong></li>
+    <li><strong>Need other parameters</strong> (impedance, reactance) for distinction</li>
+</ul>
+<h3>2. Return Loss Curve (Key 2 - Pure Sine Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>VERY LOW TONE</strong> (0.17 dB at 144 MHz)</li>
+    <li>Also <strong>identical</strong> with Scenario 8</li>
+    <li>Rises slightly over frequency</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Return Loss also does <strong>not</strong> distinguish between short circuit/open circuit</li>
+    <li>Both: Almost 100% reflection</li>
+</ul>
+<h3>3. Impedance |Z| (Key 3 - Triangle Wave) ⭐ DIFFERENCE!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>VERY HIGH TONE</strong> (1500Ω to 5000Ω)</li>
+    <li><strong>Opposite</strong> of Scenario 8! (there: Very low tone)</li>
+    <li>Remains in <strong>extremely high impedance range</strong></li>
+    <li>Far above 50Ω system impedance</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li><strong>High impedance</strong> = Open circuit characteristic!</li>
+    <li>Should ideally be ∞ (line transformation prevents exactly ∞)</li>
+    <li>Far from 50Ω → Massive mismatch</li>
+    <li><strong>5m cable</strong> transforms ∞ into high, but not infinite impedance</li>
+    <li><strong>FIRST AUDIBLE DIFFERENCE</strong> from short circuit!</li>
+</ul>
+<h3>4. Reactance X (Key 4 - Sawtooth) ⭐ IMPORTANT!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>STRONGLY POSITIVE TONE</strong> (strongly inductive!)</li>
+    <li>X values: +37Ω to +95Ω (very positive!)</li>
+    <li><strong>Opposite</strong> of Scenario 8! (there: Strongly negative)</li>
+    <li>Tone rises over frequency (becomes more inductive)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li><strong>Positive reactance</strong> = Inductive</li>
+    <li><strong>Open circuit</strong> typically shows inductive behavior</li>
+    <li>Combination with high R = <strong>Open circuit identification</strong>!</li>
+    <li><strong>SECOND AUDIBLE DIFFERENCE</strong> from short circuit!</li>
+</ul>
+<p><strong>Mnemonic:</strong></p>
+<ul>
+    <li><strong>Short circuit:</strong> R low + X strongly negative</li>
+    <li><strong>Open circuit:</strong> R high + X strongly positive</li>
+    <li><strong>Acoustically clearly distinguishable!</strong></li>
+</ul>
+<h3>5. Phase (Key 5 - Sine Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Strongly positive phase</strong> (approx. +170° to +180°)</li>
+    <li>Almost at <strong>+180°</strong> (phase reversal, different direction from short circuit!)</li>
+    <li>Varies slightly over frequency</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Phase ≈ +180° = Complete reflection with <strong>positive</strong> phase reversal</li>
+    <li><strong>Opposite</strong> of short circuit (-180°)!</li>
+    <li><strong>TDR signature:</strong> Positive reflection</li>
+    <li><strong>THIRD AUDIBLE DIFFERENCE!</strong></li>
+</ul>
+<hr>
+<h2>🎯 Smith Chart Audio Visualization</h2>
+<h3>Activate Smith Visualization</h3>
+<ol>
+    <li>In acoustic mode: Press <strong>V</strong> key</li>
+    <li>Press <strong>B</strong> key to select mode:</li>
+</ol>
+<ul>
+    <li><strong>Recommended: Mode 4 (SWR Circles)</strong></li>
+    <li>Alternative: <strong>Mode 1 (Cartesian)</strong> - shows left/right difference!</li>
+</ul>
+<h3>Expected Smith Audio Cues</h3>
+<h4>Mode 4: SWR Circles</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound VERY FAR AWAY</strong> from you (like Scenario 8)</li>
+    <li>Almost at <strong>edge of Smith chart</strong></li>
+    <li><strong>No audible difference</strong> from short circuit in this mode!</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>SWR circle mode only shows <strong>distance</strong> (SWR magnitude)</li>
+    <li>Does NOT distinguish between short circuit/open circuit</li>
+    <li><strong>Need different mode</strong> for distinction!</li>
+</ul>
+<h4>Mode 1: Cartesian ⭐ RECOMMENDED FOR DISTINCTION!</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound FAR RIGHT</strong> (Re(Γ) ≈ +1.0) ← <strong>OPPOSITE of short circuit!</strong></li>
+    <li><strong>Sound SLIGHTLY UP</strong> (Im(Γ) > 0)</li>
+    <li>Position near <strong>right edge</strong> of Smith chart</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Re(Γ) ≈ +1 = Almost complete reflection, <strong>positive</strong> real part</li>
+    <li>Im(Γ) > 0 = Phase > 0 (open circuit is in upper half)</li>
+    <li><strong>Right outside</strong> = Open circuit position in Smith chart</li>
+    <li><strong>CLEARLY DISTINGUISHABLE</strong> from short circuit (left outside)!</li>
+</ul>
+<p><strong>Comparison:</strong></p>
+<pre><code class="language-">Short Circuit (Scenario 8): Sound FAR LEFT
+<p>Open Circuit (Scenario 9):  Sound FAR RIGHT → Maximum horizontal distance in Smith chart!</p>
+</code></pre>
+<h4>Mode 3: Impedance Direct</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound EXTREMELY FAR RIGHT</strong> (R → ∞, very high impedance)</li>
+    <li><strong>Sound FAR UP</strong> (X strongly positive)</li>
+    <li>Position: <strong>Right upper corner</strong> of impedance space</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Right side = High impedance (R → ∞)</li>
+    <li>Up = Inductive (X positive)</li>
+    <li><strong>Right upper corner</strong> = Open circuit signature!</li>
+</ul>
+<p><strong>Comparison:</strong></p>
+<pre><code class="language-">Short Circuit: LEFT LOWER Corner (R→0, X negative)
+<p>Open Circuit:  RIGHT UPPER Corner (R→∞, X positive) → Diagonally opposite in impedance space!</p>
+</code></pre>
+<h3>Center Pulse (Reference Signal)</h3>
+<p><strong>Activate:</strong></p>
+<ol>
+    <li>Press <strong>A</strong> key in acoustic mode → Audio configuration</li>
+    <li>Menu: <strong>C</strong> → <strong>Smith Audio</strong> → Enable Center Pulse</li>
+</ol>
+<p><strong>What you hear:</strong></p>
+<ul>
+    <li><strong>Periodic pulse from CENTER</strong> (50Ω)</li>
+    <li>Your measurement is <strong>VERY FAR AWAY</strong> from pulse (like short circuit)</li>
+    <li><strong>But:</strong> In <strong>different direction</strong>! (Right instead of left)</li>
+</ul>
+<hr>
+<h2>🔧 Exercises and Learning Tasks</h2>
+<h3>Exercise 1: Short Circuit vs. Open Circuit - Direct Comparison! ⭐</h3>
+<p><strong>Goal:</strong> Learn to distinguish acoustically</p>
+<ol>
+    <li><strong>Load Scenario 8</strong> (short circuit)</li>
+</ol>
+<ul>
+    <li>SWR: Very high (same)</li>
+    <li>Impedance |Z|: <strong>Very low tone</strong> (low impedance)</li>
+    <li>Reactance X: <strong>Strongly negative</strong></li>
+    <li>Smith Cartesian: <strong>Far LEFT</strong></li>
+</ul>
+<ol>
+    <li><strong>Load Scenario 9</strong> (open circuit)</li>
+</ol>
+<ul>
+    <li>SWR: Very high (same)</li>
+    <li>Impedance |Z|: <strong>Very high tone</strong> (high impedance)</li>
+    <li>Reactance X: <strong>Strongly positive</strong></li>
+    <li>Smith Cartesian: <strong>Far RIGHT</strong></li>
+</ul>
+<ol>
+    <li><strong>Switch multiple times</strong> and internalize differences!</li>
+</ol>
+<p><strong>Mnemonic:</strong></p>
+<pre><code class="language-">SWR says: "Something is very wrong!"
+<p>Impedance says: "It's short circuit!" (low) or "It's open circuit!" (high)</p>
+</code></pre>
+<h3>Exercise 2: TDR Localization for Open Circuit</h3>
+<p><strong>Goal:</strong> Calculate fault distance (like Scenario 8, but different distance)  <strong>Expectation:</strong></p>
+<ul>
+    <li>Cable: 5 meters (half as long as Scenario 8)</li>
+    <li>Phase shift should be <strong>smaller</strong></li>
+</ul>
+<p><strong>Practical:</strong></p>
+<ol>
+    <li><strong>U-Menu</strong> → Key 4 → Read impedance at 145 MHz</li>
+    <li>Note phase</li>
+    <li><strong>Calculation:</strong> (see Scenario 8)</li>
+</ol>
+<ul>
+    <li>Result should be ~5m (not 10m like Scenario 8)</li>
+</ul>
+<h3>Exercise 3: Smith Position as Diagnostic Tool</h3>
+<p><strong>Goal:</strong> Determine fault type from Smith position  <strong>Exercise:</strong></p>
+<ol>
+    <li>Activate <strong>only</strong> Smith visualization (Mode 1)</li>
+    <li><strong>Turn off SWR</strong> (Key 1)</li>
+    <li><strong>Listen only to Smith position</strong></li>
+    <li><strong>Question:</strong> Where is the sound?</li>
+</ol>
+<ul>
+    <li><strong>Far left:</strong> Short circuit!</li>
+    <li><strong>Far right:</strong> Open circuit!</li>
+    <li><strong>Central:</strong> Good match</li>
+    <li><strong>Moderately far:</strong> Mismatch (but not a fault)</li>
+</ul>
+<h3>Exercise 4: Practical Fault Diagnosis</h3>
+<p><strong>Goal:</strong> Workflow for real fault finding  <strong>Scenario:</strong></p>
+<ul>
+    <li>Antenna suddenly stops working</li>
+    <li>SWR meter shows <strong>SWR >> 10:1</strong></li>
+</ul>
+<p><strong>Diagnostic Steps:</strong></p>
+<ol>
+    <li><strong>VNA S11 sweep:</strong> SWR everywhere high</li>
+    <li><strong>Check impedance |Z|:</strong></li>
+</ol>
+<ul>
+    <li><strong>Very low (<5Ω):</strong> → Short circuit → Search for damage</li>
+    <li><strong>Very high (>1000Ω):</strong> → Open circuit → Search for break</li>
+</ul>
+<ol>
+    <li><strong>TDR calculation:</strong> Determine fault distance</li>
+    <li><strong>Physical inspection:</strong></li>
+</ol>
+<ul>
+    <li>Short circuit: Cable sheath damaged? Water? Connector?</li>
+    <li>Open circuit: Antenna element broken? Connector loose? Corrosion?</li>
+</ul>
+<ol>
+    <li><strong>Repair:</strong> According to fault type</li>
+    <li><strong>Re-test:</strong> Should work again!</li>
+</ol>
+<h3>Exercise 5: Understanding Impedance Quadrants</h3>
+<p><strong>Goal:</strong> Learn four Smith regions  <strong>Impedance Space:</strong></p>
+<pre><code class="language-">        Inductive (X > 0)
+<p>| Low Impedance -+- High Impedance (R < 50)    |    (R > 50) | Capacitive (X < 0)</p>
+</code></pre>
+<p><strong>Fault Types:</strong></p>
+<ul>
+    <li><strong>Short circuit:</strong> Low impedance + Capacitive (left lower corner)</li>
+    <li><strong>Open circuit:</strong> High impedance + Inductive (right upper corner)</li>
+    <li><strong>Antenna too short:</strong> Slightly high impedance + Inductive (right-up from center)</li>
+    <li><strong>Antenna too long:</strong> Slightly low impedance + Capacitive (left-down from center)</li>
+</ul>
+<hr>
+<h2>📊 U-Menu Analysis Functions</h2>
+<h3>Recommended Analyses for this Scenario</h3>
+<h4>1. Band Suitability Check (U-Menu → Key 1)</h4>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>2m Band (144-147 MHz):</strong> ❌ <strong>NOT SUITABLE</strong> (SWR >> 10:1)</li>
+    <li>Identical with Scenario 8</li>
+    <li><strong>WARNING:</strong> Transmitter operation not recommended!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>System is <strong>not operational</strong> (like short circuit)</li>
+    <li>SWR alone <strong>cannot</strong> distinguish between fault types</li>
+</ul>
+<h4>2. Resonance Search (U-Menu → Key 2)</h4>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>No resonance found</strong> (X never near zero)</li>
+    <li>SWR minimum at 147 MHz (~8:1), but catastrophic</li>
+    <li><strong>No antenna behavior</strong> - clearly a fault!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Absence of resonance + extreme mismatch = line fault</li>
+    <li>But: <strong>What type?</strong> Need impedance analysis!</li>
+</ul>
+<h4>3. Feedpoint Impedance Analysis (U-Menu → Key 4)</h4>
+<p><strong>Enter frequency:</strong> 145.0 MHz (band center)  <strong>What you see:</strong></p>
+<ul>
+    <li><strong>R (Resistance):</strong> 3750Ω ⚠️ (should be 50Ω!)</li>
+    <li><strong>X (Reactance):</strong> +57Ω ⚠️ (strongly inductive)</li>
+    <li><strong>|Z|:</strong> ~3751Ω (extremely high impedance!)</li>
+    <li><strong>Phase:</strong> ~+178° ⚠️ (phase reversal, positive!)</li>
+    <li><strong>SWR:</strong> 22.5:1 ⚠️ (catastrophic)</li>
+    <li><strong>Classification:</strong> <strong>OPEN CIRCUIT SUSPECTED</strong></li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li><strong>Clear open circuit signature:</strong></li>
+</ul>
+<ol>
+    <li>R >> 50Ω (very high impedance)</li>
+    <li>X > 0 (inductive)</li>
+    <li>Phase ≈ +180° (positive reflection)</li>
+    <li>SWR >> 10:1</li>
+</ol>
+<ul>
+    <li><strong>Diagnosis:</strong> Open circuit/break in line, approx. 5m away</li>
+</ul>
+<p><strong>Comparison with Scenario 8:</strong></p>
+<pre><code class="language-">Parameter      | Short Circuit (S8) | Open Circuit (S9)
+<p>---------------|--------------------|----------------- R              | ~1.5Ω             | ~3750Ω X              | -67Ω              | +57Ω Phase          | -178°             | +178° Smith Position | Left outside      | Right outside</p>
+</code></pre>
+<h4>4. Matching Advice (U-Menu → Key 5)</h4>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>"ERROR: Open circuit suspected!"</strong></li>
+    <li><strong>"Impedance much too high (R → ∞)"</strong></li>
+    <li><strong>"Conductor break possible"</strong></li>
+    <li><strong>Suggestion:</strong></li>
+    <li>Check antenna elements (broken?)</li>
+    <li>Check connector connections (loose?)</li>
+    <li>Look for corrosion (oxidized contacts?)</li>
+    <li>TDR for localization</li>
+    <li><strong>DO NOT match with tuner!</strong></li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Program recognizes <strong>open circuit fault</strong> (not short circuit!)</li>
+    <li>Tuner cannot transform ∞ (like it can't transform 0Ω)</li>
+    <li>Repair required!</li>
+</ul>
+<hr>
+<h2>🎓 Learning Objectives and Interpretation</h2>
+<h3>What You Learn from this Scenario</h3>
+<h4>1. Open Circuit Recognition</h4>
+<p><strong>Acoustic Signatures:</strong></p>
+<ul>
+    <li><strong>SWR:</strong> Extremely high (like short circuit - <strong>no difference!</strong>)</li>
+    <li><strong>Impedance |Z|:</strong> <strong>Very high tone</strong> (>> 50Ω) ← Difference!</li>
+    <li><strong>Reactance X:</strong> <strong>Strongly positive</strong> ← Difference!</li>
+    <li><strong>Smith Cartesian:</strong> <strong>Far right</strong> ← Difference!</li>
+    <li><strong>Phase:</strong> <strong>~+180°</strong> ← Difference!</li>
+</ul>
+<h4>2. Short Circuit vs. Open Circuit Distinction</h4>
+<p><strong>Only possible with impedance analysis!</strong></p>
+<pre><code class="language-">              | Short Circuit    | Open Circuit
+<p>--------------|------------------|-------------- SWR           | Very high       | Very high (same!) R             | → 0Ω           | → ∞ X             | Strongly negative| Strongly positive Smith (Cart.) | Left outside    | Right outside Phase         | -180°           | +180° Audio Z       | Very low tone   | Very high tone Audio X       | Low (negative)  | High (positive)</p>
+</code></pre>
+<h4>3. TDR Application</h4>
+<ul>
+    <li><strong>Both fault types</strong> localizable with TDR</li>
+    <li><strong>Phase sign</strong> distinguishes fault type:</li>
+    <li>Negative (-180°): Short circuit</li>
+    <li>Positive (+180°): Open circuit</li>
+    <li><strong>Phase magnitude:</strong> Gives distance</li>
+</ul>
+<h4>4. Smith Chart Symmetry</h4>
+<ul>
+    <li><strong>Short circuit and open circuit:</strong> Symmetric around center</li>
+    <li><strong>Left-right axis:</strong> Separates low/high impedance</li>
+    <li><strong>Up-down axis:</strong> Separates inductive/capacitive</li>
+    <li><strong>Extreme positions:</strong> Always indicate fault!</li>
+</ul>
+<h4>5. Practical Relevance</h4>
+<ul>
+    <li><strong>Open circuit more frequent</strong> than expected:</li>
+    <li>Oxidized contacts (years old)</li>
+    <li>Antenna elements break (storm, ice)</li>
+    <li>Connector center contact withdrawn</li>
+    <li><strong>Diagnosis:</strong> Impedance measurement essential</li>
+    <li><strong>Repair:</strong> Often easier than short circuit (restore connection)</li>
+</ul>
+<hr>
+<h2>⚠️ Important Notes</h2>
+<h3>Open Circuit Causes in Practice</h3>
+<p><strong>Most Common Causes:</strong></p>
+<ol>
+    <li><strong>Oxidation</strong> (gradual!)</li>
+</ol>
+<ul>
+    <li>Contacts oxidize over years</li>
+    <li>Resistance increases → Eventually break</li>
+    <li>Typical for outdoor installations</li>
+</ul>
+<ol>
+    <li><strong>Mechanical Break</strong></li>
+</ol>
+<ul>
+    <li>Antenna elements break (aluminum fatigues)</li>
+    <li>Cable inner conductor tears (kink, overstretching)</li>
+    <li>Connector center contact breaks off</li>
+</ul>
+<ol>
+    <li><strong>Loose Connections</strong></li>
+</ol>
+<ul>
+    <li>Screw connections loosen (vibration)</li>
+    <li>Connector not fully inserted</li>
+    <li>Solder joint gone cold</li>
+</ul>
+<p><strong>Prevention:</strong></p>
+<ul>
+    <li><strong>Corrosion protection:</strong> Contact spray, solder with flux</li>
+    <li><strong>Mechanical strain relief:</strong> No tension on cable</li>
+    <li><strong>Regular inspection:</strong> Check antenna elements annually</li>
+    <li><strong>Quality connectors:</strong> Cheap connectors are fault source #1</li>
+</ul>
+<h3>Difference: High Impedance Load vs. Open Circuit</h3>
+<p><strong>High Impedance Mismatch (e.g., 150Ω):</strong></p>
+<ul>
+    <li>SWR ~3:1 (moderately bad)</li>
+    <li>Still usable (with tuner)</li>
+    <li>Smith: Right of center, but <strong>not at edge</strong></li>
+</ul>
+<p><strong>Open Circuit (∞):</strong></p>
+<ul>
+    <li>SWR >> 10:1 (catastrophic)</li>
+    <li><strong>Not usable</strong> (even with tuner)</li>
+    <li>Smith: <strong>At right edge</strong></li>
+</ul>
+<p><strong>Acoustically:</strong></p>
+<ul>
+    <li>Mismatch: Impedance tone <strong>moderately high</strong></li>
+    <li>Open circuit: Impedance tone <strong>extremely high</strong></li>
+</ul>
+<hr>
+<h2>📝 Checklist: Did You Hear Everything?</h2>
+<h3>Audio Events:</h3>
+<ul>
+    <li>[ ] SWR: Very high tone (99:1 to ~8:1) - <strong>same as short circuit</strong></li>
+    <li>[ ] Return Loss: Very low tone (0.17-3.32 dB) - <strong>same</strong></li>
+    <li>[ ] Impedance |Z|: <strong>Very high tone</strong> (1500-5000Ω) ← <strong>DIFFERENCE!</strong></li>
+    <li>[ ] Reactance X: <strong>Strongly positive tone</strong> (+37Ω to +95Ω) ← <strong>DIFFERENCE!</strong></li>
+    <li>[ ] Phase: Almost at +180° ← <strong>DIFFERENCE!</strong></li>
+</ul>
+<h3>Smith Visualization:</h3>
+<ul>
+    <li>[ ] Smith SWR circles: Very far away - <strong>same as short circuit</strong></li>
+    <li>[ ] Smith Cartesian: <strong>Far RIGHT</strong> (Re(Γ) ≈ +1) ← <strong>DIFFERENCE!</strong></li>
+    <li>[ ] Smith Impedance: <strong>Right upper corner</strong> ← <strong>DIFFERENCE!</strong></li>
+    <li>[ ] Center Pulse: Maximum distance, but <strong>different direction</strong> from short circuit</li>
+</ul>
+<h3>U-Menu:</h3>
+<ul>
+    <li>[ ] Band suitability: ❌ NOT SUITABLE (like short circuit)</li>
+    <li>[ ] Resonance search: None (like short circuit)</li>
+    <li>[ ] Impedance: R ≈ 3750Ω, X ≈ +57Ω ← <strong>Open circuit signature!</strong></li>
+    <li>[ ] Matching advice: <strong>"OPEN CIRCUIT SUSPECTED"</strong> (not "short circuit")</li>
+</ul>
+<h3>Understanding:</h3>
+<ul>
+    <li>[ ] Open circuit signature acoustically recognized</li>
+    <li>[ ] Difference from short circuit <strong>heard</strong> (impedance, reactance, Smith position)</li>
+    <li>[ ] TDR concept understood for both fault types</li>
+    <li>[ ] Practical causes (oxidation, break) understood</li>
+</ul>
+<hr>
+<h2>🎯 Next Steps</h2>
+<p>After this training you should:</p>
+<ol>
+    <li><strong>Compare Scenarios 8 and 9 multiple times</strong></li>
+</ol>
+<ul>
+    <li>Switch back and forth</li>
+    <li><strong>Hear</strong> the differences (especially impedance!)</li>
+    <li><strong>Internalize</strong> the acoustic signatures</li>
+    <li><strong>Master</strong> the diagnosis</li>
+</ul>
+<ol>
+    <li><strong>Work through Scenario 10 (Bandpass Filter)</strong></li>
+</ol>
+<ul>
+    <li>Return to "normal" measurements</li>
+    <li>Different filter type from Scenario 5</li>
+    <li>S21 peak instead of passband</li>
+    <li>Completion of training program!</li>
+</ul>
+<ol>
+    <li><strong>Own Fault Tests</strong></li>
+</ol>
+<ul>
+    <li>Cable with 50Ω load: Normal</li>
+    <li>Cable open: Open circuit signature</li>
+    <li>Cable shorted: Short circuit signature</li>
+    <li><strong>Hear</strong> the three states!</li>
+</ul>
+<ol>
+    <li><strong>Real Fault Finding</strong></li>
+</ol>
+<ul>
+    <li>When real antenna has problems</li>
+    <li>Perform VNA measurement</li>
+    <li><strong>Acoustically</strong> distinguish between short circuit/open circuit/mismatch</li>
+    <li>TDR calculation for localization</li>
+    <li>Find and fix fault!</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Good luck with the training! You can now acoustically distinguish both extreme faults (short circuit AND open circuit) - essential for professional fault finding!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_08_Kurzschluss.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_10_Bandpass_Filter.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

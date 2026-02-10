@@ -78,6 +78,17 @@ mkdir -p logs
 echo "      Creating Export directory..."
 mkdir -p Export
 
+# Copy Training directory
+echo "      Copying Training directory..."
+mkdir -p Training
+cp -r ../Training/*.csv Training/ 2>/dev/null || echo "      Warning: No training CSV files found"
+cp -r ../Training/README.md Training/ 2>/dev/null || echo "      Warning: No training README found"
+
+# Copy doc directory
+echo "      Copying doc directory..."
+mkdir -p doc
+cp -r ../doc/* doc/ 2>/dev/null || echo "      Warning: No documentation files found"
+
 echo "      Done."
 
 # Verify important files are present
@@ -111,4 +122,6 @@ echo "Config files: build/config/"
 echo "Band plans: build/bandplans/"
 echo "Logs will be saved to: build/logs/"
 echo "Exports will be saved to: build/Export/"
+echo "Training files: build/Training/"
+echo "Documentation: build/doc/"
 echo ""

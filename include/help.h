@@ -10,6 +10,7 @@ public:
     // Screen-specific help
     static std::string getMainMenuHelp(const TranslationManager& tm);
     static std::string getAcousticAnalysisHelp(const TranslationManager& tm);
+    static std::string getSmithVisualizationHelp(const TranslationManager& tm);
     static std::string getDeviceInfoHelp(const TranslationManager& tm);
     static std::string getTableViewHelp(const TranslationManager& tm);
     static std::string getCalibrationMenuHelp(const TranslationManager& tm);

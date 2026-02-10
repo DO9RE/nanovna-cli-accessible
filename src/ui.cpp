@@ -17,10 +17,12 @@
 #include <iomanip>
 #include <memory>
 #include <limits>
+#include <filesystem>
 
 #if defined(_WIN32)
 #include <conio.h>   // For _kbhit() and _getch()
-#include <windows.h> // For GetAsyncKeyState
+#include <windows.h> // For GetAsyncKeyState, ShellExecuteA
+#include <shellapi.h> // For ShellExecuteA
 #endif
 
 ConsoleUI::ConsoleUI(AppConfig cfg_, Logger* logger_, MathLogger* mathLogger_, SerialComm* serial_) 
@@ -69,6 +71,7 @@ void ConsoleUI::printOptionsLine() {
     
     menu << translation.get("MENU_OPTIONS", "(O)ptions") << "  ";
     menu << translation.get("MENU_WEB_INTERFACE", "(I) Web Interface") << "  ";
+    menu << translation.get("MENU_DOCS", "(?) Manuals and Training") << "\n";
     menu << translation.get("MENU_HELP", "(H)elp") << "  ";
     menu << translation.get("MENU_QUIT", "(Q)uit") << "\n";
     
@@ -683,7 +686,7 @@ void ConsoleUI::importMenu(std::vector<MeasurementPoint>& pts) {
     
     print(translation.get("IMPORT_AVAILABLE", "Available files:") + "\n");
     for (size_t i = 0; i < files.size(); ++i) {
-        print((i + 1) + ") " + files[i] + "\n");
+        print(std::to_string(i + 1) + ") " + files[i] + "\n");
     }
     
     print("\n" + translation.get("IMPORT_PROMPT", "Enter file number to import (or press Enter to cancel): >") + " ");
@@ -1573,6 +1576,7 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
         std::string keyHelp = translation.get("MENU_KEY_HELP", "h");
         std::string keyQuit = translation.get("MENU_KEY_QUIT", "q");
         std::string keyComfort = translation.get("MENU_KEY_COMFORT", "u");
+        std::string keyDocs = translation.get("MENU_KEY_DOCS", "?");
         
         if (key == keyQuit[0]) {
             if (logger) logger->log("UI", "User quit");
@@ -1635,6 +1639,9 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
             printOptionsLine();
         } else if (key == keyHelp[0]) {
             print(HelpModule::getMainMenuHelp(translation));
+        } else if (key == keyDocs[0] || key == '?') {
+            documentationMenu();
+            printOptionsLine();
         } else if (key == '\r' || key == '\n') {
             // Enter key - show options
             printOptionsLine();
@@ -1719,6 +1726,41 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         audioEngine = synthEngine;
     }
     analyzer.setAudioEngine(audioEngine);
+    
+    // Apply Smith configuration from settings
+    auto smith = analyzer.getSmithVisualizer();
+    if (smith) {
+        smith->setSmithCuesVolume(cfg.smith_cues_volume);
+        smith->setNoiseType(cfg.smith_noise_type);
+        
+        // Apply center pulse configuration
+        smith->setCenterPulseEnabled(cfg.center_pulse_enabled);
+        smith->setCenterPulseVolume(cfg.center_pulse_volume);
+        smith->setCenterPulseInterval(cfg.center_pulse_interval);
+        smith->setCenterPulseWaveform(cfg.center_pulse_waveform);
+        
+        // Apply axis crossing events configuration
+        smith->setAxisEventsEnabled(cfg.axis_events_enabled);
+        smith->setAxisEventsVolume(cfg.axis_events_volume);
+        smith->setAxisEventsDuration(cfg.axis_events_duration_ms);
+        smith->setAxisEventsPitchRange(cfg.axis_events_pitch_min, cfg.axis_events_pitch_max);
+        smith->setAxisCrossingSound(cfg.axis_crossing_sound);
+        
+        // Apply surround configuration
+        smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                cfg.surround_side_distance, cfg.surround_center_strength,
+                                cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                cfg.surround_fading_curve);
+        
+        // Set math logger for debug output
+        smith->setMathLogger(mathLogger);
+        
+        if (logger) {
+            logger->log("SMITH", "Applied config: Volume=" + std::to_string(cfg.smith_cues_volume) + 
+                       "%, NoiseType=" + std::to_string(static_cast<int>(cfg.smith_noise_type)));
+            logger->log("SMITH", "Surround config applied from settings");
+        }
+    }
     
     // Load settings from config
     analyzer.setSmoothMode(cfg.acoustic_smooth_mode);
@@ -2608,8 +2650,98 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                         }
                         break;
                     
+                    case 'v':  // Smith Visualization - Toggle
+                        {
+                            bool currentState = analyzer.isSmithVisualizationEnabled();
+                            analyzer.enableSmithVisualization(!currentState);
+                            if (analyzer.isSmithVisualizationEnabled()) {
+                                auto smith = analyzer.getSmithVisualizer();
+                                std::string modeName = smith ? smith->getCurrentModeName() : "Unknown";
+                                print("\n" + translation.get("SMITH_CUES_ENABLED", "[Smith spatial cues ENABLED]") + "\n");
+                                print(translation.format("SMITH_MODE_SWITCHED", "[Smith mode: {0}]", modeName) + "\n");
+                                print(translation.get("SMITH_MODE_HINT", "[Press 'b' to change mode, 'h' for Smith help]") + "\n");
+                            } else {
+                                print("\n" + translation.get("SMITH_CUES_DISABLED", "[Smith spatial cues DISABLED]") + "\n");
+                            }
+                        }
+                        break;
+                    
+                    case '.':  // Center Pulse Toggle (reference signal for Smith chart center)
+                        // Note: Period key has no uppercase variant, only one case needed
+                        {
+                            auto smith = analyzer.getSmithVisualizer();
+                            if (smith) {
+                                bool newState = !smith->isCenterPulseEnabled();
+                                smith->setCenterPulseEnabled(newState);
+                                if (newState) {
+                                    print("\n" + translation.get("CENTER_PULSE_ENABLED", 
+                                        "[Center pulse ENABLED - periodic reference signal]") + "\n");
+                                } else {
+                                    print("\n" + translation.get("CENTER_PULSE_DISABLED", 
+                                        "[Center pulse DISABLED]") + "\n");
+                                }
+                            }
+                        }
+                        break;
+                    
+                    case 'q':  // Axis Events Toggle (crossing events for horizontal and vertical axes)
+                    case 'Q':  // Handle both lowercase and uppercase for consistency
+                        {
+                            auto smith = analyzer.getSmithVisualizer();
+                            if (smith) {
+                                bool newState = !smith->isAxisEventsEnabled();
+                                smith->setAxisEventsEnabled(newState);
+                                if (newState) {
+                                    print("\n" + translation.get("AXIS_EVENTS_ENABLED", 
+                                        "[Axis crossing events ENABLED - audible markers at axis crossings]") + "\n");
+                                } else {
+                                    print("\n" + translation.get("AXIS_EVENTS_DISABLED", 
+                                        "[Axis crossing events DISABLED]") + "\n");
+                                }
+                            }
+                        }
+                        break;
+                    
+                    case 'b':  // Smith Visualization Mode Selection (B for "Bild"/"Mode")
+                        {
+                            if (!analyzer.isSmithVisualizationEnabled()) {
+                                print("\n" + translation.get("SMITH_ENABLE_FIRST", "[Enable Smith visualization first with 'v']") + "\n");
+                                break;
+                            }
+                            
+                            analyzer.pause();
+                            print("\n=== " + translation.get("SMITH_MODE_SELECTION", "Smith Visualization Mode Selection") + " ===\n");
+                            print(translation.get("SMITH_MODE_PROMPT", "Select visualization mode:") + "\n\n");
+                            print(translation.get("SMITH_MODE_1", "1 - Cartesian") + "\n");
+                            print(translation.get("SMITH_MODE_2", "2 - Polar") + "\n");
+                            print(translation.get("SMITH_MODE_3", "3 - Impedance Direct") + "\n");
+                            print(translation.get("SMITH_MODE_4", "4 - SWR Circles") + "\n");
+                            print(translation.get("SMITH_MODE_5", "5 - Time Domain") + "\n");
+                            print(translation.get("SMITH_MODE_6", "6 - Hybrid Multi") + "\n");
+                            print("\n" + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
+                            
+                            int modeChoice = _getch();
+                            if (modeChoice >= '1' && modeChoice <= '6') {
+                                auto smith = analyzer.getSmithVisualizer();
+                                if (smith) {
+                                    SmithVisualizationMode mode = static_cast<SmithVisualizationMode>(modeChoice - '1');
+                                    smith->setMode(mode);
+                                    print("\n" + translation.format("SMITH_MODE_SWITCHED", 
+                                        "[Smith mode switched to: {0}]", smith->getCurrentModeName()) + "\n");
+                                }
+                            }
+                            print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
+                            _getch();
+                        }
+                        break;
+                    
                     case 'h':  // Help
-                        print(HelpModule::getAcousticAnalysisHelp(translation));
+                        // Show Smith-specific help if Smith visualization is enabled
+                        if (analyzer.isSmithVisualizationEnabled()) {
+                            print(HelpModule::getSmithVisualizationHelp(translation));
+                        } else {
+                            print(HelpModule::getAcousticAnalysisHelp(translation));
+                        }
                         break;
                         
                     case 27:  // ESC key - Back to main menu
@@ -2765,6 +2897,885 @@ bool ConsoleUI::readNumericInput(const std::string& prompt, int& result) {
         }
     }
     return false;
+}
+
+bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
+    print("\n=== " + translation.get("SMITH_AUDIO_CONFIG_TITLE", "Smith Diagram Audio Configuration") + " ===\n");
+    
+    // Get current settings
+    auto smith = analyzer ? analyzer->getSmithVisualizer() : nullptr;
+    if (!smith) {
+        print(translation.get("SMITH_CONFIG_NO_VISUALIZER", "[Error: Smith visualizer not available]") + "\n");
+        return false;
+    }
+    
+    // Detect and display audio capability
+    AudioCapability audioCap = smith->getAudioCapability();
+    const char* capName = "";
+    switch (audioCap) {
+        case AudioCapability::STEREO_ONLY: 
+            capName = "Stereo (2.0)"; 
+            break;
+        case AudioCapability::SURROUND_5_1: 
+            capName = "5.1 Surround"; 
+            break;
+        case AudioCapability::SURROUND_7_1: 
+            capName = "7.1 Surround"; 
+            break;
+        case AudioCapability::SURROUND_ATMOS: 
+            capName = "Dolby Atmos"; 
+            break;
+    }
+    
+    print(translation.format("SMITH_CONFIG_AUDIO_MODE", "\nAudio Mode: {0}", capName) + "\n");
+    
+    if (audioCap == AudioCapability::STEREO_ONLY) {
+        print(translation.get("SMITH_CONFIG_STEREO_NOTE", 
+            "  Note: Only left/right panning available in stereo mode.") + "\n");
+        print(translation.get("SMITH_CONFIG_STEREO_HINT", 
+            "  For full 360° spatial audio, use a 5.1 or 7.1 surround headset.") + "\n");
+    } else {
+        print(translation.get("SMITH_CONFIG_SURROUND_ACTIVE", 
+            "  Full spatial audio (360°) is active!") + "\n");
+        print(translation.get("SMITH_CONFIG_SURROUND_HINT", 
+            "  Use 'S' to configure surround sound parameters.") + "\n");
+    }
+    
+    int currentVolume = smith->getSmithCuesVolume();
+    AppConfig::SmithNoiseType currentNoiseType = smith->getNoiseType();
+    
+    // Get center pulse and axis events settings
+    bool centerPulseEnabled = smith->isCenterPulseEnabled();
+    int centerPulseVolume = smith->getCenterPulseVolume();
+    double centerPulseInterval = smith->getCenterPulseInterval();
+    AppConfig::CenterPulseWaveform centerPulseWaveform = smith->getCenterPulseWaveform();
+    bool axisEventsEnabled = smith->isAxisEventsEnabled();
+    int axisEventsVolume = smith->getAxisEventsVolume();
+    int axisEventsDuration = smith->getAxisEventsDuration();
+    double axisPitchMin = smith->getAxisEventsPitchMin();
+    double axisPitchMax = smith->getAxisEventsPitchMax();
+    AppConfig::AxisCrossingSound axisCrossingSound = smith->getAxisCrossingSound();
+    
+    // Display current settings
+    print(translation.format("SMITH_CONFIG_VOLUME_CURRENT", "\nCurrent volume: {0}%", currentVolume) + "\n");
+    
+    const char* noiseTypeName = "";
+    switch (currentNoiseType) {
+        case AppConfig::SmithNoiseType::PINK: noiseTypeName = "Pink Noise"; break;
+        case AppConfig::SmithNoiseType::WHITE: noiseTypeName = "White Noise"; break;
+        case AppConfig::SmithNoiseType::BROWN: noiseTypeName = "Brown Noise"; break;
+        case AppConfig::SmithNoiseType::SINE_WAVE: noiseTypeName = "Sine Wave"; break;
+    }
+    print(translation.format("SMITH_CONFIG_NOISE_TYPE_CURRENT", "Current sound type: {0}", noiseTypeName) + "\n");
+    
+    // Display center pulse and axis events status
+    print(translation.format("SMITH_CONFIG_CENTER_PULSE_STATUS", "\nCenter pulse: {0}", 
+        (centerPulseEnabled ? "ENABLED" : "DISABLED")) + "\n");
+    if (centerPulseEnabled) {
+        print(translation.format("SMITH_CONFIG_CENTER_PULSE_DETAILS", "  Volume: {0}%, Interval: {1} seconds", 
+            centerPulseVolume, centerPulseInterval) + "\n");
+    }
+    
+    print(translation.format("SMITH_CONFIG_AXIS_EVENTS_STATUS", "Axis events: {0}", 
+        (axisEventsEnabled ? "ENABLED" : "DISABLED")) + "\n");
+    if (axisEventsEnabled) {
+        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_DETAILS", "  Volume: {0}%, Pitch: {1}-{2} Hz", 
+            axisEventsVolume, static_cast<int>(axisPitchMin), static_cast<int>(axisPitchMax)) + "\n");
+    }
+    print("\n");
+    
+    print(translation.get("SMITH_CONFIG_COMMANDS", "Commands:") + "\n");
+    print(translation.get("SMITH_CONFIG_VOLUME_CMD", "  V - Configure Volume (10-100%)") + "\n");
+    print(translation.get("SMITH_CONFIG_NOISE_TYPE_CMD", "  N - Configure sound type (Pink/White/Brown/Sine)") + "\n");
+    print(translation.get("SMITH_CONFIG_CENTER_PULSE_CMD", "  C - Configure Center Pulse (reference signal)") + "\n");
+    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_CMD", "  A - Configure Axis crossing Events") + "\n");
+    if (audioCap != AudioCapability::STEREO_ONLY) {
+        print(translation.get("SMITH_CONFIG_SURROUND_CMD", "  S - Configure Surround Sound parameters") + "\n");
+    }
+    print(translation.get("SMITH_CONFIG_PREVIEW_CMD", "  P - Preview current Smith sound") + "\n");
+    print(translation.get("HELP_COMMAND", "  H - Help") + "\n");
+    print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+    
+    bool running = true;
+    bool settingsChanged = false;
+    
+    print(getPromptWithDepth("SMITH_CONFIG_PROMPT", 4) + " ");
+    
+    while (running) {
+        int ch = 0;
+        bool hasInput = false;
+        
+        // Check for keyboard input
+        if (_kbhit()) {
+            ch = _getch();
+            if (ch == 0 || ch == 224) {
+                if (_kbhit()) _getch();
+                continue;
+            }
+            hasInput = true;
+        }
+        
+        if (hasInput) {
+            char key = static_cast<char>(ch);
+            if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+            
+            switch (key) {
+                case 'v':  // Volume configuration
+                    {
+                        print("V\n\n" + translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                            "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                        
+                        std::string volumeInput;
+                        bool inputting = true;
+                        while (inputting) {
+                            if (_kbhit()) {
+                                int vch = _getch();
+                                if (vch == 27) {  // ESC
+                                    print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
+                                    inputting = false;
+                                } else if (vch == '\r' || vch == '\n') {  // Enter
+                                    if (!volumeInput.empty()) {
+                                        try {
+                                            int volume = std::stoi(volumeInput);
+                                            if (volume >= 10 && volume <= 100) {
+                                                smith->setSmithCuesVolume(volume);
+                                                cfg.smith_cues_volume = volume;
+                                                currentVolume = volume;
+                                                print("\n" + translation.format("SMITH_CONFIG_VOLUME_SET", 
+                                                    "[Smith cues volume set to: {0}%]", volume) + "\n");
+                                                saveSettings();
+                                                settingsChanged = true;
+                                                inputting = false;
+                                            } else {
+                                                print("\n" + translation.get("SMITH_CONFIG_VOLUME_ERROR", 
+                                                    "[Error: Volume must be between 10 and 100]") + "\n");
+                                                print(translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                                                    "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                                                volumeInput.clear();
+                                            }
+                                        } catch (...) {
+                                            print("\n" + translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                            print(translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                                                "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                                            volumeInput.clear();
+                                        }
+                                    }
+                                } else if (vch >= '0' && vch <= '9') {
+                                    volumeInput += static_cast<char>(vch);
+                                    print(std::string(1, vch));
+                                } else if (vch == 8 && !volumeInput.empty()) {  // Backspace
+                                    volumeInput.pop_back();
+                                    print("\b \b");
+                                }
+                            }
+                        }
+                    }
+                    break;
+                
+                case 'n':  // Noise type configuration
+                    {
+                        print("N\n\n" + translation.get("SMITH_CONFIG_NOISE_TYPE_MENU", "=== Select Sound Type ===") + "\n");
+                        print(translation.get("SMITH_CONFIG_NOISE_TYPE_1", "  1 - Pink Noise (warm, filtered - default)") + "\n");
+                        print(translation.get("SMITH_CONFIG_NOISE_TYPE_2", "  2 - White Noise (bright, full spectrum)") + "\n");
+                        print(translation.get("SMITH_CONFIG_NOISE_TYPE_3", "  3 - Brown Noise (dark, low frequencies)") + "\n");
+                        print(translation.get("SMITH_CONFIG_NOISE_TYPE_4", "  4 - Sine Wave (pure tone, cleaner)") + "\n");
+                        print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
+                        print("> ");
+                        
+                        int typeChoice = _getch();
+                        if (typeChoice >= '1' && typeChoice <= '4') {
+                            AppConfig::SmithNoiseType newType;
+                            const char* newTypeName = "";
+                            
+                            switch (typeChoice) {
+                                case '1': 
+                                    newType = AppConfig::SmithNoiseType::PINK;
+                                    newTypeName = "Pink Noise";
+                                    break;
+                                case '2': 
+                                    newType = AppConfig::SmithNoiseType::WHITE;
+                                    newTypeName = "White Noise";
+                                    break;
+                                case '3': 
+                                    newType = AppConfig::SmithNoiseType::BROWN;
+                                    newTypeName = "Brown Noise";
+                                    break;
+                                case '4': 
+                                    newType = AppConfig::SmithNoiseType::SINE_WAVE;
+                                    newTypeName = "Sine Wave";
+                                    break;
+                            }
+                            
+                            smith->setNoiseType(newType);
+                            cfg.smith_noise_type = newType;
+                            currentNoiseType = newType;
+                            print("\n" + translation.format("SMITH_CONFIG_NOISE_TYPE_SET", 
+                                "[Sound type changed to: {0}]", newTypeName) + "\n");
+                            saveSettings();
+                            settingsChanged = true;
+                        }
+                    }
+                    break;
+                
+                case 'c':  // Center pulse configuration
+                    {
+                        print("C\n\n" + translation.get("SMITH_CONFIG_CENTER_PULSE_MENU", "=== Center Pulse Configuration ===") + "\n");
+                        print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_STATUS", "Current status: {0}",
+                            (centerPulseEnabled ? "ENABLED" : "DISABLED")) + "\n");
+                        print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_VOL", "Volume: {0}%", centerPulseVolume) + "\n");
+                        print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_INT", "Interval: {0} seconds", centerPulseInterval) + "\n");
+                        
+                        // Display waveform type
+                        const char* waveformName = "Unknown";
+                        switch (centerPulseWaveform) {
+                            case AppConfig::CenterPulseWaveform::CLICK: waveformName = "Click (filtered noise)"; break;
+                            case AppConfig::CenterPulseWaveform::SINE: waveformName = "Sine wave"; break;
+                            case AppConfig::CenterPulseWaveform::SQUARE: waveformName = "Square wave"; break;
+                            case AppConfig::CenterPulseWaveform::TRIANGLE: waveformName = "Triangle wave"; break;
+                            case AppConfig::CenterPulseWaveform::SAWTOOTH: waveformName = "Sawtooth wave"; break;
+                            case AppConfig::CenterPulseWaveform::PULSE: waveformName = "Pulse wave"; break;
+                        }
+                        print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_WAVE", "Waveform: {0}", waveformName) + "\n\n");
+                        
+                        print(translation.get("SMITH_CONFIG_CENTER_PULSE_COMMANDS", "Commands:") + "\n");
+                        print(translation.get("SMITH_CONFIG_CENTER_PULSE_TOGGLE_CMD", "  T - Toggle center pulse on/off") + "\n");
+                        print(translation.get("SMITH_CONFIG_CENTER_PULSE_VOLUME_CMD", "  V - Set volume (10-100%)") + "\n");
+                        print(translation.get("SMITH_CONFIG_CENTER_PULSE_INTERVAL_CMD", "  I - Set interval (0.5-2.0 seconds)") + "\n");
+                        print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVEFORM_CMD", "  W - Select waveform type") + "\n");
+                        print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+                        print("> ");
+                        
+                        int cpChoice = _getch();
+                        switch (cpChoice) {
+                            case 't':
+                            case 'T':
+                                centerPulseEnabled = !centerPulseEnabled;
+                                smith->setCenterPulseEnabled(centerPulseEnabled);
+                                cfg.center_pulse_enabled = centerPulseEnabled;
+                                print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_TOGGLED",
+                                    "[Center pulse: {0}]", (centerPulseEnabled ? "ENABLED" : "DISABLED")) + "\n");
+                                saveSettings();
+                                settingsChanged = true;
+                                break;
+                            
+                            case 'v':
+                            case 'V':
+                                {
+                                    print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_VOL",
+                                        "Enter center pulse volume (10-100%, current: {0}%): ", centerPulseVolume) + "> ");
+                                    std::string volInput;
+                                    if (readLine(volInput) && !volInput.empty()) {
+                                        try {
+                                            int vol = std::stoi(volInput);
+                                            if (vol >= 10 && vol <= 100) {
+                                                smith->setCenterPulseVolume(vol);
+                                                cfg.center_pulse_volume = vol;
+                                                centerPulseVolume = vol;
+                                                print(translation.format("SMITH_CONFIG_CENTER_PULSE_VOL_SET",
+                                                    "[Center pulse volume set to {0}%]", vol) + "\n");
+                                                saveSettings();
+                                                settingsChanged = true;
+                                            } else {
+                                                print(translation.get("SMITH_CONFIG_CENTER_PULSE_VOL_ERROR",
+                                                    "[Error: Volume must be 10-100]") + "\n");
+                                            }
+                                        } catch (...) {
+                                            print(translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                        }
+                                    }
+                                }
+                                break;
+                            
+                            case 'i':
+                            case 'I':
+                                {
+                                    print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_INT",
+                                        "Enter pulse interval in seconds (0.5-2.0, current: {0}): ", centerPulseInterval) + "> ");
+                                    std::string intInput;
+                                    if (readLine(intInput) && !intInput.empty()) {
+                                        try {
+                                            double interval = std::stod(intInput);
+                                            if (interval >= 0.5 && interval <= 2.0) {
+                                                smith->setCenterPulseInterval(interval);
+                                                cfg.center_pulse_interval = interval;
+                                                centerPulseInterval = interval;
+                                                print(translation.format("SMITH_CONFIG_CENTER_PULSE_INT_SET",
+                                                    "[Pulse interval set to {0} seconds]", interval) + "\n");
+                                                saveSettings();
+                                                settingsChanged = true;
+                                            } else {
+                                                print(translation.get("SMITH_CONFIG_CENTER_PULSE_INT_ERROR",
+                                                    "[Error: Interval must be 0.5-2.0]") + "\n");
+                                            }
+                                        } catch (...) {
+                                            print(translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                        }
+                                    }
+                                }
+                                break;
+                            
+                            case 'w':
+                            case 'W':
+                                {
+                                    print("\n" + translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_MENU", "=== Select Center Pulse Waveform ===") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_1", "  1 - Click (filtered noise - default, percussive)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_2", "  2 - Sine wave (clean, musical)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_3", "  3 - Square wave (bright, synthetic)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_4", "  4 - Triangle wave (warm, mellow)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_5", "  5 - Sawtooth wave (bright, rich)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_6", "  6 - Pulse wave (sharp, electronic)") + "\n\n");
+                                    print("> ");
+                                    
+                                    int waveChoice = _getch();
+                                    AppConfig::CenterPulseWaveform newWaveform = centerPulseWaveform;
+                                    const char* waveName = nullptr;
+                                    
+                                    switch (waveChoice) {
+                                        case '1': newWaveform = AppConfig::CenterPulseWaveform::CLICK; waveName = "Click"; break;
+                                        case '2': newWaveform = AppConfig::CenterPulseWaveform::SINE; waveName = "Sine wave"; break;
+                                        case '3': newWaveform = AppConfig::CenterPulseWaveform::SQUARE; waveName = "Square wave"; break;
+                                        case '4': newWaveform = AppConfig::CenterPulseWaveform::TRIANGLE; waveName = "Triangle wave"; break;
+                                        case '5': newWaveform = AppConfig::CenterPulseWaveform::SAWTOOTH; waveName = "Sawtooth wave"; break;
+                                        case '6': newWaveform = AppConfig::CenterPulseWaveform::PULSE; waveName = "Pulse wave"; break;
+                                    }
+                                    
+                                    if (waveName) {
+                                        smith->setCenterPulseWaveform(newWaveform);
+                                        cfg.center_pulse_waveform = newWaveform;
+                                        centerPulseWaveform = newWaveform;
+                                        print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_WAVE_SET",
+                                            "[Center pulse waveform set to: {0}]", waveName) + "\n");
+                                        saveSettings();
+                                        settingsChanged = true;
+                                    }
+                                }
+                                break;
+                            
+                            case 27:  // ESC
+                                break;
+                        }
+                    }
+                    break;
+                
+                case 'a':  // Axis events configuration
+                    {
+                        print("A\n\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_MENU", "=== Axis Crossing Events Configuration ===") + "\n");
+                        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_STATUS", "Current status: {0}",
+                            (axisEventsEnabled ? "ENABLED" : "DISABLED")) + "\n");
+                        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_VOL", "Volume: {0}%", axisEventsVolume) + "\n");
+                        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_DURATION", "Duration: {0} ms", axisEventsDuration) + "\n");
+                        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_PITCH", "Pitch range: {0}-{1} Hz",
+                            static_cast<int>(axisPitchMin), static_cast<int>(axisPitchMax)) + "\n");
+                        
+                        // Display sound type
+                        const char* soundName = "Unknown";
+                        switch (axisCrossingSound) {
+                            case AppConfig::AxisCrossingSound::PLUCK: soundName = "Pluck (string-like)"; break;
+                            case AppConfig::AxisCrossingSound::SWEEP: soundName = "Sweep (pure sine)"; break;
+                            case AppConfig::AxisCrossingSound::CHIRP: soundName = "Chirp (complex)"; break;
+                            case AppConfig::AxisCrossingSound::BELL: soundName = "Bell (resonant)"; break;
+                            case AppConfig::AxisCrossingSound::PERCUSSION: soundName = "Percussion (sharp)"; break;
+                        }
+                        print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_SOUND", "Sound type: {0}", soundName) + "\n\n");
+                        
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_COMMANDS", "Commands:") + "\n");
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_TOGGLE_CMD", "  T - Toggle axis events on/off") + "\n");
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_VOLUME_CMD", "  V - Set volume (10-100%)") + "\n");
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_DURATION_CMD", "  D - Set duration (50-500ms)") + "\n");
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_PITCH_CMD", "  P - Set pitch range") + "\n");
+                        print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_CMD", "  S - Select sound type") + "\n");
+                        print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+                        print("> ");
+                        
+                        int aeChoice = _getch();
+                        switch (aeChoice) {
+                            case 't':
+                            case 'T':
+                                axisEventsEnabled = !axisEventsEnabled;
+                                smith->setAxisEventsEnabled(axisEventsEnabled);
+                                cfg.axis_events_enabled = axisEventsEnabled;
+                                print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_TOGGLED",
+                                    "[Axis events: {0}]", (axisEventsEnabled ? "ENABLED" : "DISABLED")) + "\n");
+                                saveSettings();
+                                settingsChanged = true;
+                                break;
+                            
+                            case 'v':
+                            case 'V':
+                                {
+                                    print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_VOL",
+                                        "Enter axis events volume (10-100%, current: {0}%): ", axisEventsVolume) + "> ");
+                                    std::string volInput;
+                                    if (readLine(volInput) && !volInput.empty()) {
+                                        try {
+                                            int vol = std::stoi(volInput);
+                                            if (vol >= 10 && vol <= 100) {
+                                                smith->setAxisEventsVolume(vol);
+                                                cfg.axis_events_volume = vol;
+                                                axisEventsVolume = vol;
+                                                print(translation.format("SMITH_CONFIG_AXIS_EVENTS_VOL_SET",
+                                                    "[Axis events volume set to {0}%]", vol) + "\n");
+                                                saveSettings();
+                                                settingsChanged = true;
+                                            } else {
+                                                print(translation.get("SMITH_CONFIG_AXIS_EVENTS_VOL_ERROR",
+                                                    "[Error: Volume must be 10-100]") + "\n");
+                                            }
+                                        } catch (...) {
+                                            print(translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                        }
+                                    }
+                                }
+                                break;
+                            
+                            case 'd':
+                            case 'D':
+                                {
+                                    print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_DURATION",
+                                        "Enter axis events sound duration (50-500ms, current: {0}): ", axisEventsDuration) + "> ");
+                                    std::string durInput;
+                                    if (readLine(durInput) && !durInput.empty()) {
+                                        try {
+                                            int duration = std::stoi(durInput);
+                                            if (duration >= 50 && duration <= 500) {
+                                                smith->setAxisEventsDuration(duration);
+                                                cfg.axis_events_duration_ms = duration;
+                                                axisEventsDuration = duration;
+                                                print(translation.format("SMITH_CONFIG_AXIS_EVENTS_DURATION_SET",
+                                                    "[Axis events duration set to {0} ms]", duration) + "\n");
+                                                saveSettings();
+                                                settingsChanged = true;
+                                            } else {
+                                                print(translation.get("SMITH_CONFIG_AXIS_EVENTS_DURATION_ERROR",
+                                                    "[Error: Duration must be 50-500ms]") + "\n");
+                                            }
+                                        } catch (...) {
+                                            print(translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                        }
+                                    }
+                                }
+                                break;
+                            
+                            case 'p':
+                            case 'P':
+                                {
+                                    print("\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_PITCH_MENU", "Set pitch range:") + "\n");
+                                    print(translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MIN",
+                                        "Enter minimum pitch (200-1000 Hz, current: {0}): ", static_cast<int>(axisPitchMin)) + "> ");
+                                    std::string minInput;
+                                    if (readLine(minInput) && !minInput.empty()) {
+                                        try {
+                                            double pitchMin = std::stod(minInput);
+                                            print(translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MAX",
+                                                "Enter maximum pitch (400-2000 Hz, current: {0}): ", static_cast<int>(axisPitchMax)) + "> ");
+                                            std::string maxInput;
+                                            if (readLine(maxInput) && !maxInput.empty()) {
+                                                double pitchMax = std::stod(maxInput);
+                                                if (pitchMin >= 200.0 && pitchMin <= 1000.0 && 
+                                                    pitchMax >= 400.0 && pitchMax <= 2000.0 &&
+                                                    pitchMin < pitchMax) {
+                                                    smith->setAxisEventsPitchRange(pitchMin, pitchMax);
+                                                    cfg.axis_events_pitch_min = pitchMin;
+                                                    cfg.axis_events_pitch_max = pitchMax;
+                                                    axisPitchMin = pitchMin;
+                                                    axisPitchMax = pitchMax;
+                                                    print(translation.format("SMITH_CONFIG_AXIS_EVENTS_PITCH_SET",
+                                                        "[Pitch range set to {0}-{1} Hz]", 
+                                                        static_cast<int>(pitchMin), static_cast<int>(pitchMax)) + "\n");
+                                                    saveSettings();
+                                                    settingsChanged = true;
+                                                } else {
+                                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_PITCH_ERROR",
+                                                        "[Error: Invalid pitch range]") + "\n");
+                                                }
+                                            }
+                                        } catch (...) {
+                                            print(translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
+                                        }
+                                    }
+                                }
+                                break;
+                            
+                            case 's':
+                            case 'S':
+                                {
+                                    print("\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_MENU", "=== Select Axis Crossing Sound ===") + "\n");
+                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_1", "  1 - Pluck (string-like, natural - default)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_2", "  2 - Sweep (pure sine, directional)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_3", "  3 - Chirp (complex, attention-grabbing)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_4", "  4 - Bell (resonant, pleasant)") + "\n");
+                                    print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_5", "  5 - Percussion (sharp, distinctive)") + "\n\n");
+                                    print("> ");
+                                    
+                                    int soundChoice = _getch();
+                                    AppConfig::AxisCrossingSound newSound = axisCrossingSound;
+                                    const char* soundTypeName = nullptr;
+                                    
+                                    switch (soundChoice) {
+                                        case '1': newSound = AppConfig::AxisCrossingSound::PLUCK; soundTypeName = "Pluck"; break;
+                                        case '2': newSound = AppConfig::AxisCrossingSound::SWEEP; soundTypeName = "Sweep"; break;
+                                        case '3': newSound = AppConfig::AxisCrossingSound::CHIRP; soundTypeName = "Chirp"; break;
+                                        case '4': newSound = AppConfig::AxisCrossingSound::BELL; soundTypeName = "Bell"; break;
+                                        case '5': newSound = AppConfig::AxisCrossingSound::PERCUSSION; soundTypeName = "Percussion"; break;
+                                    }
+                                    
+                                    if (soundTypeName) {
+                                        smith->setAxisCrossingSound(newSound);
+                                        cfg.axis_crossing_sound = newSound;
+                                        axisCrossingSound = newSound;
+                                        print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_SOUND_SET",
+                                            "[Axis crossing sound set to: {0}]", soundTypeName) + "\n");
+                                        saveSettings();
+                                        settingsChanged = true;
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                    break;
+                
+                case 's':  // Surround configuration (only if not stereo)
+                    if (audioCap != AudioCapability::STEREO_ONLY) {
+                        print("S\n");
+                        bool surroundChanged = runSurroundConfigurationScreen(smith);
+                        if (surroundChanged) {
+                            settingsChanged = true;
+                        }
+                    }
+                    break;
+                
+                case 'p':  // Preview
+                    {
+                        print("P\n" + translation.get("SMITH_CONFIG_PREVIEW_MSG", 
+                            "[Playing preview... Press any key to stop]") + "\n");
+                        
+                        // TODO: Implement preview playback
+                        print(translation.get("SMITH_CONFIG_PREVIEW_TODO", "[Preview not yet implemented in this screen]") + "\n");
+                        _getch();
+                    }
+                    break;
+                
+                case 'h':  // Help
+                    print(translation.get("SMITH_CONFIG_HELP_TITLE", "\n=== Smith Audio Configuration Help ===") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_VOLUME", "V - Set volume for Smith ambient cues (10-100%)") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_NOISE", "N - Change sound type (Pink/White/Brown/Sine)") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_PINK", "    Pink: Warm, filtered (default, recommended)") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_WHITE", "    White: Bright, full spectrum") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_BROWN", "    Brown: Dark, low frequencies") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_SINE", "    Sine: Pure tone, musical") + "\n");
+                    print(translation.get("SMITH_CONFIG_HELP_PREVIEW", "P - Preview current settings") + "\n");
+                    break;
+                
+                case 27:  // ESC
+                    running = false;
+                    break;
+            }
+            
+            if (running) {
+                print(getPromptWithDepth("SMITH_CONFIG_PROMPT", 4) + " ");
+            }
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    print("\n");
+    return settingsChanged;
+}
+
+// Surround sound configuration screen
+bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
+    print("\n=== " + translation.get("SURROUND_CONFIG_TITLE", "Surround Sound Configuration") + " ===\n");
+    
+    if (!smith) {
+        print(translation.get("SURROUND_CONFIG_NO_SMITH", "[Error: Smith visualizer not available]") + "\n");
+        return false;
+    }
+    
+    bool running = true;
+    bool settingsChanged = false;
+    
+    while (running) {
+        // Display current settings
+        print("\n" + translation.get("SURROUND_CONFIG_CURRENT", "Current Settings:") + "\n");
+        print(translation.format("SURROUND_CONFIG_FRONT_DIST", "  Front distance factor: {0}%", cfg.surround_front_distance) + "\n");
+        print(translation.format("SURROUND_CONFIG_BACK_DIST", "  Back distance factor: {0}%", cfg.surround_back_distance) + "\n");
+        print(translation.format("SURROUND_CONFIG_SIDE_DIST", "  Side distance factor: {0}%", cfg.surround_side_distance) + "\n");
+        print(translation.format("SURROUND_CONFIG_CENTER_STR", "  Center channel strength: {0}%", cfg.surround_center_strength) + "\n");
+        print(translation.format("SURROUND_CONFIG_FB_SEP", "  Front/Back separation: {0}%", cfg.surround_fb_separation) + "\n");
+        print(translation.format("SURROUND_CONFIG_SIDE_EMP", "  Side channel emphasis: {0}%", cfg.surround_side_emphasis) + "\n");
+        
+        const char* curveName = "";
+        switch (cfg.surround_fading_curve) {
+            case AppConfig::SurroundFadingCurve::LINEAR: curveName = "Linear"; break;
+            case AppConfig::SurroundFadingCurve::LOGARITHMIC: curveName = "Logarithmic"; break;
+            case AppConfig::SurroundFadingCurve::EXPONENTIAL: curveName = "Exponential"; break;
+            case AppConfig::SurroundFadingCurve::SINE: curveName = "Sine"; break;
+        }
+        print(translation.format("SURROUND_CONFIG_FADING", "  Fading curve: {0}", curveName) + "\n\n");
+        
+        print(translation.get("SURROUND_CONFIG_COMMANDS", "Commands:") + "\n");
+        print(translation.get("SURROUND_CONFIG_FRONT_CMD", "  F - Configure Front distance (50-200%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_BACK_CMD", "  B - Configure Back distance (50-200%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_SIDE_CMD", "  I - Configure Side distance (50-200%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_CENTER_CMD", "  C - Configure Center strength (0-100%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_FB_SEP_CMD", "  S - Configure front/back Separation (50-200%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_SIDE_EMP_CMD", "  E - Configure side channel Emphasis (50-200%)") + "\n");
+        print(translation.get("SURROUND_CONFIG_FADING_CMD", "  V - Configure fading curVe (Linear/Log/Exp/Sine)") + "\n");
+        print(translation.get("SURROUND_CONFIG_RESET_CMD", "  R - Reset to defaults") + "\n");
+        print(translation.get("HELP_COMMAND", "  H - Help") + "\n");
+        print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+        
+        print(getPromptWithDepth("SURROUND_CONFIG_PROMPT", 5) + " ");
+        
+        int ch = _getch();
+        if (ch == 0 || ch == 224) {
+            if (_kbhit()) _getch();
+            continue;
+        }
+        
+        char key = static_cast<char>(ch);
+        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+        
+        switch (key) {
+            case 'f':  // Front distance
+                {
+                    print("F\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_FRONT", 
+                        "Enter front distance factor (50-200%, current: {0}%):", cfg.surround_front_distance), value)) {
+                        if (value >= 50 && value <= 200) {
+                            cfg.surround_front_distance = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_FRONT_SET", "[Front distance set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_RANGE_ERROR", "[Error: Value must be between 50 and 200]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 'b':  // Back distance
+                {
+                    print("B\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_BACK", 
+                        "Enter back distance factor (50-200%, current: {0}%):", cfg.surround_back_distance), value)) {
+                        if (value >= 50 && value <= 200) {
+                            cfg.surround_back_distance = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_BACK_SET", "[Back distance set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_RANGE_ERROR", "[Error: Value must be between 50 and 200]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 'i':  // Side distance
+                {
+                    print("I\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_SIDE", 
+                        "Enter side distance factor (50-200%, current: {0}%):", cfg.surround_side_distance), value)) {
+                        if (value >= 50 && value <= 200) {
+                            cfg.surround_side_distance = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_SIDE_SET", "[Side distance set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_RANGE_ERROR", "[Error: Value must be between 50 and 200]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 'c':  // Center strength
+                {
+                    print("C\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_CENTER", 
+                        "Enter center strength (0-100%, current: {0}%):", cfg.surround_center_strength), value)) {
+                        if (value >= 0 && value <= 100) {
+                            cfg.surround_center_strength = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_CENTER_SET", "[Center strength set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_CENTER_ERROR", "[Error: Value must be between 0 and 100]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 's':  // FB separation
+                {
+                    print("S\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_FB_SEP", 
+                        "Enter front/back separation (50-200%, current: {0}%):", cfg.surround_fb_separation), value)) {
+                        if (value >= 50 && value <= 200) {
+                            cfg.surround_fb_separation = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_FB_SEP_SET", "[F/B separation set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_RANGE_ERROR", "[Error: Value must be between 50 and 200]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 'e':  // Side emphasis
+                {
+                    print("E\n");
+                    int value;
+                    if (readNumericInput(translation.format("SURROUND_CONFIG_ENTER_SIDE_EMP", 
+                        "Enter side channel emphasis (50-200%, current: {0}%):", cfg.surround_side_emphasis), value)) {
+                        if (value >= 50 && value <= 200) {
+                            cfg.surround_side_emphasis = value;
+                            smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                    cfg.surround_side_distance, cfg.surround_center_strength,
+                                                    cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                    cfg.surround_fading_curve);
+                            saveSettings();
+                            settingsChanged = true;
+                            print(translation.format("SURROUND_CONFIG_SIDE_EMP_SET", "[Side emphasis set to: {0}%]", value) + "\n");
+                        } else {
+                            print(translation.get("SURROUND_CONFIG_RANGE_ERROR", "[Error: Value must be between 50 and 200]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 'v':  // Fading curve
+                {
+                    print("V\n\n" + translation.get("SURROUND_CONFIG_FADING_MENU", "=== Select Fading Curve ===") + "\n");
+                    print(translation.get("SURROUND_CONFIG_FADING_1", "  1 - Linear (equal perceived movement)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_FADING_2", "  2 - Logarithmic (more emphasis on center)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_FADING_3", "  3 - Exponential (more emphasis on edges)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_FADING_4", "  4 - Sine (smooth, natural transition)") + "\n");
+                    print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
+                    print("> ");
+                    
+                    int curveChoice = _getch();
+                    if (curveChoice >= '1' && curveChoice <= '4') {
+                        AppConfig::SurroundFadingCurve newCurve;
+                        const char* newCurveName = "";
+                        
+                        switch (curveChoice) {
+                            case '1': 
+                                newCurve = AppConfig::SurroundFadingCurve::LINEAR;
+                                newCurveName = "Linear";
+                                break;
+                            case '2': 
+                                newCurve = AppConfig::SurroundFadingCurve::LOGARITHMIC;
+                                newCurveName = "Logarithmic";
+                                break;
+                            case '3': 
+                                newCurve = AppConfig::SurroundFadingCurve::EXPONENTIAL;
+                                newCurveName = "Exponential";
+                                break;
+                            case '4': 
+                                newCurve = AppConfig::SurroundFadingCurve::SINE;
+                                newCurveName = "Sine";
+                                break;
+                        }
+                        
+                        cfg.surround_fading_curve = newCurve;
+                        smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                                cfg.surround_side_distance, cfg.surround_center_strength,
+                                                cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                                cfg.surround_fading_curve);
+                        saveSettings();
+                        settingsChanged = true;
+                        print("\n" + translation.format("SURROUND_CONFIG_FADING_SET", 
+                            "[Fading curve changed to: {0}]", newCurveName) + "\n");
+                    }
+                }
+                break;
+                
+            case 'r':  // Reset to defaults
+                {
+                    print("R\n");
+                    cfg.surround_front_distance = 100;
+                    cfg.surround_back_distance = 100;
+                    cfg.surround_side_distance = 100;
+                    cfg.surround_center_strength = 50;
+                    cfg.surround_fb_separation = 100;
+                    cfg.surround_side_emphasis = 100;
+                    cfg.surround_fading_curve = AppConfig::SurroundFadingCurve::LINEAR;
+                    
+                    smith->setSurroundConfig(cfg.surround_front_distance, cfg.surround_back_distance,
+                                            cfg.surround_side_distance, cfg.surround_center_strength,
+                                            cfg.surround_fb_separation, cfg.surround_side_emphasis,
+                                            cfg.surround_fading_curve);
+                    saveSettings();
+                    settingsChanged = true;
+                    print(translation.get("SURROUND_CONFIG_RESET_DONE", "[Surround settings reset to defaults]") + "\n");
+                }
+                break;
+                
+            case 'h':  // Help
+                {
+                    print("H\n\n" + translation.get("SURROUND_CONFIG_HELP_TITLE", "=== Surround Configuration Help ===") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_DESC", 
+                        "Configure spatial audio parameters for optimal Smith diagram localization.") + "\n\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_FRONT", 
+                        "F - Front distance: Perceived distance to front speakers (50-200%)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_BACK", 
+                        "B - Back distance: Perceived distance to back speakers (50-200%)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_SIDE", 
+                        "I - Side distance: Perceived distance to side speakers (50-200%)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_CENTER", 
+                        "C - Center strength: Center channel strength (0-100%, 0=off)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_FB_SEP", 
+                        "S - F/B separation: Front/back distinction enhancement (50-200%)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_SIDE_EMP", 
+                        "E - Side emphasis: 90° localization emphasis (50-200%)") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_FADING", 
+                        "V - Fading curve: Spatial movement perception curve") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_RESET", 
+                        "R - Reset all settings to defaults") + "\n\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_TIP", 
+                        "Tip: Start with defaults, then adjust front/back separation if") + "\n");
+                    print(translation.get("SURROUND_CONFIG_HELP_TIP2", 
+                        "     front and back sound too similar.") + "\n");
+                }
+                break;
+                
+            case 27:  // ESC
+                running = false;
+                break;
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    print("\n");
+    return settingsChanged;
 }
 
 // Duration configuration submenu
@@ -2992,14 +4003,16 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     }
     
     print(translation.get("AUDIO_CONFIG_VOLUME_CMD", "  V - Configure Volume for individual curves") + "\n");
+    print(translation.get("AUDIO_CONFIG_SMITH_CMD", "  S - Configure Smith diagram audio settings") + "\n");
     print(translation.get("AUDIO_CONFIG_RULER_CMD", "  A - Configure Y-Axis Ruler settings") + "\n");
     print(translation.get("AUDIO_CONFIG_X_RULER_CMD", "  X - Configure X-Axis Ruler settings") + "\n");
     print(translation.get("AUDIO_CONFIG_STATUS_LINE_CMD", "  N - Configure Status Line settings") + "\n");
+    print(translation.get("AUDIO_CONFIG_SPATIAL_WIZARD_CMD", "  W - Run Spatial Audio Calibration Wizard (recommended!)") + "\n");
     
     // MIDI-specific commands for interpolated panning
     if (cfg.audio_engine == AudioEngineType::MIDI) {
         print(translation.get("AUDIO_CONFIG_MIDI_INTERP_PAN_CMD", "  I - Toggle MIDI interpolated panning") + "\n");
-        print(translation.get("AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD", "  S - Set MIDI interpolation strength") + "\n");
+        print(translation.get("AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD", "  T - Set MIDI interpolation strength") + "\n");
     }
     
     // Context-sensitive preview message
@@ -3809,6 +4822,26 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     }
                     break;
                 
+                case 's':  // Smith Configuration
+                    {
+                        runSmithConfigurationScreen(analyzer);
+                    }
+                    break;
+                
+                case 'w':  // Spatial Audio Calibration Wizard
+                    {
+                        if (analyzer) {
+                            print("\n" + translation.get("SPATIAL_WIZARD_STARTING", "[Starting Spatial Audio Calibration Wizard...]") + "\n");
+                            bool wizardCompleted = runSpatialAudioCalibrationWizard(analyzer);
+                            if (wizardCompleted) {
+                                print("\n" + translation.get("SPATIAL_WIZARD_COMPLETED", "[Calibration completed and saved]") + "\n");
+                            }
+                        } else {
+                            print("\n" + translation.get("ERROR_NO_ANALYZER", "[Error: Audio analyzer not available]") + "\n");
+                        }
+                    }
+                    break;
+                
                 case 'a':  // Ruler configuration
                     {
                         print("\n=== " + translation.get("RULER_CONFIG_TITLE", "Y-Axis Ruler Configuration") + " ===\n");
@@ -4368,10 +5401,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     }
                     break;
                 
-                case 's':  // Set MIDI interpolation strength
+                case 't':  // Set MIDI interpolation strength
                     {
                         if (cfg.audio_engine == AudioEngineType::MIDI) {
-                            print("S\n\n" + translation.get("MIDI_INTERP_STRENGTH_TITLE", 
+                            print("T\n\n" + translation.get("MIDI_INTERP_STRENGTH_TITLE", 
                                 "=== Configure MIDI Interpolation Strength ===") + "\n");
                             print(translation.format("MIDI_INTERP_STRENGTH_CURRENT", 
                                 "Current strength: {0}", cfg.midi_interpolation_strength) + "\n");
@@ -4613,7 +5646,7 @@ void ConsoleUI::languageSelectionMenu() {
         if (languages[i].first == cfg.language) {
             marker = " [CURRENT]";
         }
-        print((i + 1) + ") " + languages[i].second + " (" + languages[i].first + ")" + marker + "\n");
+        print(std::to_string(i + 1) + ") " + languages[i].second + " (" + languages[i].first + ")" + marker + "\n");
     }
     
     print("\n" + translation.get("LANG_PROMPT", "Enter language number (or press Enter to cancel): ") + " ");
@@ -4676,7 +5709,7 @@ void ConsoleUI::bandplanSelectionMenu() {
         if (bandplans[i].first == cfg.bandplan) {
             marker = " [CURRENT]";
         }
-        print((i + 1) + ") " + bandplans[i].second + " (" + bandplans[i].first + ")" + marker + "\n");
+        print(std::to_string(i + 1) + ") " + bandplans[i].second + " (" + bandplans[i].first + ")" + marker + "\n");
     }
     
     print("\n" + translation.get("BANDPLAN_PROMPT", "Enter band plan number (or press Enter to cancel): ") + " ");
@@ -5548,7 +6581,7 @@ void ConsoleUI::runFirstStartWizard() {
             if (languages[i].first == selectedLang) {
                 marker = " [*]";
             }
-            print((i + 1) + ") " + languages[i].second + " (" + languages[i].first + ")" + marker + "\n");
+            print(std::to_string(i + 1) + ") " + languages[i].second + " (" + languages[i].first + ")" + marker + "\n");
         }
         
         print("\n" + translation.get("FIRST_START_ENTER_NUMBER", "Enter number: ") + "> ");
@@ -5580,7 +6613,7 @@ void ConsoleUI::runFirstStartWizard() {
     if (!bandplans.empty()) {
         // Show band plans with descriptions
         for (size_t i = 0; i < bandplans.size(); ++i) {
-            print((i + 1) + ") " + bandplans[i].second + " (" + bandplans[i].first + ")");
+            print(std::to_string(i + 1) + ") " + bandplans[i].second + " (" + bandplans[i].first + ")");
             
             // Add description if available
             if (bandplans[i].first == "usa") {
@@ -6351,4 +7384,218 @@ bool ConsoleUI::readLine(std::string& result) {
     
     // Fallback to standard getline (no web interface or non-Windows)
     return std::getline(std::cin, result).good();
+}
+
+void ConsoleUI::documentationMenu() {
+    print("\n=== " + translation.get("DOCS_MENU_TITLE", "Manuals and Training") + " ===\n");
+    print(translation.get("DOCS_MENU_MANUAL", "1. Open User Manual") + "\n");
+    print(translation.get("DOCS_MENU_TRAINING", "2. Open Training Suite") + "\n");
+    print(translation.get("DOCS_MENU_BETA", "3. Open Beta Test Instructions") + "\n");
+    print(translation.get("DOCS_MENU_FEEDBACK", "4. Feedback to Developer") + "\n");
+    print(translation.get("DOCS_MENU_BACK", "ESC - Back to Main Menu") + "\n\n");
+    
+    print(translation.get("DOCS_MENU_PROMPT", "Select an option (1-4, or ESC to go back):") + " > ");
+    
+#if defined(_WIN32)
+    while (true) {
+        if (_kbhit()) {
+            char key = static_cast<char>(_getch());
+            if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+            
+            if (key == 27) {  // ESC
+                print("\n");
+                return;
+            } else if (key == '1') {
+                print("1\n");
+                std::string docPath = translation.get("DOC_PATH_MANUAL", "doc/manuals/USER_MANUAL_EN.html");
+                openDocumentation(docPath);
+                return;
+            } else if (key == '2') {
+                print("2\n");
+                std::string docPath = translation.get("DOC_PATH_TRAINING", "doc/training/en/Training_Index.html");
+                openDocumentation(docPath);
+                return;
+            } else if (key == '3') {
+                print("3\n");
+                std::string docPath = translation.get("DOC_PATH_BETA", "doc/beta-testing/BETA_TESTING_EN.html");
+                openDocumentation(docPath);
+                return;
+            } else if (key == '4') {
+                print("4\n");
+                feedbackToDeveloper();
+                return;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+#else
+    std::string input;
+    if (!std::getline(std::cin, input)) return;
+    if (input.empty() || input == "esc") return;
+    
+    if (input == "1") {
+        std::string docPath = translation.get("DOC_PATH_MANUAL", "doc/manuals/USER_MANUAL_EN.html");
+        openDocumentation(docPath);
+    } else if (input == "2") {
+        std::string docPath = translation.get("DOC_PATH_TRAINING", "doc/training/en/Training_Index.html");
+        openDocumentation(docPath);
+    } else if (input == "3") {
+        std::string docPath = translation.get("DOC_PATH_BETA", "doc/beta-testing/BETA_TESTING_EN.html");
+        openDocumentation(docPath);
+    } else if (input == "4") {
+        feedbackToDeveloper();
+    }
+#endif
+}
+
+void ConsoleUI::openDocumentation(const std::string& docPath) {
+    print(translation.get("DOC_OPENED", "Opening documentation in browser...") + "\n");
+    
+    // Check if file exists
+    if (!std::filesystem::exists(docPath)) {
+        print(translation.format("ERROR_DOC_NOT_FOUND", "Error: Documentation file not found: {0}", docPath) + "\n");
+        if (logger) logger->log("UI", "Documentation file not found: " + docPath);
+        return;
+    }
+    
+    // Get absolute path
+    std::filesystem::path absPath = std::filesystem::absolute(docPath);
+    std::string pathStr = absPath.string();
+    
+#if defined(_WIN32)
+    // On Windows, use ShellExecute to open in default browser
+    HINSTANCE result = ShellExecuteA(NULL, "open", pathStr.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    if ((INT_PTR)result <= 32) {
+        print(translation.get("ERROR_BROWSER_FAILED", "Error: Could not open browser.") + "\n");
+        if (logger) logger->log("UI", "Failed to open browser for: " + pathStr);
+    } else {
+        if (logger) logger->log("UI", "Opened documentation: " + pathStr);
+    }
+#else
+    // On Linux/Mac, use xdg-open or open
+    std::string cmd = "xdg-open \"" + pathStr + "\" 2>/dev/null || open \"" + pathStr + "\"";
+    int result = system(cmd.c_str());
+    if (result != 0) {
+        print(translation.get("ERROR_BROWSER_FAILED", "Error: Could not open browser.") + "\n");
+        if (logger) logger->log("UI", "Failed to open browser for: " + pathStr);
+    } else {
+        if (logger) logger->log("UI", "Opened documentation: " + pathStr);
+    }
+#endif
+}
+
+void ConsoleUI::feedbackToDeveloper() {
+    print("\n=== " + translation.get("FEEDBACK_MENU_TITLE", "Feedback to Developer") + " ===\n");
+    print(translation.get("FEEDBACK_ATTACH_QUESTION", "Would you like to attach logs and configuration files? (y/n):") + " ");
+    
+    bool attachFiles = false;
+    
+#if defined(_WIN32)
+    while (true) {
+        if (_kbhit()) {
+            char key = static_cast<char>(_getch());
+            if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+            
+            std::string yesKey = translation.get("YES_KEY", "y");
+            std::string noKey = translation.get("NO_KEY", "n");
+            
+            if (key == yesKey[0] || key == 'y') {
+                print(std::string(1, key) + "\n");
+                attachFiles = true;
+                break;
+            } else if (key == noKey[0] || key == 'n') {
+                print(std::string(1, key) + "\n");
+                attachFiles = false;
+                break;
+            } else if (key == 27) {  // ESC
+                print("\n");
+                return;
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+#else
+    std::string input;
+    if (!std::getline(std::cin, input)) return;
+    if (input.empty()) return;
+    
+    std::string yesKey = translation.get("YES_KEY", "y");
+    char inputChar = input[0];
+    if (inputChar >= 'A' && inputChar <= 'Z') inputChar = inputChar - 'A' + 'a';
+    
+    attachFiles = (inputChar == yesKey[0] || inputChar == 'y');
+#endif
+    
+    // Show warning message about manual attachment BEFORE opening email
+    if (attachFiles) {
+        print("\n" + translation.get("FEEDBACK_ATTACHMENTS_WARNING", 
+            "IMPORTANT: Email clients cannot attach files automatically.\nYou will need to manually attach the following folders after the email opens:") + "\n");
+        print("  - config/*\n");
+        print("  - logs/*\n");
+        print("  - Export/* (if relevant)\n\n");
+        print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to cancel, or any other key to continue...") + " ");
+        
+#if defined(_WIN32)
+        while (true) {
+            if (_kbhit()) {
+                char key = static_cast<char>(_getch());
+                if (key == 27) {  // ESC
+                    print("\n");
+                    return;
+                }
+                print("\n");
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+#else
+        std::string dummy;
+        std::getline(std::cin, dummy);
+#endif
+    }
+    
+    print(translation.get("FEEDBACK_PREPARING", "Preparing email...") + "\n");
+    
+    // Prepare email
+    std::string emailAddress = "do9re@hotmail.com";
+    std::string subject = "NanoVNA CLI Accessible - Feedback";
+    std::string body = "Hello,%0D%0A%0D%0APlease describe your feedback here:%0D%0A%0D%0A";
+    
+    if (attachFiles) {
+        body += "%0D%0A--- Please attach the following files ----%0D%0A";
+        body += "- config/*%0D%0A";
+        body += "- logs/*%0D%0A";
+        body += "- Export/* (if relevant)%0D%0A%0D%0A";
+    }
+    
+    std::string mailtoUrl = "mailto:" + emailAddress + "?subject=" + subject + "&body=" + body;
+    
+#if defined(_WIN32)
+    HINSTANCE result = ShellExecuteA(NULL, "open", mailtoUrl.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    if ((INT_PTR)result <= 32) {
+        print(translation.get("FEEDBACK_ERROR", "Error opening email client.") + "\n");
+        if (logger) logger->log("UI", "Failed to open email client");
+    } else {
+        print(translation.get("FEEDBACK_EMAIL_PREPARED", "Email client has been opened. Please add your message and send the email.") + "\n");
+        if (attachFiles) {
+            print(translation.get("FEEDBACK_ATTACHMENTS_INFO", 
+                "The following files should be attached:\n  - config/*\n  - logs/*\n  - Export/*\n\nPlease manually attach these folders to your email.") + "\n");
+        }
+        if (logger) logger->log("UI", "Opened email client for feedback");
+    }
+#else
+    std::string cmd = "xdg-open \"" + mailtoUrl + "\" 2>/dev/null || open \"" + mailtoUrl + "\"";
+    int result = system(cmd.c_str());
+    if (result != 0) {
+        print(translation.get("FEEDBACK_ERROR", "Error opening email client.") + "\n");
+        if (logger) logger->log("UI", "Failed to open email client");
+    } else {
+        print(translation.get("FEEDBACK_EMAIL_PREPARED", "Email client has been opened. Please add your message and send the email.") + "\n");
+        if (attachFiles) {
+            print(translation.get("FEEDBACK_ATTACHMENTS_INFO", 
+                "The following files should be attached:\n  - config/*\n  - logs/*\n  - Export/*\n\nPlease manually attach these folders to your email.") + "\n");
+        }
+        if (logger) logger->log("UI", "Opened email client for feedback");
+    }
+#endif
 }

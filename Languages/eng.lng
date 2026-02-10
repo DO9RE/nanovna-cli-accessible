@@ -2,6 +2,32 @@
 # NanoVNA CLI Accessible - English Translation
 # Format: KEY=Value
 
+# ========================================
+# Menu Keys (Consolidated)
+# All menu key bindings are defined here for easy maintenance
+# ========================================
+
+# Main menu keys
+MENU_KEY_SUMMARY=s
+MENU_KEY_TABLE=t
+MENU_KEY_ACOUSTIC=a
+MENU_KEY_EXPORT=e
+MENU_KEY_LOAD=l
+MENU_KEY_CALIBRATE=k
+MENU_KEY_PORT=p
+MENU_KEY_RANGE=r
+MENU_KEY_DEVICE_INFO=d
+MENU_KEY_MANUAL=m
+MENU_KEY_OPTIONS=o
+MENU_KEY_SWEEP=w
+MENU_KEY_HELP=h
+MENU_KEY_QUIT=q
+
+# Special menu keys
+MENU_KEY_COMFORT=u
+MENU_KEY_WEB_INTERFACE=i
+MENU_KEY_DOCS=?
+
 # Technical terms (unit labels)
 OHM_TEXT=Ohm
 DEGREE_TEXT=degree
@@ -19,20 +45,6 @@ PORT_CHOOSE_PROMPT=Choose port number (or press Enter to cancel):
 DEVICE_INFO_PROMPT=Device Info
 
 # Main menu keys (lowercase)
-MENU_KEY_SUMMARY=s
-MENU_KEY_TABLE=t
-MENU_KEY_ACOUSTIC=a
-MENU_KEY_EXPORT=e
-MENU_KEY_LOAD=l
-MENU_KEY_CALIBRATE=k
-MENU_KEY_PORT=p
-MENU_KEY_RANGE=r
-MENU_KEY_DEVICE_INFO=d
-MENU_KEY_MANUAL=m
-MENU_KEY_OPTIONS=o
-MENU_KEY_SWEEP=w
-MENU_KEY_HELP=h
-MENU_KEY_QUIT=q
 
 # Yes/No input keys
 YES_KEY=y
@@ -385,88 +397,12 @@ MSG_UNKNOWN_COMMAND=Unknown command. Press H for help.
 # Help texts
 HELP_CMD_LINE=NanoVNA-CLI-Accessible - Accessible Console Application for NanoVNA-H4\n\nUsage: nanovna-cli.exe [OPTIONS]\n\nCommand Line Options:\n  -h, --help              Show this help message\n  -d                      Enable debug logging (logs to logs/ directory)\n  -p, --port PORT         Specify serial port (e.g., COM4)\n  --baud RATE             Set baud rate (default: 9600)\n  --start FREQ            Set start frequency (e.g., 144M or 144000000)\n  --end FREQ              Set end frequency (e.g., 146M or 146000000)\n  --step FREQ             Set frequency step (e.g., 1K or 1000)\n  --autostart             Automatically perform measurement on startup\n  --no-audio              Disable audio output\n  --config FILE           Specify config file path (default: config/command_templates.cfg)\n\nExamples:\n  Interactive mode:\n    nanovna-cli.exe -d\n\n  Direct measurement:\n    nanovna-cli.exe -d -p COM4 --start 144M --end 146M --step 1K --autostart\n    nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autostart\n\nConfiguration:\n  Settings are stored in: config/app_settings.cfg\n  Command templates in: config/command_templates.cfg\n  Debug logs in: logs/\n  Export files in: Export/\n\nMain Menu Commands:\n  Press 'H' in any screen for context-sensitive help.
 
-HELP_MAIN_MENU_TITLE=== Main Menu Help ===
-HELP_MAIN_MENU_COMMANDS=Available Commands:
-HELP_MAIN_MENU_CMD_SUMMARY=  S - Summary       Display measurement summary (min/max/avg SWR)
-HELP_MAIN_MENU_CMD_TABLE=  T - Table         View measurement data in table format with pagination
-HELP_MAIN_MENU_CMD_ACOUSTIC=  A - Acoustic      Enter acoustic analysis mode for audio representation
-HELP_MAIN_MENU_CMD_EXPORT=  E - Export        Export measurement data to CSV or TXT format
-HELP_MAIN_MENU_CMD_LOAD=  L - Load          Load previously exported measurement data
-HELP_MAIN_MENU_CMD_CALIBRATE=  K - Kalibrate     Start calibration flow (Open/Short/Load)
-HELP_MAIN_MENU_CMD_PORT=  P - Port          Select and configure serial port
-HELP_MAIN_MENU_CMD_RANGE=  R - Range         Set frequency range and perform scan
-HELP_MAIN_MENU_CMD_DEVICE=  D - Device Info   View device information and battery status
-HELP_MAIN_MENU_CMD_MANUAL=  M - Manual        Perform manual measurement with current settings
-HELP_MAIN_MENU_CMD_HELP=  H - Help          Show this help message
-HELP_MAIN_MENU_CMD_QUIT=  Q - Quit          Exit the application
-HELP_MAIN_MENU_TIPS=Tips:\n  - Use 'R' to set frequency range before taking measurements\n  - Use 'T' then 'C' to customize table columns\n  - Use 'A' for acoustic analysis after measurements\n  - Use 'E' to export data, 'L' to load it later\n  - Press 'H' in any screen for context-specific help
 
-HELP_ACOUSTIC_TITLE=== Acoustic Analysis Help ===
-HELP_ACOUSTIC_PLAYBACK=Playback Control:
-HELP_ACOUSTIC_PLAY=  SPACE       Play / Pause (hard pause - silence)
-HELP_ACOUSTIC_FREEZE=  F           Freeze (static audio at current position)
-HELP_ACOUSTIC_STOP=  S           Stop and reset to start
-HELP_ACOUSTIC_TOGGLE_MODE=  T           Toggle smooth/dotted playback
-HELP_ACOUSTIC_TIME=  +/-         Increase/decrease playback time (in seconds)
-HELP_ACOUSTIC_NAVIGATION=Navigation:
-HELP_ACOUSTIC_NAV_LR=  Left/Right         Move ±1 point
-HELP_ACOUSTIC_NAV_CTRL=  Ctrl+Left/Right    Move ±10 points
-HELP_ACOUSTIC_NAV_SHIFT=  Ctrl+Shift+L/R     Move ±100 points
-HELP_ACOUSTIC_LOOP=Loop Control:
-HELP_ACOUSTIC_LOOP_LEFT=  L           Set left loop marker
-HELP_ACOUSTIC_LOOP_RIGHT=  R           Set right loop marker
-HELP_ACOUSTIC_LOOP_TOGGLE=  O           Toggle loop playback
-HELP_ACOUSTIC_LOOP_ZOOM=  Z           Toggle loop zoom (centers loop in stereo, applies full time to loop)
-HELP_ACOUSTIC_CONTINUOUS=  C           Toggle continuous replay
-HELP_ACOUSTIC_CURVES=Curves (1-5: toggle, Ctrl+digit: vol-, Shift+digit: vol+):
-HELP_ACOUSTIC_CURVE1=  1           SWR (Sine wave, stereo pan)
-HELP_ACOUSTIC_CURVE2=  2           Return Loss (Pure sine, stereo pan)
-HELP_ACOUSTIC_CURVE3=  3           Impedance |Z| (Triangle wave, stereo pan)
-HELP_ACOUSTIC_CURVE4=  4           Reactance X (Sawtooth, stereo pan)
-HELP_ACOUSTIC_CURVE5=  5           Phase (Sine with stereo pan)
-HELP_ACOUSTIC_AUDIO_CONFIG=Audio Configuration:
-HELP_ACOUSTIC_AUDIO_Y=  A           Open audio configuration screen\n              - Toggle Synthesizer/MIDI engine\n              - Configure frequency range for Synthesizer (R)\n              - Configure MIDI instruments per curve\n              - Preview MIDI sounds
-HELP_ACOUSTIC_OTHER=Other:
-HELP_ACOUSTIC_RULER=  Y           Play acoustic Y-axis ruler (ascending scale reference)
-HELP_ACOUSTIC_MEASURE=  M           Show measurement at current position
-HELP_ACOUSTIC_EXPORT=  E           Export measurement (in freeze mode)
-HELP_ACOUSTIC_HELP=  H           Show this help message
-HELP_ACOUSTIC_ESC=  ESC         Back to main menu
-HELP_ACOUSTIC_MODES=Playback Modes:\n  Smooth - Continuous gliding transitions between points\n  Dotted - Individual dots at timed intervals
-HELP_ACOUSTIC_AUDIO_REP=Audio Representation:\n  - Pitch represents Y-axis value (higher pitch = higher value)\n  - Stereo panning represents X-axis position (left to right)\n  - Each curve has a unique waveform for identification
-HELP_ACOUSTIC_LOOP_ZOOM_MODE=Loop Zoom Mode:\n  When enabled with loop active:\n  - Loop section is centered in the stereo field\n  - Full playback time is applied to the loop range\n  - Easier to hear panning/timing in edge-positioned loops
-HELP_ACOUSTIC_TIPS=Practical Tips:\n  - Start with smooth mode to get overview of frequency response\n  - Switch to dotted mode to count resonance points precisely\n  - Use loop markers to focus on problem areas (e.g., high SWR region)\n  - Adjust playback time: longer for detailed analysis, shorter for quick overview\n  - Use Y-axis ruler (A key) to calibrate your perception of pitch-to-value mapping\n  - Freeze (F) to inspect exact values at interesting audio features\n  - Lower individual curve volumes if multiple curves make it hard to distinguish\n  - Reactance curve (4) indicates: rising tone = inductive, falling = capacitive
 
-HELP_DEVICE_TITLE=== Device Info Help ===
-HELP_DEVICE_COMMANDS=Available Commands:
-HELP_DEVICE_INFO=  I - Info          Display device information
-HELP_DEVICE_BATTERY=  B - Battery       Query and display battery voltage
-HELP_DEVICE_SHELL=  S - Shell         Open debug shell for direct device communication
-HELP_DEVICE_HELP=  H - Help          Show this help message
-HELP_DEVICE_INFO_DESC=Device Information:\n  Shows firmware version, hardware info, and device capabilities.
-HELP_DEVICE_BATTERY_DESC=Battery Status:\n  Displays current battery voltage of the NanoVNA device.\n  Helps monitor device power status during measurements.
-HELP_DEVICE_TIPS=Tips:\n  - Check battery before long measurement sessions\n  - Low battery can affect measurement accuracy\n  - Typical NanoVNA-H4 voltage: 3.7-4.2V when charged
 HELP_DEVICE_SHELL_DESC=Debug Shell:\n  Opens a direct communication shell to the NanoVNA.\n  Allows sending raw commands for debugging and testing.\n  Use arrow keys to navigate, backspace to delete. Press ESC to exit.
 
-HELP_TABLE_TITLE=== Table View Help ===
-HELP_TABLE_NAV_COMMANDS=Navigation Commands:
-HELP_TABLE_SPACE=  SPACE       Next page
-HELP_TABLE_NEXT=  N           Next page
-HELP_TABLE_PREV=  P           Previous page
-HELP_TABLE_CUSTOMIZE=  C           Customize columns (toggle which columns to display)
-HELP_TABLE_ESC=  ESC         Back to main menu
-HELP_TABLE_HELP=  H           Show this help message
-HELP_TABLE_COLUMNS=Table Columns:
-HELP_TABLE_COL_INDEX=  Index       Measurement point index
-HELP_TABLE_COL_FREQ=  Freq(Hz)    Frequency in Hertz
-HELP_TABLE_COL_SWR=  SWR         Standing Wave Ratio
-HELP_TABLE_COL_RL=  RL(dB)      Return Loss in decibels
-HELP_TABLE_COL_R=  R           Resistance (Real part of impedance)
-HELP_TABLE_COL_X=  X           Reactance (Imaginary part of impedance)
-HELP_TABLE_TIPS=Tips:\n  - Use SPACE or N to advance through pages\n  - Use P to go back to previous pages\n  - Press G to jump to specific point or frequency\n  - Press C to customize which columns are displayed\n  - Hide unneeded columns to reduce screen reader verbosity\n  - Use Go To > Min SWR to find resonance quickly
 
 # U-Menu (Comfort Functions)
-MENU_KEY_COMFORT=u
 MENU_COMFORT=(U) Comfort Functions
 
 # U-Menu main screen
@@ -798,75 +734,16 @@ FIRST_START_SETUP_COMPLETE=Setup complete! Your settings have been saved.
 FIRST_START_ENTER_NUMBER=Enter number: >
 
 # Help: Calibration Menu
-HELP_CAL_TITLE=== Calibration Menu Help ===
-HELP_CAL_COMMANDS=Available Commands:
-HELP_CAL_LOAD=  L - Load          Load calibration from device memory bank
-HELP_CAL_PERFORM=  P - Perform       Start calibration wizard (Open/Short/Load)
-HELP_CAL_HELP=  H - Help          Show this help message
-HELP_CAL_DESC=Calibration:\n  Calibration improves measurement accuracy by compensating for\n  cable and connector effects. The wizard guides you through:\n  1. Open circuit (nothing connected)\n  2. Short circuit (short calibration standard)\n  3. Load (50 Ohm load)\n  Results are saved to the device for future measurements.
 
 # Help: Options Menu
-HELP_OPT_TITLE=== Options Menu Help ===
-HELP_OPT_COMMANDS=Available Commands:
-HELP_OPT_LANGUAGE=  L - Language      Select display language
-HELP_OPT_BANDPLAN=  B - Bandplan      Select amateur radio band plan (IARU regions)
-HELP_OPT_HELP=  H - Help          Show this help message
-HELP_OPT_TIPS=Tips:\n  - Language changes affect all menus and messages\n  - Bandplan affects comfort functions like Band Suitability Check\n  - Settings are saved automatically
 
 # Help: Go To Menu (Table)
-HELP_GOTO_TITLE=== Go To Menu Help ===
-HELP_GOTO_COMMANDS=Available Commands:
-HELP_GOTO_POINT=  P - Point         Jump to specific point index
-HELP_GOTO_FREQ=  F - Frequency     Jump to nearest frequency
-HELP_GOTO_MIN=  M - Min SWR       Jump to point with minimum SWR
-HELP_GOTO_MAX=  X - Max SWR       Jump to point with maximum SWR
-HELP_GOTO_HELP=  H - Help          Show this help message
-HELP_GOTO_CANCEL=  ESC - Cancel      Return to table view
-HELP_GOTO_TIPS=Tips:\n  - Point index starts at 1\n  - Frequency search finds the closest match\n  - Min/Max SWR helps find resonance and problem areas
 
 # Help: Go To Menu (Acoustic)
-HELP_GOTO_ACOUSTIC_TITLE=== Go To Menu (Acoustic) Help ===
-HELP_GOTO_ACOUSTIC_COMMANDS=Available Commands:
-HELP_GOTO_ACOUSTIC_POINT=  P - Point         Jump to specific point index
-HELP_GOTO_ACOUSTIC_FREQ=  F - Frequency     Jump to nearest frequency
-HELP_GOTO_ACOUSTIC_MIN=  M - Min SWR       Jump to point with minimum SWR
-HELP_GOTO_ACOUSTIC_MAX=  X - Max SWR       Jump to point with maximum SWR
-HELP_GOTO_ACOUSTIC_CROSS=  C - Cross Point   Find intersection between two curves
-HELP_GOTO_ACOUSTIC_HELP=  H - Help          Show this help message
-HELP_GOTO_ACOUSTIC_CANCEL=  ESC - Cancel      Return to acoustic analysis
-HELP_GOTO_ACOUSTIC_TIPS=Tips:\n  - Cross point helps find where impedance matches target\n  - Use after jumping to hear the audio at that position\n  - Combine with loop markers to focus on specific ranges
 
 # Help: Comfort Functions Menu
-HELP_COMFORT_TITLE=== Comfort Functions Menu Help ===
-HELP_COMFORT_DESC=Comfort Functions provide convenient tools for antenna and cable analysis.
-HELP_COMFORT_COMMANDS=Available Functions:
-HELP_COMFORT_1=  1 - Band Suitability      Check antenna performance on amateur radio bands
-HELP_COMFORT_2=  2 - Resonance Finder      Find frequencies with minimum SWR
-HELP_COMFORT_3=  3 - SWR Bandwidth         Calculate 1.5:1 and 2:1 SWR bandwidth
-HELP_COMFORT_4=  4 - Feedpoint Impedance   Detailed impedance at selected frequency
-HELP_COMFORT_5=  5 - Matching Hints        Suggestions for impedance matching
-HELP_COMFORT_6=  6 - Cable Length          Estimate cable length from phase
-HELP_COMFORT_7=  7 - Cable Fault           Detect shorts, opens, and damage
-HELP_COMFORT_8=  8 - Cable Attenuation     Measure cable loss (requires S21)
-HELP_COMFORT_9=  9 - Filter Quick Check    Analyze filter characteristics (requires S21)
-HELP_COMFORT_10=  10 - Before/After         Compare two measurements
-HELP_COMFORT_11=  11 - Auto-Marker (A)      Automatically set markers at key points
-HELP_COMFORT_12=  12 - Configuration (C)    Set velocity factor, SWR limits, etc.
-HELP_COMFORT_HELP=  H - Help                  Show this help message
-HELP_COMFORT_TIPS=Tips:\n  - Functions 1-7 work with S11 (reflection) measurements\n  - Functions 8-9 require S21 (transmission) measurements\n  - Most functions will prompt to measure if no data available\n  - Configuration settings affect function behavior
 
 # Help: Customize Columns Menu
-HELP_CUSTOM_TITLE=== Customize Columns Help ===
-HELP_CUSTOM_DESC=Customize which columns are displayed in the table view.
-HELP_CUSTOM_COLUMNS=Available Columns:
-HELP_CUSTOM_FREQ=  FREQ  - Frequency in Hz
-HELP_CUSTOM_SWR=  SWR   - Standing Wave Ratio
-HELP_CUSTOM_RL=  RL    - Return Loss in dB
-HELP_CUSTOM_R=  R     - Resistance (real impedance)
-HELP_CUSTOM_X=  X     - Reactance (imaginary impedance)
-HELP_CUSTOM_Z=  Z     - Impedance magnitude |Z|
-HELP_CUSTOM_PHASE=  PHASE - Phase angle in degrees
-HELP_CUSTOM_USAGE=Usage:\n  - Enter column number (1-7) to toggle it on/off\n  - Press Enter to return to table view\n  - [X] indicates enabled, [ ] indicates disabled\n  - Changes are saved automatically
 
 # Volume configuration
 VOLUME_CONFIG_TITLE=Configure Curve Volume
@@ -1028,7 +905,6 @@ AUDIO_HELP_FREEZE_DESC=    Controls pause between repeated points in freeze mode
 
 # Web Interface
 MENU_WEB_INTERFACE=(I) Web Interface
-MENU_KEY_WEB_INTERFACE=i
 WEB_INTERFACE_TITLE=Web Interface
 WEB_INTERFACE_RUNNING=Web interface is RUNNING
 WEB_INTERFACE_NOT_RUNNING=Web interface is currently OFF
@@ -1147,7 +1023,7 @@ HELP_ACOUSTIC_GOTO=  G           Go To specific frequency/position
 AUDIO_CONFIG_MIDI_INTERP_PAN_STATUS=Interpolated panning: {0}
 AUDIO_CONFIG_MIDI_INTERP_STRENGTH_STATUS=Interpolation strength: {0}
 AUDIO_CONFIG_MIDI_INTERP_PAN_CMD=  I - Toggle MIDI interpolated panning
-AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  S - Set MIDI interpolation strength
+AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  T - Set MIDI interpolation strength
 MIDI_INTERP_PAN_TOGGLED=[MIDI interpolated panning: {0}]
 MIDI_INTERP_PAN_MIDI_ONLY=[Error: Interpolated panning is only available in MIDI mode]
 MIDI_INTERP_STRENGTH_TITLE==== Configure MIDI Interpolation Strength ===
@@ -1160,3 +1036,415 @@ MIDI_INTERP_STRENGTH_SET=[Interpolation strength set to: {0}]
 MIDI_INTERP_STRENGTH_ERROR=[Error: Strength must be between 0.0 and 1.0]
 MIDI_INTERP_STRENGTH_MIDI_ONLY=[Error: Interpolation strength is only available in MIDI mode]
 ERROR_INVALID_NUMBER=[Error: Invalid number]
+
+# Smith Diagram Visualization
+SMITH_MODE_CARTESIAN=Cartesian (3D Space)
+SMITH_MODE_POLAR=Polar (Rotation)
+SMITH_MODE_IMPEDANCE=Impedance Direct
+SMITH_MODE_SWR=SWR Circles
+SMITH_MODE_TIME=Time Domain + Smith Cues
+SMITH_MODE_HYBRID=Hybrid Multi-Layer
+SMITH_VISUALIZATION_TITLE=Smith Diagram Visualization
+SMITH_ENABLE_PROMPT=Enable Smith visualization? (y/n):
+SMITH_MODE_PROMPT=Select visualization mode:
+SMITH_MODE_1=1 - Cartesian: Position in 3D space (Re(Γ) → L/R, Im(Γ) → F/B)
+SMITH_MODE_2=2 - Polar: Rotation around user (∠Γ → angle, |Γ| → distance)
+SMITH_MODE_3=3 - Impedance Direct: R → L/R, X → F/B (simpler)
+SMITH_MODE_4=4 - SWR Circles: Focus on constant SWR
+SMITH_MODE_5=5 - Time Domain: Extend acoustic with Smith cues
+SMITH_MODE_6=6 - Hybrid Multi: Multiple layers simultaneously
+SMITH_CUES_ENABLED=[Smith spatial cues ENABLED]
+SMITH_CUES_DISABLED=[Smith spatial cues DISABLED]
+SMITH_MARKERS_ENABLED=[Smith markers ENABLED]
+SMITH_MARKERS_DISABLED=[Smith markers DISABLED]
+SMITH_CUES_VOLUME=Smith cues volume: {0}%
+SMITH_MODE_SWITCHED=[Smith mode switched to: {0}]
+SMITH_HELP_TITLE==== Smith Diagram Visualization Help ====
+SMITH_HELP_INTRO=Smith Diagram shows impedance matching acoustically.
+SMITH_HELP_CENTER=Center = Perfect match (50Ω, SWR 1.0)
+SMITH_HELP_EDGE=Edge = Poor match (high SWR)
+SMITH_HELP_HORIZONTAL=Horizontal (L-R) = Resistance level
+SMITH_HELP_VERTICAL=Vertical (F-B) = Reactance (inductive/capacitive)
+HELP_ACOUSTIC_SMITH=  V           Toggle Smith diagram visualization
+HELP_ACOUSTIC_SMITH_MODE=  B           Change Smith visualization mode (6 modes available)
+SMITH_ENABLE_FIRST=[Enable Smith visualization first with 'v']
+SMITH_MODE_HINT=[Press 'b' to change mode, 'h' for Smith help]
+SMITH_MODE_SELECTION=Smith Visualization Mode Selection
+
+# Smith Visualization Help
+
+# Smith Audio Configuration
+AUDIO_CONFIG_SMITH_CMD=  S - Configure Smith diagram audio settings
+SMITH_AUDIO_CONFIG_TITLE=Smith Diagram Audio Configuration
+SMITH_CONFIG_NO_VISUALIZER=[Error: Smith visualizer not available]
+SMITH_CONFIG_VOLUME_CURRENT=Current volume: {0}%
+SMITH_CONFIG_NOISE_TYPE_CURRENT=Current sound type: {0}
+SMITH_CONFIG_COMMANDS=Commands:
+SMITH_CONFIG_VOLUME_CMD=  V - Configure Volume (10-100%)
+SMITH_CONFIG_NOISE_TYPE_CMD=  N - Configure sound type (Pink/White/Brown/Sine)
+SMITH_CONFIG_PREVIEW_CMD=  P - Preview current Smith sound
+SMITH_CONFIG_PROMPT=Smith Config
+SMITH_CONFIG_ENTER_VOLUME=Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:
+SMITH_CONFIG_VOLUME_SET=[Smith cues volume set to: {0}%]
+SMITH_CONFIG_VOLUME_ERROR=[Error: Volume must be between 10 and 100]
+SMITH_CONFIG_NOISE_TYPE_MENU=== Select Sound Type ===
+SMITH_CONFIG_NOISE_TYPE_1=  1 - Pink Noise (warm, filtered - default)
+SMITH_CONFIG_NOISE_TYPE_2=  2 - White Noise (bright, full spectrum)
+SMITH_CONFIG_NOISE_TYPE_3=  3 - Brown Noise (dark, low frequencies)
+SMITH_CONFIG_NOISE_TYPE_4=  4 - Sine Wave (pure tone, cleaner)
+SMITH_CONFIG_NOISE_TYPE_SET=[Sound type changed to: {0}]
+SMITH_CONFIG_PREVIEW_MSG=[Playing preview... Press any key to stop]
+SMITH_CONFIG_PREVIEW_TODO=[Preview not yet implemented in this screen]
+SMITH_CONFIG_HELP_TITLE=
+=== Smith Audio Configuration Help ===
+SMITH_CONFIG_HELP_VOLUME=V - Set volume for Smith ambient cues (10-100%)
+SMITH_CONFIG_HELP_NOISE=N - Change sound type (Pink/White/Brown/Sine)
+SMITH_CONFIG_HELP_PINK=    Pink: Warm, filtered (default, recommended)
+SMITH_CONFIG_HELP_WHITE=    White: Bright, full spectrum
+SMITH_CONFIG_HELP_BROWN=    Brown: Dark, low frequencies
+SMITH_CONFIG_HELP_SINE=    Sine: Pure tone, musical
+SMITH_CONFIG_HELP_PREVIEW=P - Preview current settings
+
+# Consolidated Help Entries (Multi-line format)
+HELP_MAIN_MENU_FULL="
+=== Main Menu Help ===
+
+Available Commands:
+  S - Summary       Display measurement summary (min/max/avg SWR)
+  T - Table         View measurement data in table format with pagination
+  A - Acoustic      Enter acoustic analysis mode for audio representation
+  E - Export        Export measurement data to CSV or TXT format
+  L - Load          Load previously exported measurement data
+  K - Kalibrate     Start calibration flow (Open/Short/Load)
+  P - Port          Select and configure serial port
+  R - Range         Set frequency range and perform scan
+  D - Device Info   View device information and battery status
+  M - Manual        Perform manual measurement with current settings
+  H - Help          Show this help message
+  Q - Quit          Exit the application
+
+Tips:
+  - Use 'R' to set frequency range before taking measurements
+  - Use 'T' then 'C' to customize table columns
+  - Use 'A' for acoustic analysis after measurements
+  - Use 'E' to export data, 'L' to load it later
+  - Press 'H' in any screen for context-specific help
+"
+
+HELP_ACOUSTIC_FULL="
+=== Acoustic Analysis Help ===
+
+Playback Control:
+  SPACE       Play / Pause (hard pause - silence)
+  F           Freeze (static audio at current position)
+  S           Stop and reset to start
+  T           Toggle smooth/dotted playback
+  +/-         Increase/decrease playback time (in seconds)
+
+Navigation:
+  Left/Right         Move ±1 point
+  Ctrl+Left/Right    Move ±10 points
+  Ctrl+Shift+L/R     Move ±100 points
+
+Loop Control:
+  L           Set left loop marker
+  R           Set right loop marker
+  O           Toggle loop playback
+  Z           Toggle loop zoom (centers loop in stereo, applies full time to loop)
+  I           Invert loop (play outside loop markers)
+  C           Toggle continuous replay
+
+Curves (1-5: toggle, Ctrl+digit: vol-, Shift+digit: vol+):
+  1           SWR (Sine wave, stereo pan)
+  2           Return Loss (Pure sine, stereo pan)
+  3           Impedance |Z| (Triangle wave, stereo pan)
+  4           Reactance X (Sawtooth, stereo pan)
+  5           Phase (Sine with stereo pan)
+
+Audio Configuration:
+  A           Open audio configuration screen
+              - Toggle Synthesizer/MIDI engine
+              - Configure frequency range for Synthesizer (R)
+              - Configure MIDI instruments per curve
+              - Preview MIDI sounds
+
+Other:
+  Y           Play acoustic Y-axis ruler (ascending scale reference)
+  X           Toggle X-axis ruler (blips at each measurement point)
+  N           Toggle status line (shows detailed info during playback)
+  V           Toggle Smith diagram visualization
+  B           Change Smith visualization mode (6 modes available)
+  G           Go To specific frequency/position
+  M           Show measurement at current position
+  E           Export measurement (in freeze mode)
+  H           Show this help message
+  ESC         Back to main menu
+
+Playback Modes:
+  Smooth - Continuous gliding transitions between points
+  Dotted - Individual dots at timed intervals
+
+Audio Representation:
+  - Pitch represents Y-axis value (higher pitch = higher value)
+  - Stereo panning represents X-axis position (left to right)
+  - Each curve has a unique waveform for identification
+
+Loop Zoom Mode:
+  When enabled with loop active:
+  - Loop section is centered in the stereo field
+  - Full playback time is applied to the loop range
+  - Easier to hear panning/timing in edge-positioned loops
+
+Practical Tips:
+  - Start with smooth mode to get overview
+  - Switch to dotted mode to count points
+  - Use loop markers to focus on problem areas
+"
+
+HELP_DEVICE_FULL="
+=== Device Info Help ===
+
+Available Commands:
+  I - Info          Display device information
+  B - Battery       Query and display battery voltage
+  H - Help          Show this help message
+  ESC - Back        Return to main menu
+
+Device Information:
+  Shows firmware version, hardware info, and device capabilities.
+
+Battery Status:
+  Displays current battery voltage of the NanoVNA device.
+  Helps monitor device power status during measurements.
+
+Tips:
+  - Check battery before long measurement sessions
+  - Low battery can affect measurement accuracy
+"
+
+HELP_TABLE_FULL="
+=== Table View Help ===
+
+Navigation Commands:
+  SPACE       Next page
+  N           Next page
+  P           Previous page
+  C           Customize columns (toggle which columns to display)
+  ESC         Back to main menu
+  H           Show this help message
+
+Table Columns:
+  Index       Measurement point index
+  Freq(Hz)    Frequency in Hertz
+  SWR         Standing Wave Ratio
+  RL(dB)      Return Loss in decibels
+  R           Resistance (Real part of impedance)
+  X           Reactance (Imaginary part of impedance)
+
+Tips:
+  - Use SPACE or N to advance through pages
+  - Use P to go back to previous pages
+  - Press G to jump to specific point or frequency
+  - Press C to customize which columns are displayed
+  - Hide unneeded columns to reduce screen reader verbosity
+  - Use Go To > Min SWR to find resonance quickly
+"
+
+HELP_CAL_FULL="
+=== Calibration Menu Help ===
+
+Available Commands:
+  L - Load          Load calibration from device memory bank
+  P - Perform       Start calibration wizard (Open/Short/Load)
+  H - Help          Show this help message
+  ESC - Back        Return to main menu
+
+Calibration:
+  Calibration improves measurement accuracy by compensating for
+  cable and connector effects. The wizard guides you through:
+  1. Open circuit (nothing connected)
+  2. Short circuit (short calibration standard)
+  3. Load (50 Ohm load)
+  Results are saved to the device for future measurements.
+"
+
+HELP_OPT_FULL="
+=== Options Menu Help ===
+
+Available Commands:
+  L - Language      Select display language
+  B - Bandplan      Select amateur radio band plan (IARU regions)
+  H - Help          Show this help message
+  ESC - Back        Return to main menu
+
+Tips:
+  - Language changes affect all menus and messages
+  - Bandplan affects comfort functions like Band Suitability Check
+  - Settings are saved automatically
+"
+
+HELP_GOTO_FULL="
+=== Go To Menu Help ===
+
+Available Commands:
+  P - Point         Jump to specific point index
+  F - Frequency     Jump to nearest frequency
+  M - Min SWR       Jump to point with minimum SWR
+  X - Max SWR       Jump to point with maximum SWR
+  H - Help          Show this help message
+  ESC - Cancel      Return to table view
+
+Tips:
+  - Point index starts at 1
+  - Frequency search finds the closest match
+  - Min/Max SWR helps find resonance and problem areas
+"
+
+HELP_GOTO_ACOUSTIC_FULL="
+=== Go To Menu (Acoustic) Help ===
+
+Available Commands:
+  P - Point         Jump to specific point index
+  F - Frequency     Jump to nearest frequency
+  M - Min SWR       Jump to point with minimum SWR
+  X - Max SWR       Jump to point with maximum SWR
+  C - Cross Point   Find intersection between two curves
+  H - Help          Show this help message
+  ESC - Cancel      Return to acoustic analysis
+
+Tips:
+  - Cross point helps find where impedance matches target
+  - Use after jumping to hear the audio at that position
+  - Combine with loop markers to focus on specific ranges
+"
+
+HELP_COMFORT_FULL="
+=== Comfort Functions Menu Help ===
+
+Comfort Functions provide convenient tools for antenna and cable analysis.
+
+Available Functions:
+  1 - Band Suitability      Check antenna performance on amateur radio bands
+  2 - Resonance Finder      Find frequencies with minimum SWR
+  3 - SWR Bandwidth         Calculate 1.5:1 and 2:1 SWR bandwidth
+  4 - Feedpoint Impedance   Detailed impedance at selected frequency
+  5 - Matching Hints        Suggestions for impedance matching
+  6 - Cable Length          Estimate cable length from phase
+  7 - Cable Fault           Detect shorts, opens, and damage
+  8 - Cable Attenuation     Measure cable loss (requires S21)
+  9 - Filter Quick Check    Analyze filter characteristics (requires S21)
+  10 - Before/After         Compare two measurements
+  11 - Auto-Marker (A)      Automatically set markers at key points
+  12 - Configuration (C)    Set velocity factor, SWR limits, etc.
+  H - Help                  Show this help message
+  ESC - Back        Return to main menu
+
+Tips:
+  - Functions 1-7 work with S11 (reflection) measurements
+  - Functions 8-9 require S21 (transmission) measurements
+  - Most functions will prompt to measure if no data available
+  - Configuration settings affect function behavior
+"
+
+HELP_CUSTOM_FULL="
+=== Customize Columns Help ===
+
+Customize which columns are displayed in the table view.
+
+Available Columns:
+  FREQ  - Frequency in Hz
+  SWR   - Standing Wave Ratio
+  RL    - Return Loss in dB
+  R     - Resistance (real impedance)
+  X     - Reactance (imaginary impedance)
+  Z     - Impedance magnitude |Z|
+  PHASE - Phase angle in degrees
+
+Usage:
+  - Enter column number (1-7) to toggle it on/off
+  - Press Enter to return to table view
+  - [X] indicates enabled, [ ] indicates disabled
+  - Changes are saved automatically
+"
+
+HELP_SMITH_FULL="
+=== Smith Diagram Visualization Help ===
+
+Smith Diagram shows impedance matching acoustically using spatial audio.
+
+Key Concepts:
+  Center = Perfect match (50Ω, SWR 1.0)
+  Edge   = Poor match (high SWR)
+  Left-Right  = Resistance level (Re of reflection coefficient)
+  Front-Back  = Reactance (Im of reflection coefficient)
+    Front = Inductive (antenna too short)
+    Back  = Capacitive (antenna too long)
+
+Visualization Modes:
+  1 - Cartesian: Position in 3D space
+      Re(Γ) → Left/Right, Im(Γ) → Front/Back
+  2 - Polar: Rotation around user
+      Angle → direction, Magnitude → distance
+  3 - Impedance Direct: R and X directly mapped
+      R → Left/Right, X → Front/Back (simpler)
+  4 - SWR Circles: Focus on constant SWR levels
+  5 - Time Domain: Acoustic analysis + Smith cues
+  6 - Hybrid: Multiple audio layers simultaneously
+
+Controls:
+  V - Toggle Smith visualization on/off
+  B - Change visualization mode (1-6)
+  H - Show this Smith help
+
+Audio Representation:
+  - Spatial position shows impedance location in Smith chart
+  - Subtle ambient noise indicates position
+  - Default volume: 30% (configurable)
+
+Tips:
+  - Start with Cartesian mode (easiest to understand)
+  - Use headphones for best spatial audio experience
+  - Smith cues work best with smooth playback mode
+  - Sound moves toward center when approaching resonance
+  - Front/back position indicates inductive/capacitive
+
+Example Interpretations:
+  Center sound = Perfect 50Ω match
+  Sound moves to center = Approaching resonance
+  Sound in front = Inductive reactance (too short)
+  Sound in back = Capacitive reactance (too long)
+  Sound at edge = High SWR, poor match
+"
+
+# ========================================
+# Manuals and Training Menu (? Key)
+# ========================================
+MENU_DOCS=(?) Manuals and Training
+DOCS_MENU_TITLE=Manuals and Training
+DOCS_MENU_MANUAL=1. Open User Manual
+DOCS_MENU_TRAINING=2. Open Training Suite
+DOCS_MENU_BETA=3. Open Beta Test Instructions
+DOCS_MENU_FEEDBACK=4. Feedback to Developer
+DOCS_MENU_BACK=ESC - Back to Main Menu
+DOCS_MENU_PROMPT=Select an option (1-4, or ESC to go back):
+
+# Feedback Menu
+FEEDBACK_MENU_TITLE=Feedback to Developer
+FEEDBACK_ATTACH_QUESTION=Would you like to attach logs and configuration files? (y/n):
+FEEDBACK_PREPARING=Preparing email...
+FEEDBACK_EMAIL_PREPARED=Email client has been opened. Please add your message and send the email.
+FEEDBACK_ERROR=Error opening email client.
+FEEDBACK_ATTACHMENTS_WARNING=IMPORTANT: Email clients cannot attach files automatically.\nYou will need to manually attach the following folders after the email opens:
+FEEDBACK_ATTACHMENTS_INFO=The following files should be attached:\n  - config/*\n  - logs/*\n  - Export/*\n\nPlease manually attach these folders to your email.
+
+# Documentation Paths
+DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_EN.html
+DOC_PATH_TRAINING=doc/training/en/Training_Index.html
+DOC_PATH_BETA=doc/beta-testing/BETA_TESTING_EN.html
+DOC_PATH_MAIN_INDEX=doc/README.html
+
+# Error messages for documentation
+ERROR_DOC_NOT_FOUND=Error: Documentation file not found: {0}
+ERROR_BROWSER_FAILED=Error: Could not open browser.
+DOC_OPENED=Opening documentation in browser...
+

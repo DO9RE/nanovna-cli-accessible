@@ -61,6 +61,9 @@ private:
     
     // Audio configuration screen
     bool runAudioConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Returns true if engine changed
+    bool runSmithConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Smith audio settings submenu
+    bool runSurroundConfigurationScreen(SmithVisualizer* smith);  // Surround sound configuration submenu
+    bool runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer);  // Spatial audio calibration wizard (NEW)
     bool runDurationConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Duration submenu
     bool runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Freeze pause submenu
     bool runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Loop pause submenu
@@ -75,6 +78,11 @@ private:
     
     // Web interface menu
     void webInterfaceMenu();  // Web interface control
+    
+    // Documentation and training menu
+    void documentationMenu();  // Documentation, training, and feedback menu
+    void openDocumentation(const std::string& docPath);  // Open HTML file in browser
+    void feedbackToDeveloper();  // Send feedback email to developer
     
     // First-start wizard
     void runFirstStartWizard();  // First-time setup wizard
@@ -123,6 +131,10 @@ private:
     
     // Helper function for Braille curve selection UI
     bool selectBrailleCurves(bool curveFlags[5]);
+    
+    // Helper function to offer repeat option after playing a sound in wizard
+    // Returns true if user wants to repeat, false if user wants to continue
+    bool offerRepeat();
     
     // Output wrapper for web interface integration
     void print(const std::string& text);
