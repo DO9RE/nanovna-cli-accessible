@@ -72,7 +72,7 @@ PaperDimensions BraillePrinter::getPaperDimensions(AppConfig::BraillePaperSize p
 
 bool BraillePrinter::enumeratePrinters(std::vector<PrinterInfo>& printers, std::string& err) {
 #if !defined(_WIN32)
-    err = "Printer enumeration is only supported on Windows";
+    err = "Braille printer support is only available on Windows";
     if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
     return false;
 #else
@@ -193,6 +193,9 @@ std::vector<int> BraillePrinter::parsePatternString(const std::string& pattern) 
 int BraillePrinter::calculatePageCount(const std::vector<MeasurementPoint>& pts,
                                        const bool curveFlags[5],
                                        const AppConfig& config) {
+#if !defined(_WIN32)
+    return 0;
+#else
     if (pts.empty()) return 0;
     
     // Count selected curves
@@ -229,6 +232,7 @@ int BraillePrinter::calculatePageCount(const std::vector<MeasurementPoint>& pts,
     if (pages == 0) pages = 1;
     
     return pages;
+#endif
 }
 
 // New interface that accepts full AppConfig
@@ -238,6 +242,11 @@ bool BraillePrinter::generateBrailleData(const std::vector<MeasurementPoint>& pt
                                         const AppConfig& config,
                                         std::vector<char>& data,
                                         std::string& err) {
+#if !defined(_WIN32)
+    err = "Braille printer support is only available on Windows";
+    if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
+    return false;
+#else
     if (logger) {
         std::ostringstream oss;
         oss << "Generating Braille data for " << pts.size() << " points, "
@@ -282,8 +291,10 @@ bool BraillePrinter::generateBrailleData(const std::vector<MeasurementPoint>& pt
     } else {
         return generateV4Data(pts, startFreq, endFreq, step, curveFlags, paper, config, data, err);
     }
+#endif
 }
 
+#if defined(_WIN32)
 bool BraillePrinter::generateV5Data(const std::vector<MeasurementPoint>& pts,
                                    uint64_t startFreq, uint64_t endFreq, uint64_t step,
                                    const bool curveFlags[5],
@@ -1093,6 +1104,7 @@ bool BraillePrinter::generateV4Data(const std::vector<MeasurementPoint>& pts,
     
     return true;
 }
+#endif // _WIN32
 
 bool BraillePrinter::printBraille(const std::string& printerName,
                                  const std::vector<MeasurementPoint>& pts,
@@ -1100,6 +1112,11 @@ bool BraillePrinter::printBraille(const std::string& printerName,
                                  const bool curveFlags[5],
                                  const AppConfig& config,
                                  std::string& err) {
+#if !defined(_WIN32)
+    err = "Braille printer support is only available on Windows";
+    if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
+    return false;
+#else
     if (logger) {
         std::ostringstream oss;
         oss << "Starting direct Braille print to: '" << printerName << "'";
@@ -1129,13 +1146,14 @@ bool BraillePrinter::printBraille(const std::string& printerName,
     
     if (logger) logger->log("BRAILLE_PRINTER", "Print operation completed successfully");
     return true;
+#endif
 }
 
 bool BraillePrinter::sendToPrinter(const std::string& printerName, 
                                   const std::vector<char>& data,
                                   std::string& err) {
 #if !defined(_WIN32)
-    err = "Direct printing is only supported on Windows";
+    err = "Braille printer support is only available on Windows";
     if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
     return false;
 #else

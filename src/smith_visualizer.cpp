@@ -1,17 +1,22 @@
 #include "smith_visualizer.h"
 #include "config.h"
 #include "math_logger.h"
+#include "pitch_mapping.h"
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <random>
 
+using namespace PitchMapping;
+
 // Windows Audio API headers for hardware detection
+#if defined(_WIN32)
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
 #include <functiondiscoverykeys_devpkey.h>
+#endif
 
 static constexpr double PI = 3.14159265358979323846;
 static constexpr int SAMPLE_RATE = 44100;
@@ -87,6 +92,7 @@ AudioCapability SmithVisualizer::detectAudioCapability() {
     
     AudioCapability detected = AudioCapability::STEREO_ONLY;
     
+#if defined(_WIN32)
     // Use Windows Core Audio API for detection
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     bool comInitialized = SUCCEEDED(hr);
@@ -166,6 +172,13 @@ AudioCapability SmithVisualizer::detectAudioCapability() {
             CoUninitialize();
         }
     }
+#else
+    // On non-Windows platforms, default to stereo
+    detected = AudioCapability::STEREO_ONLY;
+    if (logger) {
+        logger->log("SMITH", "Audio capability detection: Using default stereo mode (platform-specific detection not yet implemented)");
+    }
+#endif
     
     if (logger) {
         const char* capName = "UNKNOWN";
@@ -284,10 +297,10 @@ SmithPosition3D SmithVisualizer::calculateCartesianPosition(const MeasurementPoi
     // Z-axis: Not used in 2D Smith chart
     pos.z = 0.0;
     
+    // Task 1.9: Use centralized pitch mapping
     // Pitch: Based on SWR (low SWR = low pitch, high SWR = high pitch)
     // Map SWR 1.0-10.0 to 200-2000 Hz
-    double swr = std::clamp(pt.swr, 1.0, 10.0);
-    pos.pitch = 200.0 + (swr - 1.0) * 200.0;
+    pos.pitch = linearPitchMap(pt.swr, 1.0, 10.0, 200.0, 2000.0);
     
     // Volume: Based on Return Loss (high RL = quiet, low RL = loud)
     // Map RL 0-30 dB to 1.0-0.2
@@ -309,10 +322,11 @@ SmithPositionPolar SmithVisualizer::calculatePolarPosition(const MeasurementPoin
     pos.radius = calculateGammaMagnitude(pt);
     pos.radius = std::clamp(pos.radius, 0.0, 1.0);
     
+    // Task 1.9: Use centralized pitch mapping
     // Pitch: Based on impedance type (resistive vs reactive)
-    // Map reactance to pitch: high |X| = high pitch
+    // Map reactance to pitch: high |X| = high pitch, range 0-50 Ohms maps to 400-1000 Hz
     double absX = std::abs(pt.X);
-    pos.pitch = 400.0 + std::min(absX / 50.0, 1.0) * 600.0;  // 400-1000 Hz
+    pos.pitch = linearPitchMap(absX, 0.0, 50.0, 400.0, 1000.0);
     
     // Volume: Based on radius (distance from center)
     // Far from center = loud, near center = quiet
@@ -334,9 +348,10 @@ SmithPosition3D SmithVisualizer::calculateImpedanceDirectPosition(const Measurem
     // Z-axis: Not used
     pos.z = 0.0;
     
-    // Pitch: Based on |Z - 50|
+    // Task 1.9: Use centralized pitch mapping
+    // Pitch: Based on |Z - 50|, deviation 0-150 Ohms maps to 300-1000 Hz
     double impedanceDeviation = std::abs(pt.impedance_mag - 50.0);
-    pos.pitch = 300.0 + std::min(impedanceDeviation / 150.0, 1.0) * 700.0;
+    pos.pitch = linearPitchMap(impedanceDeviation, 0.0, 150.0, 300.0, 1000.0);
     
     // Volume: Based on SWR
     double swr = std::clamp(pt.swr, 1.0, 10.0);
@@ -361,10 +376,10 @@ SmithPosition3D SmithVisualizer::calculateSwrCirclesPosition(const MeasurementPo
     pos.y = std::sin(angleRad) * gammaMag;
     pos.z = 0.0;
     
+    // Task 1.9: Use centralized pitch mapping
     // Pitch: Based primarily on SWR value
-    // Low SWR (good) = low pitch, high SWR (bad) = high pitch
-    double swr = std::clamp(pt.swr, 1.0, 10.0);
-    pos.pitch = 150.0 + (swr - 1.0) * 200.0;  // 150-1950 Hz range
+    // Low SWR (good) = low pitch, high SWR (bad) = high pitch, map 1-10 to 150-1950 Hz
+    pos.pitch = linearPitchMap(pt.swr, 1.0, 10.0, 150.0, 1950.0);
     
     // Volume: Based on distance from center (SWR quality)
     // Near center (SWR ≈ 1) = quiet, far from center = loud
@@ -388,10 +403,10 @@ SmithPosition3D SmithVisualizer::calculateTimeDomainCuesPosition(const Measureme
     
     pos.z = 0.0;
     
+    // Task 1.9: Use centralized pitch mapping
     // Pitch: Based on measurement value (like standard acoustic mode)
-    // Use SWR for pitch encoding
-    double swr = std::clamp(pt.swr, 1.0, 10.0);
-    pos.pitch = 200.0 + (swr - 1.0) * 200.0;
+    // Use SWR for pitch encoding, map 1-10 to 200-2000 Hz
+    pos.pitch = linearPitchMap(pt.swr, 1.0, 10.0, 200.0, 2000.0);
     
     // Volume: Modified by Smith position (Re(Γ) affects volume)
     // Center of Smith chart = louder, edges = quieter
@@ -420,8 +435,10 @@ SmithPosition3D SmithVisualizer::calculateHybridMultiPosition(const MeasurementP
     
     // Layer 3 (Markers): Will be handled by marker system separately
     
+    // Task 1.9: Use centralized pitch mapping for SWR component
     // Pitch: Combine polar (reactance) and SWR
-    pos.pitch = (polarPos.pitch + (200.0 + (swr - 1.0) * 200.0)) * 0.5;
+    double swrPitch = linearPitchMap(swr, 1.0, 10.0, 200.0, 2000.0);
+    pos.pitch = (polarPos.pitch + swrPitch) * 0.5;
     
     // Volume: Combine radius-based and SWR-based volume
     double swrVolume = 0.3 + (swr - 1.0) / 9.0 * 0.7;

@@ -10,10 +10,8 @@
 #endif
 
 WebServer::WebServer(Logger* logger_) 
-    : logger(logger_), running(false), shouldStop(false), serverPort(8080) {
-#if defined(_WIN32)
-    listenSocket = INVALID_SOCKET;
-#endif
+    : logger(logger_), running(false), shouldStop(false), serverPort(8080), 
+      listenSocket(INVALID_SOCKET) {
 }
 
 WebServer::~WebServer() {
@@ -30,13 +28,16 @@ bool WebServer::initWinsock() {
     }
     return true;
 #else
-    return false;  // Not supported on non-Windows
+    // No initialization needed for POSIX sockets
+    return true;
 #endif
 }
 
 void WebServer::cleanupWinsock() {
 #if defined(_WIN32)
     WSACleanup();
+#else
+    // No cleanup needed for POSIX sockets
 #endif
 }
 
@@ -53,19 +54,28 @@ bool WebServer::start(int port, const std::string& bindAddress) {
     serverPort = port;
     bindAddr = bindAddress;
 
-#if defined(_WIN32)
     // Create socket
     listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listenSocket == INVALID_SOCKET) {
+#if defined(_WIN32)
         if (logger) logger->log("WEBSERVER", "Failed to create socket: " + std::to_string(WSAGetLastError()));
+#else
+        if (logger) logger->log("WEBSERVER", "Failed to create socket: " + std::string(strerror(errno)));
+#endif
         cleanupWinsock();
         return false;
     }
 
     // Allow socket reuse
+#if defined(_WIN32)
     char opt = 1;
     if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == SOCKET_ERROR) {
         if (logger) logger->log("WEBSERVER", "Warning: Failed to set SO_REUSEADDR: " + std::to_string(WSAGetLastError()));
+#else
+    int opt = 1;
+    if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == SOCKET_ERROR) {
+        if (logger) logger->log("WEBSERVER", "Warning: Failed to set SO_REUSEADDR: " + std::string(strerror(errno)));
+#endif
         // Continue anyway - not critical
     }
 
@@ -81,8 +91,13 @@ bool WebServer::start(int port, const std::string& bindAddress) {
     }
 
     if (bind(listenSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
+#if defined(_WIN32)
         if (logger) logger->log("WEBSERVER", "Failed to bind socket: " + std::to_string(WSAGetLastError()));
         closesocket(listenSocket);
+#else
+        if (logger) logger->log("WEBSERVER", "Failed to bind socket: " + std::string(strerror(errno)));
+        close(listenSocket);
+#endif
         listenSocket = INVALID_SOCKET;
         cleanupWinsock();
         return false;
@@ -90,8 +105,13 @@ bool WebServer::start(int port, const std::string& bindAddress) {
 
     // Listen
     if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR) {
+#if defined(_WIN32)
         if (logger) logger->log("WEBSERVER", "Failed to listen: " + std::to_string(WSAGetLastError()));
         closesocket(listenSocket);
+#else
+        if (logger) logger->log("WEBSERVER", "Failed to listen: " + std::string(strerror(errno)));
+        close(listenSocket);
+#endif
         listenSocket = INVALID_SOCKET;
         cleanupWinsock();
         return false;
@@ -104,9 +124,6 @@ bool WebServer::start(int port, const std::string& bindAddress) {
 
     if (logger) logger->log("WEBSERVER", "Server started on port " + std::to_string(port));
     return true;
-#else
-    return false;  // Not supported on non-Windows
-#endif
 }
 
 void WebServer::stop() {
@@ -116,7 +133,6 @@ void WebServer::stop() {
 
     shouldStop = true;
 
-#if defined(_WIN32)
     // Give SSE threads time to notice shouldStop and exit cleanly
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     
@@ -124,8 +140,13 @@ void WebServer::stop() {
     {
         std::lock_guard<std::mutex> lock(clientMutex);
         for (SOCKET sock : sseClients) {
+#if defined(_WIN32)
             shutdown(sock, SD_BOTH);  // Graceful shutdown before close
             closesocket(sock);
+#else
+            shutdown(sock, SHUT_RDWR);  // Graceful shutdown before close
+            close(sock);
+#endif
         }
         sseClients.clear();
     }
@@ -137,19 +158,28 @@ void WebServer::stop() {
     {
         std::lock_guard<std::mutex> lock(clientMutex);
         for (SOCKET sock : clientSockets) {
+#if defined(_WIN32)
             shutdown(sock, SD_BOTH);
             closesocket(sock);
+#else
+            shutdown(sock, SHUT_RDWR);
+            close(sock);
+#endif
         }
         clientSockets.clear();
     }
 
     // Close listen socket
     if (listenSocket != INVALID_SOCKET) {
+#if defined(_WIN32)
         shutdown(listenSocket, SD_BOTH);
         closesocket(listenSocket);
+#else
+        shutdown(listenSocket, SHUT_RDWR);
+        close(listenSocket);
+#endif
         listenSocket = INVALID_SOCKET;
     }
-#endif
 
     // Wait for server thread to finish
     if (serverThread.joinable()) {
@@ -163,7 +193,6 @@ void WebServer::stop() {
 }
 
 void WebServer::serverLoop() {
-#if defined(_WIN32)
     while (!shouldStop) {
         // Set timeout for accept
         fd_set readSet;
@@ -174,9 +203,15 @@ void WebServer::serverLoop() {
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
 
+#if defined(_WIN32)
         int selectResult = select(0, &readSet, nullptr, nullptr, &timeout);
         if (selectResult == SOCKET_ERROR) {
             if (logger) logger->log("WEBSERVER", "Select error: " + std::to_string(WSAGetLastError()));
+#else
+        int selectResult = select(listenSocket + 1, &readSet, nullptr, nullptr, &timeout);
+        if (selectResult == SOCKET_ERROR) {
+            if (logger) logger->log("WEBSERVER", "Select error: " + std::string(strerror(errno)));
+#endif
             break;
         }
 
@@ -189,7 +224,11 @@ void WebServer::serverLoop() {
         SOCKET clientSocket = accept(listenSocket, nullptr, nullptr);
         if (clientSocket == INVALID_SOCKET) {
             if (!shouldStop) {
+#if defined(_WIN32)
                 if (logger) logger->log("WEBSERVER", "Accept failed: " + std::to_string(WSAGetLastError()));
+#else
+                if (logger) logger->log("WEBSERVER", "Accept failed: " + std::string(strerror(errno)));
+#endif
             }
             continue;
         }
@@ -197,15 +236,17 @@ void WebServer::serverLoop() {
         // Handle client in a separate thread to avoid blocking
         std::thread clientThread([this, clientSocket]() {
             handleClient(clientSocket);
+#if defined(_WIN32)
             closesocket(clientSocket);
+#else
+            close(clientSocket);
+#endif
         });
         clientThread.detach();
     }
-#endif
 }
 
 void WebServer::handleClient(int clientSocket) {
-#if defined(_WIN32)
     char buffer[4096];
     int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
     
@@ -262,7 +303,6 @@ void WebServer::handleClient(int clientSocket) {
         std::string response = generateHTTPResponse(404, "text/plain", "Not Found");
         send(clientSocket, response.c_str(), response.length(), 0);
     }
-#endif
 }
 
 bool WebServer::parseHTTPRequest(const std::string& request, std::string& method, 
@@ -758,11 +798,14 @@ std::string WebServer::getServerURL() const {
 std::vector<std::string> WebServer::getLocalIPAddresses() const {
     std::vector<std::string> addresses;
     
-#if defined(_WIN32)
     char hostname[256];
     if (gethostname(hostname, sizeof(hostname)) == 0) {
         struct addrinfo hints, *result;
+#if defined(_WIN32)
         ZeroMemory(&hints, sizeof(hints));
+#else
+        memset(&hints, 0, sizeof(hints));
+#endif
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
         
@@ -776,13 +819,11 @@ std::vector<std::string> WebServer::getLocalIPAddresses() const {
             freeaddrinfo(result);
         }
     }
-#endif
     
     return addresses;
 }
 
 void WebServer::handleSSE(int clientSocket) {
-#if defined(_WIN32)
     // Send SSE headers
     std::string headers = generateHTTPResponse(200, "text/event-stream", "", true);
     send(clientSocket, headers.c_str(), headers.length(), 0);
@@ -871,7 +912,6 @@ void WebServer::handleSSE(int clientSocket) {
     }
     
     if (logger) logger->log("WEBSERVER", "SSE client disconnected");
-#endif
 }
 
 void WebServer::sendOutput(const std::string& text) {

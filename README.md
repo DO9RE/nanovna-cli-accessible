@@ -2,9 +2,13 @@
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
-> **⚠️ WINDOWS-ONLY APPLICATION**  
-> This application requires Windows and cannot be built on Linux/macOS.  
-> Uses Windows-specific APIs: winmm, Windows API, conio.h, SetupAPI.
+> **📋 PLATFORM SUPPORT STATUS**  
+> - **Windows**: ✅ Fully supported (native build, MIDI available)
+> - **macOS**: ✅ MIDI support added! Audio & console ports in progress (see [macOS Setup Guide](doc/MACOS_SETUP.md))
+> - **Linux**: ⚠️ Planned (MIDI stub in place, needs testing)
+>
+> **Note**: MIDI audio synthesis is now cross-platform! The macOS MIDI implementation provides high-quality
+> audio synthesis using Apple's DLS Synth. See [MIDI Documentation](doc/midi/README.md) for details.
 
 ## Overview
 
@@ -136,25 +140,61 @@ Access the application from any browser on your local network:
 
 ## Quick Start
 
-### Installation
+### Windows Installation
 Requires Windows with MSYS2/MinGW-w64 or Visual Studio.
 
 ```bash
+# Using the provided build script (recommended)
+./build.sh
+
+# Or manually:
 mkdir build && cd build
 cmake -G "MinGW Makefiles" ..
 mingw32-make -j4
 ```
 
+### macOS Installation (Phase 2 - Partial Support)
+See [doc/MACOS_SETUP.md](doc/MACOS_SETUP.md) for detailed instructions and current status.
+
+```bash
+# Install dependencies
+brew install cmake portaudio
+
+# Build using the macOS build script
+./build-macos.sh
+
+# Or manually:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(sysctl -n hw.ncpu)
+```
+
+**Note**: macOS build will compile but has limited functionality. Console input, audio, and serial communication require additional integration work. See macOS Setup Guide for details.
+
 ### Usage
 
 **Interactive mode:**
 ```bash
+# Windows
 nanovna-cli.exe -d
+
+# macOS/Linux - Option 1 (Terminal)
+cd build
+./nanovna-cli -d
+
+# macOS - Option 2 (Finder - double-click)
+# Navigate to the build/ directory in Finder
+# Double-click the file: nanovna-cli.command
+# This will open a Terminal window and run the application
 ```
 
 **Direct measurement:**
 ```bash
+# Windows
 nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autostart
+
+# macOS/Linux (when serial support is complete)
+./nanovna-cli -d -p /dev/ttyUSB0 --start 144000000 --end 146000000 --step 1000 --autostart
 ```
 
 ## Command Reference

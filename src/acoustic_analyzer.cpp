@@ -1,7 +1,9 @@
 #include "acoustic_analyzer.h"
+#include "audio_backend.h"
 #include "config.h"
 #include "synthesizer_engine.h"
 #include "midi_engine.h"
+#include "pitch_mapping.h"
 #include <cmath>
 #include <algorithm>
 #include <thread>
@@ -10,21 +12,9 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <climits>
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
-#endif
-
-// Cross-platform sleep
-static void platform_sleep_ms(int ms) {
-#if defined(_WIN32)
-    Sleep(ms);
-#else
-    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-#endif
-}
+using namespace PitchMapping;
 
 static constexpr double PI = 3.14159265358979323846;
 static constexpr int SAMPLE_RATE = 44100;
@@ -54,12 +44,13 @@ AcousticAnalyzer::AcousticAnalyzer(Logger* logger_, MathLogger* mathLogger_, Tra
       rulerCustomSoundSynth(0), rulerCustomSoundMidiGliding(48), rulerCustomSoundMidiDotted(11),
       lastEnabledCurve(0),
       lastAxisCrossingCheckPos(0),
-      pendingAxisEventOffset(0)
-#if defined(_WIN32)
-      , hWaveOut(nullptr), audioDeviceOpen(false),
-      nextBufferToQueue(0), nextBufferToCheck(0), buffersInFlight(0)
-#endif
+      pendingAxisEventOffset(0),
+      backend(createAudioBackend())
 {
+    // Initialize audio backend
+    if (backend) {
+        backend->initialize();
+    }
     
     // Initialize Smith visualizer
     smithVisualizer = std::make_unique<SmithVisualizer>(logger, translation);
@@ -85,11 +76,6 @@ AcousticAnalyzer::AcousticAnalyzer(Logger* logger_, MathLogger* mathLogger_, Tra
         curveVolumes[i] = 100;
     }
     masterVolume = 100;  // Initialize master volume to 100%
-    
-#if defined(_WIN32)
-    // Initialize double-buffering structures
-    initializeBuffers();
-#endif
 }
 
 AcousticAnalyzer::~AcousticAnalyzer() noexcept {
@@ -110,23 +96,11 @@ AcousticAnalyzer::~AcousticAnalyzer() noexcept {
         if (logger) logger->log("ACOUSTIC", "Unknown exception in stopYAxisRuler() during destructor");
     }
     
-#if defined(_WIN32)
-    try {
-        closeAudioDevice();
-    } catch (const std::exception& e) {
-        if (logger) logger->log("ACOUSTIC", std::string("Exception in closeAudioDevice() during destructor: ") + e.what());
-    } catch (...) {
-        if (logger) logger->log("ACOUSTIC", "Unknown exception in closeAudioDevice() during destructor");
+    // Clean up audio backend
+    // Memory automatically freed by unique_ptr, but shutdown() called explicitly to release audio resources
+    if (backend) {
+        backend->shutdown();
     }
-    
-    try {
-        cleanupBuffers();
-    } catch (const std::exception& e) {
-        if (logger) logger->log("ACOUSTIC", std::string("Exception in cleanupBuffers() during destructor: ") + e.what());
-    } catch (...) {
-        if (logger) logger->log("ACOUSTIC", "Unknown exception in cleanupBuffers() during destructor");
-    }
-#endif
 }
 
 void AcousticAnalyzer::setData(const std::vector<MeasurementPoint>& data) {
@@ -249,14 +223,7 @@ void AcousticAnalyzer::play() {
         }
     }
     
-#if defined(_WIN32)
-    // Open audio device for continuous playback
-    if (!openAudioDevice()) {
-        if (logger) logger->log("ACOUSTIC", "Failed to open audio device for playback");
-        return;
-    }
-#endif
-    
+    // Audio backend is initialized in constructor, no explicit open needed
     state = PlaybackState::PLAYING;
     
     if (!audioThread.joinable()) {
@@ -333,15 +300,7 @@ void AcousticAnalyzer::stop() {
     shouldStop = false;
     currentPos = 0;  // Reset position to start
     
-#if defined(_WIN32)
-    try {
-        closeAudioDevice();
-    } catch (const std::exception& e) {
-        if (logger) logger->log("ACOUSTIC", std::string("Exception in closeAudioDevice(): ") + e.what());
-    } catch (...) {
-        if (logger) logger->log("ACOUSTIC", "Unknown exception in closeAudioDevice()");
-    }
-#endif
+    // Audio backend is cleaned up in destructor, no explicit close needed
     
     if (logger) logger->log("ACOUSTIC", "Stopped and reset to start");
 }
@@ -565,19 +524,15 @@ void AcousticAnalyzer::toggleCurve(int curveIndex) {
                     (curves[curveIndex].enabled ? "enabled" : "disabled"));
     }
     
-#if defined(_WIN32)
-    // In smooth mode, flush and pause/resume for immediate response
-    // Flushing audio buffers ensures curve changes are heard immediately
+    // In smooth mode, pause/resume for immediate response
     if (smoothMode.load()) {
         PlaybackState currentState = state.load();
         if (currentState == PlaybackState::PLAYING) {
-            flushAudioBuffers();  // Flush pending audio for immediate response
             pause();  // Pause playback
-            platform_sleep_ms(CURVE_TOGGLE_PAUSE_DELAY_MS);  // Brief delay to ensure pause takes effect
+            std::this_thread::sleep_for(std::chrono::milliseconds(CURVE_TOGGLE_PAUSE_DELAY_MS));  // Brief delay to ensure pause takes effect
             play();   // Resume playback
         }
     }
-#endif
 }
 
 bool AcousticAnalyzer::isCurveEnabled(int curveIndex) const {
@@ -597,17 +552,16 @@ void AcousticAnalyzer::setCurveVolume(int curveIndex, int volumePercent) {
         logger->log("ACOUSTIC", curves[curveIndex].name + " volume set to " + std::to_string(volumePercent) + "%");
     }
     
-#if defined(_WIN32)
+    // Task 2.4: Enable pause/resume on all platforms for consistent acoustic response
     // In smooth mode, pause and resume for immediate response
     if (smoothMode.load()) {
         PlaybackState currentState = state.load();
         if (currentState == PlaybackState::PLAYING) {
             pause();  // Pause playback
-            platform_sleep_ms(CURVE_TOGGLE_PAUSE_DELAY_MS);  // Brief delay to ensure pause takes effect
+            std::this_thread::sleep_for(std::chrono::milliseconds(CURVE_TOGGLE_PAUSE_DELAY_MS));  // Brief delay to ensure pause takes effect
             play();   // Resume playback
         }
     }
-#endif
 }
 
 int AcousticAnalyzer::getCurveVolume(int curveIndex) const {
@@ -724,21 +678,21 @@ void AcousticAnalyzer::audioThreadFunc() {
         PlaybackState currentState = state.load();
         
         if (currentState == PlaybackState::STOPPED) {
-            platform_sleep_ms(10);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             smoothFractionalPos = 0.0;
             buffersWereFlushed.store(false);
             continue;
         }
         
         if (currentState == PlaybackState::PAUSED) {
-            platform_sleep_ms(10);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             smoothFractionalPos = 0.0;
             buffersWereFlushed.store(false);
             continue;
         }
         
         if (measurementData.empty()) {
-            platform_sleep_ms(10);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             smoothFractionalPos = 0.0;
             buffersWereFlushed.store(false);
             continue;
@@ -881,7 +835,7 @@ void AcousticAnalyzer::audioThreadFunc() {
                         // Fall back to advancing position normally
                         advancePosition();
                         needsPointSelection.store(true);
-                        platform_sleep_ms(10);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                         continue;  // Skip to next iteration
                     }
                     
@@ -1013,7 +967,7 @@ void AcousticAnalyzer::audioThreadFunc() {
                                 // Apply loop pause before wrapping
                                 int pauseMs = loopPauseMs.load();
                                 if (pauseMs > 0) {
-                                    platform_sleep_ms(pauseMs);
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
                                 }
                                 
                                 nextPoint = 0;
@@ -1081,18 +1035,16 @@ void AcousticAnalyzer::audioThreadFunc() {
                                         int blipVolume = (xAxisRulerVolume * masterVolume) / 100;
                                         audioEngine->generateXAxisRulerAudio(blipBuffer, blipSamples, frac, blipVolume);
                                         
-#if defined(_WIN32)
                                         playAudioBuffer(blipBuffer);
-#endif
                                         // Sleep for remaining time to maintain msPerClick timing
                                         int sleepTime = msPerClick - blipDuration;
                                         if (sleepTime > 0) {
-                                            platform_sleep_ms(sleepTime);
+                                            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
                                         }
                                     }
                                 } else if (gapMs > 0) {
                                     // Just play the silent gap without clicks
-                                    platform_sleep_ms(gapMs);
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(gapMs));
                                 }
                             }
                         } else if (loop) {
@@ -1110,7 +1062,7 @@ void AcousticAnalyzer::audioThreadFunc() {
                                 // Apply loop pause before wrapping
                                 int pauseMs = loopPauseMs.load();
                                 if (pauseMs > 0) {
-                                    platform_sleep_ms(pauseMs);
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
                                 }
                                 
                                 nextPoint = left;
@@ -1131,26 +1083,26 @@ void AcousticAnalyzer::audioThreadFunc() {
                     smoothFractionalPos = 0.0;
                     
                     // Silence between dots
-                    platform_sleep_ms(silenceDurationMs);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(silenceDurationMs));
                 } else {
                     // No more selected points, advance normally
                     advancePosition();
                     needsPointSelection.store(true);  // Recalculate on next iteration
-                    platform_sleep_ms(10);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
             }
         } else {
             // Frozen mode: stay at current point and play continuously
             if (isSmooth) {
                 playCurrentPositionSmooth(0.0);  // No interpolation in frozen mode
-                platform_sleep_ms(1);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             } else {
                 // In dotted mode (freeze), use configured freeze point pause timing
                 int dotDurationMs = dottedDurationMs.load();
                 int freezePointPauseDurationMs = freezePointPauseMs.load();
                 
                 playCurrentPosition(dotDurationMs);
-                platform_sleep_ms(freezePointPauseDurationMs);
+                std::this_thread::sleep_for(std::chrono::milliseconds(freezePointPauseDurationMs));
             }
         }
     }
@@ -1214,14 +1166,12 @@ void AcousticAnalyzer::advancePosition() {
                     int blipVolume = (xAxisRulerVolume * masterVolume) / 100;
                     audioEngine->generateXAxisRulerAudio(blipBuffer, blipSamples, frac, blipVolume);
                     
-#if defined(_WIN32)
                     playAudioBuffer(blipBuffer);
-#endif
-                    platform_sleep_ms(msPerClick - blipDuration);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(msPerClick - blipDuration));
                 }
             } else if (gapMs > 0) {
                 // Just play the silent gap without clicks
-                platform_sleep_ms(gapMs);
+                std::this_thread::sleep_for(std::chrono::milliseconds(gapMs));
             }
             
             pos = right + 1;  // Jump to just after the loop range
@@ -1232,7 +1182,7 @@ void AcousticAnalyzer::advancePosition() {
             // Apply loop pause before wrapping
             int pauseMs = loopPauseMs.load();
             if (pauseMs > 0) {
-                platform_sleep_ms(pauseMs);
+                std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
             }
             
             pos = 0;
@@ -1247,7 +1197,7 @@ void AcousticAnalyzer::advancePosition() {
             // Apply loop pause before wrapping
             int pauseMs = loopPauseMs.load();
             if (pauseMs > 0) {
-                platform_sleep_ms(pauseMs);
+                std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
             }
             
             pos = left;
@@ -1262,7 +1212,7 @@ void AcousticAnalyzer::advancePosition() {
             // Apply loop pause before wrapping (also applies to continuous replay)
             int pauseMs = loopPauseMs.load();
             if (pauseMs > 0) {
-                platform_sleep_ms(pauseMs);
+                std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
             }
             
             pos = 0;
@@ -1417,10 +1367,8 @@ void AcousticAnalyzer::playCurrentPosition(int durationMs) {
     size_t prevPos = (pos > 0) ? (pos - 1) : 0;
     checkAxisCrossingsInRange(prevPos, pos, mixBuffer, samples);
     
-#if defined(_WIN32)
-    // Play the mixed buffer using persistent audio device
+    // Play the mixed buffer using platform audio backend
     playAudioBuffer(mixBuffer);
-#endif
 }
 
 void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int skipFactor) {
@@ -1631,10 +1579,8 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
     // This ensures we detect crossings even when points are skipped in smooth mode
     checkAxisCrossingsInRange(pos, nextPos, mixBuffer, samples);
     
-#if defined(_WIN32)
-    // Play the mixed buffer using persistent audio device
+    // Play the mixed buffer using platform audio backend
     playAudioBuffer(mixBuffer);
-#endif
 }
 
 void AcousticAnalyzer::synthSWR(const MeasurementPoint& pt, std::vector<int16_t>& buffer, int samples, double frac) {
@@ -1986,203 +1932,32 @@ void AcousticAnalyzer::synthPhaseInterpolated(const MeasurementPoint& pt1, const
     }
 }
 
-#if defined(_WIN32)
-// Windows audio device management for continuous playback
-bool AcousticAnalyzer::openAudioDevice() {
-    std::lock_guard<std::mutex> lock(audioMutex);
-    
-    if (audioDeviceOpen) return true;
-    
-    WAVEFORMATEX wfx = {0};
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nChannels = CHANNELS;
-    wfx.nSamplesPerSec = SAMPLE_RATE;
-    wfx.wBitsPerSample = BITS;
-    wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
-    wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-    
-    MMRESULT res = waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
-    
-    if (res != MMSYSERR_NOERROR) {
-        if (logger) logger->log("ACOUSTIC", "Failed to open audio device");
-        return false;
-    }
-    
-    audioDeviceOpen = true;
-    if (logger) logger->log("ACOUSTIC", "Audio device opened");
-    return true;
-}
-
-void AcousticAnalyzer::closeAudioDevice() {
-    std::lock_guard<std::mutex> lock(audioMutex);
-    
-    if (!audioDeviceOpen) return;
-    
-    if (hWaveOut) {
-        waveOutReset(hWaveOut);
-        waveOutClose(hWaveOut);
-        hWaveOut = nullptr;
-    }
-    
-    audioDeviceOpen = false;
-    if (logger) logger->log("ACOUSTIC", "Audio device closed");
-}
-
-void AcousticAnalyzer::initializeBuffers() {
-    // Allocate buffer headers using RAII-safe vector
-    playbackHeaders.resize(NUM_AUDIO_BUFFERS);
-    
-    // Initialize headers to zero
-    for (int i = 0; i < NUM_AUDIO_BUFFERS; i++) {
-        memset(&playbackHeaders[i], 0, sizeof(WAVEHDR));
-    }
-    
-    // Pre-allocate buffer data storage
-    bufferData.resize(NUM_AUDIO_BUFFERS);
-    for (int i = 0; i < NUM_AUDIO_BUFFERS; i++) {
-        bufferData[i].reserve(AUDIO_BUFFER_SIZE_BYTES / sizeof(int16_t));
-    }
-    
-    nextBufferToQueue = 0;
-    nextBufferToCheck = 0;
-    buffersInFlight = 0;
-    
-    if (logger) logger->log("ACOUSTIC", "Initialized " + std::to_string(NUM_AUDIO_BUFFERS) + " audio buffers");
-}
-
-void AcousticAnalyzer::cleanupBuffers() {
-    if (!playbackHeaders.empty()) {
-        // Unprepare any prepared headers before clearing
-        if (audioDeviceOpen && hWaveOut) {
-            for (int i = 0; i < NUM_AUDIO_BUFFERS; i++) {
-                if (playbackHeaders[i].dwFlags & WHDR_PREPARED) {
-                    waveOutUnprepareHeader(hWaveOut, &playbackHeaders[i], sizeof(WAVEHDR));
-                }
-            }
-        }
-        
-        playbackHeaders.clear();  // RAII-safe cleanup
-    }
-    
-    bufferData.clear();
-    nextBufferToQueue = 0;
-    nextBufferToCheck = 0;
-    buffersInFlight = 0;
-    
-    if (logger) logger->log("ACOUSTIC", "Cleaned up audio buffers");
-}
-
-void AcousticAnalyzer::flushAudioBuffers() {
-    std::lock_guard<std::mutex> lock(audioMutex);
-    
-    if (!audioDeviceOpen || !hWaveOut) return;
-    
-    // Reset stops playback and marks all pending buffers as done
-    waveOutReset(hWaveOut);
-    
-    // Unprepare all headers that were prepared
-    for (int i = 0; i < NUM_AUDIO_BUFFERS; i++) {
-        if (playbackHeaders[i].dwFlags & WHDR_PREPARED) {
-            waveOutUnprepareHeader(hWaveOut, &playbackHeaders[i], sizeof(WAVEHDR));
-        }
-    }
-    
-    // Reset buffer tracking
-    nextBufferToQueue = 0;
-    nextBufferToCheck = 0;
-    buffersInFlight = 0;
-    
-    // Signal audio thread to restart immediately
-    buffersWereFlushed.store(true);
-    
-    if (logger) logger->log("ACOUSTIC", "Flushed audio buffers for immediate curve toggle response");
-}
-
+// Audio playback helper - now cross-platform via IAudioBackend
 void AcousticAnalyzer::playAudioBuffer(const std::vector<int16_t>& buffer) {
-    if (!audioDeviceOpen) {
-        if (!openAudioDevice()) return;
-    }
-    
-    // DOUBLE-BUFFERING IMPLEMENTATION
-    // This implements a circular buffer queue for seamless audio streaming.
-    // Key improvements over the old single-buffer approach:
-    // - Maintains a queue of buffers ready to play
-    // - Only blocks when all buffer slots are full
-    // - Quickly returns to allow audio thread to generate next buffer
-    // - Eliminates gaps between buffers for smooth, continuous audio
+    if (!backend) return;
+    if (buffer.empty()) return;
     
     std::lock_guard<std::mutex> lock(audioMutex);
     
-    // First, check and free any completed buffers
-    // This is non-blocking - we just check the status
-    while (buffersInFlight > 0) {
-        WAVEHDR& header = playbackHeaders[nextBufferToCheck];
-        
-        // Check if this buffer is done (non-blocking check)
-        if (header.dwFlags & WHDR_DONE) {
-            // Unprepare the completed buffer
-            waveOutUnprepareHeader(hWaveOut, &header, sizeof(WAVEHDR));
-            buffersInFlight--;
-            nextBufferToCheck = (nextBufferToCheck + 1) % NUM_AUDIO_BUFFERS;
-        } else {
-            // This buffer is still playing, stop checking
-            // (buffers complete in order)
-            break;
-        }
-    }
+    // Calculate samples from buffer size (buffer is interleaved stereo)
+    int samples = buffer.size() / CHANNELS;
     
-    // Now wait if all buffer slots are full
-    // This provides backpressure to prevent generating audio faster than it can play
-    while (buffersInFlight >= NUM_AUDIO_BUFFERS) {
-        WAVEHDR& header = playbackHeaders[nextBufferToCheck];
-        
-        // Wait for the oldest buffer to complete
-        while (!(header.dwFlags & WHDR_DONE)) {
-            platform_sleep_ms(PLAYBACK_POLLING_INTERVAL_MS);
-        }
-        
-        // Unprepare the completed buffer
-        waveOutUnprepareHeader(hWaveOut, &header, sizeof(WAVEHDR));
-        buffersInFlight--;
-        nextBufferToCheck = (nextBufferToCheck + 1) % NUM_AUDIO_BUFFERS;
-    }
-    
-    // Queue the new buffer
-    // We know we have space now (buffersInFlight < NUM_AUDIO_BUFFERS)
-    WAVEHDR& header = playbackHeaders[nextBufferToQueue];
-    
-    // Copy data to our persistent buffer storage
-    // Note: Copy is necessary (not move) because the buffer data must persist
-    // until waveOut finishes playing it, which happens asynchronously
-    bufferData[nextBufferToQueue] = buffer;
-    
-    // Setup header
-    header.lpData = reinterpret_cast<LPSTR>(bufferData[nextBufferToQueue].data());
-    header.dwBufferLength = static_cast<DWORD>(buffer.size() * sizeof(int16_t));
-    header.dwFlags = 0;
-    
-    // Prepare and queue the buffer
-    waveOutPrepareHeader(hWaveOut, &header, sizeof(WAVEHDR));
-    waveOutWrite(hWaveOut, &header, sizeof(WAVEHDR));
-    
-    nextBufferToQueue = (nextBufferToQueue + 1) % NUM_AUDIO_BUFFERS;
-    buffersInFlight++;
+    // Play buffer using platform audio backend
+    backend->playBuffer(buffer.data(), samples, SAMPLE_RATE, CHANNELS, BITS);
 }
-#endif
 
 // Pitch calculation helper functions
 double AcousticAnalyzer::calcSWRPitch(const MeasurementPoint& pt) {
-    // Use configurable frequency range
+    // Task 1.9: Use centralized pitch mapping
     // SWR: 1.0 (best) to 20.0 (worst) - linear mapping
-    double swr = std::max(1.0, std::min(20.0, pt.swr));
-    double normalizedValue = (swr - 1.0) / (20.0 - 1.0);  // 0.0 to 1.0
-    
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = minHz + normalizedValue * (maxHz - minHz);
+    double pitchHz = linearPitchMap(pt.swr, 1.0, 20.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
+        double swr = std::clamp(pt.swr, 1.0, 20.0);
+        double normalizedValue = (swr - 1.0) / 19.0;
         std::ostringstream oss;
         oss << "SWR=" << pt.swr << " (clamped=" << swr << ") "
             << "-> normalized=" << normalizedValue << " "
@@ -2196,17 +1971,16 @@ double AcousticAnalyzer::calcSWRPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcRLPitch(const MeasurementPoint& pt) {
-    // Use configurable frequency range
+    // Task 1.9: Use centralized pitch mapping
     // Return Loss: 0 dB (worst) to 40 dB (best) - linear mapping
-    double rl = std::max(0.0, std::min(40.0, pt.rl));
-    double normalizedValue = rl / 40.0;  // 0.0 to 1.0
-    
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = minHz + normalizedValue * (maxHz - minHz);
+    double pitchHz = linearPitchMap(pt.rl, 0.0, 40.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
+        double rl = std::clamp(pt.rl, 0.0, 40.0);
+        double normalizedValue = rl / 40.0;
         std::ostringstream oss;
         oss << "RL=" << pt.rl << " dB (clamped=" << rl << " dB) "
             << "-> normalized=" << normalizedValue << " "
@@ -2220,17 +1994,16 @@ double AcousticAnalyzer::calcRLPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcZPitch(const MeasurementPoint& pt) {
-    // Use configurable frequency range
+    // Task 1.9: Use centralized pitch mapping
     // Impedance Magnitude: 1 to 500 Ohms - linear mapping
-    double zMag = std::max(1.0, std::min(500.0, pt.impedance_mag));
-    double normalizedValue = (zMag - 1.0) / (500.0 - 1.0);  // 0.0 to 1.0
-    
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = minHz + normalizedValue * (maxHz - minHz);
+    double pitchHz = linearPitchMap(pt.impedance_mag, 1.0, 500.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
+        double zMag = std::clamp(pt.impedance_mag, 1.0, 500.0);
+        double normalizedValue = (zMag - 1.0) / 499.0;
         std::ostringstream oss;
         oss << "|Z|=" << pt.impedance_mag << " Ω (clamped=" << zMag << " Ω) "
             << "-> normalized=" << normalizedValue << " "
@@ -2244,17 +2017,16 @@ double AcousticAnalyzer::calcZPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcXPitch(const MeasurementPoint& pt) {
-    // Use configurable frequency range
+    // Task 1.9: Use centralized pitch mapping
     // Reactance: -300 to +300 Ohms - linear mapping
-    double x = std::max(-300.0, std::min(300.0, pt.X));
-    double normalizedValue = (x + 300.0) / 600.0;  // 0.0 to 1.0
-    
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = minHz + normalizedValue * (maxHz - minHz);
+    double pitchHz = linearPitchMap(pt.X, -300.0, 300.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
+        double x = std::clamp(pt.X, -300.0, 300.0);
+        double normalizedValue = (x + 300.0) / 600.0;
         std::ostringstream oss;
         oss << "X=" << pt.X << " Ω (clamped=" << x << " Ω) "
             << "-> normalized=" << normalizedValue << " "
@@ -2268,17 +2040,16 @@ double AcousticAnalyzer::calcXPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcPhasePitch(const MeasurementPoint& pt) {
-    // Use configurable frequency range
+    // Task 1.9: Use centralized pitch mapping
     // Phase: -180° to +180° - linear mapping
-    double phase = std::max(-180.0, std::min(180.0, pt.phase_deg));
-    double normalizedValue = (phase + 180.0) / 360.0;  // 0.0 to 1.0
-    
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = minHz + normalizedValue * (maxHz - minHz);
+    double pitchHz = linearPitchMap(pt.phase_deg, -180.0, 180.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
+        double phase = std::clamp(pt.phase_deg, -180.0, 180.0);
+        double normalizedValue = (phase + 180.0) / 360.0;
         std::ostringstream oss;
         oss << "Phase=" << pt.phase_deg << "° (clamped=" << phase << "°) "
             << "-> normalized=" << normalizedValue << " "
@@ -2986,13 +2757,6 @@ void AcousticAnalyzer::playYAxisRuler() {
         return;
     }
     
-#if !defined(_WIN32)
-    if (logger) {
-        logger->log("ACOUSTIC", "Y-Axis Ruler: Feature only available on Windows platform");
-    }
-    return;
-#endif
-    
     // Save current playback state
     stateBeforeRuler = state.load();
     
@@ -3356,12 +3120,11 @@ void AcousticAnalyzer::rulerThreadFunc() {
         // This avoids conflicts with curve channels in MIDI mode
         audioEngine->generateRulerAudio(buffer, samples, pitchHz, panFraction, volume, curveIndex);
         
-#if defined(_WIN32)
         // Play the buffer
         playAudioBuffer(buffer);
         
         // Wait for the blip to finish
-        platform_sleep_ms(blipDuration);
+        std::this_thread::sleep_for(std::chrono::milliseconds(blipDuration));
         
         // Stop the ruler note after the blip duration (important for MIDI mode)
         // This ensures clean, distinct blips with proper duration
@@ -3375,8 +3138,7 @@ void AcousticAnalyzer::rulerThreadFunc() {
         }
         
         // Small pause between blips - longer when curves are playing
-        platform_sleep_ms(pauseMs);
-#endif
+        std::this_thread::sleep_for(std::chrono::milliseconds(pauseMs));
     }
     
     // Ensure all ruler sounds are stopped
@@ -3386,11 +3148,6 @@ void AcousticAnalyzer::rulerThreadFunc() {
         // This prevents hanging notes when switching back to playing state
         audioEngine->stopAllNotes();
     }
-    
-#if defined(_WIN32)
-    // Flush any pending audio buffers to stop sounds immediately
-    flushAudioBuffers();
-#endif
     
     // Restore previous playback state
     PlaybackState restoreState = stateBeforeRuler;

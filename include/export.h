@@ -5,6 +5,37 @@
 #include "measurement.h"
 #include "config.h"
 
+// Task 1.14: Centralized CSV schema definition
+// Single source of truth for CSV field order - ensures export/import compatibility
+namespace CSVSchema {
+    // CSV field names in their canonical order
+    // IMPORTANT: Changes to this order must be reflected in both export and import logic
+    const std::vector<std::string> FIELD_NAMES = {
+        "freq_hz",
+        "s11_re",
+        "s11_im",
+        "swr",
+        "return_loss_db",
+        "r_ohm",
+        "x_ohm",
+        "s21_re",
+        "s21_im"
+    };
+    
+    // Field indices for programmatic access
+    enum FieldIndex {
+        FREQ_HZ = 0,
+        S11_RE = 1,
+        S11_IM = 2,
+        SWR = 3,
+        RETURN_LOSS_DB = 4,
+        R_OHM = 5,
+        X_OHM = 6,
+        S21_RE = 7,
+        S21_IM = 8
+    };
+}
+
 class ExportModule {
 public:
     // Export to CSV with filename generation including timestamp and parameters

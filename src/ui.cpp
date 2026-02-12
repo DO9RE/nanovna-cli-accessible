@@ -20,7 +20,6 @@
 #include <filesystem>
 
 #if defined(_WIN32)
-#include <conio.h>   // For _kbhit() and _getch()
 #include <windows.h> // For GetAsyncKeyState, ShellExecuteA
 #include <shellapi.h> // For ShellExecuteA
 #endif
@@ -29,6 +28,15 @@ ConsoleUI::ConsoleUI(AppConfig cfg_, Logger* logger_, MathLogger* mathLogger_, S
     : cfg(cfg_), logger(logger_), mathLogger(mathLogger_), serial(serial_), webServer(nullptr) {
     activeColumns = cfg.table_columns;  // Load from config
     audio.open();
+    
+    // Initialize console input
+    consoleInput.reset(createConsoleInput());
+    if (consoleInput && !consoleInput->initialize()) {
+        std::cerr << "ERROR: Failed to initialize console input. Keyboard interaction may not work properly.\n";
+        if (logger) logger->log("UI", "ERROR: Failed to initialize console input");
+    } else if (logger) {
+        logger->log("UI", "Console input initialized successfully");
+    }
     
     // Initialize comfort functions with math logger
     comfortFuncs.setMathLogger(mathLogger_);
@@ -46,6 +54,12 @@ ConsoleUI::ConsoleUI(AppConfig cfg_, Logger* logger_, MathLogger* mathLogger_, S
         }
     } else {
         if (logger) logger->log("UI", "Loaded language: " + cfg.language);
+    }
+}
+
+ConsoleUI::~ConsoleUI() {
+    if (consoleInput) {
+        consoleInput->cleanup();
     }
 }
 
@@ -197,9 +211,8 @@ void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
         print(pageOutput.str());
         
         char key;
-#if defined(_WIN32)
-        // Use _getch() for single key press without Enter
-        int ch = _getch();
+        // Use console input abstraction for cross-platform support
+        int ch = consoleInput->getch();
         key = static_cast<char>(ch);
         // Convert uppercase to lowercase for letter keys
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
@@ -209,14 +222,6 @@ void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
         } else {
             print(translation.get("KEY_ESC") + "\n");
         }
-#else
-        // Fallback for non-Windows
-        std::string cmd;
-        std::getline(std::cin, cmd);
-        if (cmd.empty()) continue;  // Ignore empty input, go back to display page
-        key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == ' ' || key == 'n') {
             // Next page
@@ -729,7 +734,6 @@ void ConsoleUI::deviceInfoMenu(NanoVNAProtocol* proto) {
     while (true) {
         print(getPromptWithDepth("DEVICE_INFO_PROMPT", 2) + " ");
         char key;
-#if defined(_WIN32)
         int ch = 0;
         bool hasInput = false;
         
@@ -753,7 +757,7 @@ void ConsoleUI::deviceInfoMenu(NanoVNAProtocol* proto) {
         
         // Check for keyboard input if no web input
         if (!hasInput) {
-            ch = _getch();
+            ch = consoleInput->getch();
             hasInput = true;
         }
         
@@ -761,16 +765,8 @@ void ConsoleUI::deviceInfoMenu(NanoVNAProtocol* proto) {
         // Convert uppercase to lowercase
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         // Echo the key (but not ESC)
-        if (ch != 27) print(key + "\n");
+        if (ch != 27) print(std::string(1, key) + "\n");
         else print(translation.get("KEY_ESC") + "\n");
-#else
-        // Fallback for non-Windows
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;
-        if (cmd.empty()) continue;  // Ignore empty input
-        key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == 27) {  // ESC key
             break;
@@ -824,11 +820,9 @@ void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
         std::string command;
         bool buildingCommand = true;
         
-#if defined(_WIN32)
-        // Windows: Use _getch() for character-by-character input with editing
         while (buildingCommand) {
-            if (_kbhit()) {
-                int ch = _getch();
+            if (consoleInput->kbhit()) {
+                int ch = consoleInput->getch();
                 
                 if (ch == 27) {  // ESC
                     print("\n" + translation.get("DEBUG_SHELL_EXIT", "Exiting shell...") + "\n");
@@ -844,7 +838,7 @@ void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
                     }
                 } else if (ch == 224 || ch == 0) {  // Arrow keys (extended keys)
                     // Extended key codes - read next character
-                    int ext = _getch();
+                    int ext = consoleInput->getch();
                     // For now, we'll ignore arrow keys as they would require
                     // implementing a command history, which is beyond basic editing
                     // Just ignore these keys
@@ -854,13 +848,6 @@ void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
                 }
             }
         }
-#else
-        // Unix/Linux: Use getline for simpler input (terminal handles editing)
-        if (!std::getline(std::cin, command)) {
-            running = false;
-            break;
-        }
-#endif
         
         // Send command if we're still running and have a command
         if (running && !command.empty()) {
@@ -951,8 +938,6 @@ void ConsoleUI::calibrationMenu(NanoVNAProtocol* proto) {
     
     while (true) {
         print(getPromptWithDepth("CAL_MENU_PROMPT", 2) + " ");
-        char key;
-#if defined(_WIN32)
         int ch = 0;
         bool hasInput = false;
         
@@ -976,35 +961,20 @@ void ConsoleUI::calibrationMenu(NanoVNAProtocol* proto) {
         
         // Check for keyboard input if no web input
         if (!hasInput) {
-            ch = _getch();
+            ch = consoleInput->getch();
             hasInput = true;
         }
         
-        key = static_cast<char>(ch);
+        char key = static_cast<char>(ch);
         // Convert uppercase to lowercase
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         // Echo the key (but not ESC)
-        if (ch != 27) print(key + "\n");
+        if (ch != 27) print(std::string(1, key) + "\n");
         else print(translation.get("KEY_ESC") + "\n");
-#else
-        // Fallback for non-Windows
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;
-        if (cmd.empty()) continue;
-        key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
-#if defined(_WIN32)
         if (ch == 27) {  // ESC key
             break;
         }
-#else
-        // On non-Windows, allow 'q' or 'x' to exit as alternative to ESC
-        if (key == 'q' || key == 'x') {
-            break;
-        }
-#endif
         
         if (key == 'l') {
             loadCalibrationProfile(proto);
@@ -1383,15 +1353,13 @@ std::vector<MeasurementPoint> ConsoleUI::performMeasurementWithTiming(NanoVNAPro
             print("\r" + translation.format("MEASURING_PROGRESS", "Measuring... {0}% complete", std::to_string(percent)) + "    ");
         }
         
-        // Check for ESC key press to cancel (Windows only for now)
-#if defined(_WIN32)
-        if (_kbhit()) {
-            int key = _getch();
+        // Check for ESC key press to cancel
+        if (consoleInput->kbhit()) {
+            int key = consoleInput->getch();
             if (key == 27) {  // ESC key
                 proto->setCancelled(true);
             }
         }
-#endif
     });
 
     // Start timing
@@ -1481,7 +1449,6 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
         char key = '\0';
         bool fromWeb = false;
         
-#if defined(_WIN32)
         // Check for web interface input or keyboard input
         // Loop until we get input from either source
         while (key == '\0') {
@@ -1527,9 +1494,8 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
             }
             
             // Check if keyboard key is available
-            if (_kbhit()) {
-                // Use _getch() for single key press without Enter
-                key = static_cast<char>(_getch());
+            if (consoleInput->kbhit()) {
+                key = static_cast<char>(consoleInput->getch());
                 
                 // Convert uppercase to lowercase
                 if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
@@ -1550,14 +1516,6 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
         if (fromWeb && key >= 'A' && key <= 'Z') {
             key = key - 'A' + 'a';
         }
-#else
-        // Fallback for non-Windows (should not be reached as this is Windows-only)
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;
-        if (cmd.empty()) { printOptionsLine(); continue; }
-        key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         // Get language-specific key mappings
         std::string keySummary = translation.get("MENU_KEY_SUMMARY", "s");
@@ -1661,11 +1619,6 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, NanoVNAProtocol* proto) {
-#if !defined(_WIN32)
-    print(translation.get("ACOUSTIC_NOT_WINDOWS", "Acoustic analysis mode is only available on Windows.") + "\n");
-    if (logger) logger->log("UI", "Acoustic analysis attempted on non-Windows platform");
-    return;
-#else
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No measurement data available for acoustic analysis.") + "\n");
         return;
@@ -2142,35 +2095,31 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         }
         
         // Check for keyboard input if no web input
-        if (!hasWebInput && _kbhit()) {
-            ch = _getch();
+        if (!hasWebInput && consoleInput->kbhit()) {
+            ch = consoleInput->getKey();  // Use getKey() to handle platform-specific extended keys
             hasKeyboardInput = true;
         }
         
         // If we have input, process it
         if (hasKeyboardInput || hasWebInput) {
             
-            // Handle special keys (arrows, function keys)
-            // Note: For web input, ch is already set to the appropriate value (72, 75, 77, 80)
-            // For keyboard input, we need to check for extended key prefix
-            if (hasKeyboardInput && (ch == 0 || ch == 224)) {  // Extended key prefix from keyboard
-                ch = _getch();
-            }
-            
-            // Now handle arrow keys (from either source)
-            if (ch == 75) {  // Left arrow
+            // Handle arrow keys
+            // For web input: ch is set to Windows-style codes (72, 75, 77, 80)
+            // For keyboard input: ch is set to LogicalKey codes (KEY_UP, KEY_DOWN, etc.) by getKey()
+            // We need to handle both for backward compatibility
+            if (ch == 75 || ch == KEY_LEFT) {  // Left arrow
                 int adjustedDelta = analyzer.movePositionWithBoundaryCheck(-cfg.navigation_jump_width);
                 if (std::abs(adjustedDelta) != cfg.navigation_jump_width && adjustedDelta != 0) {
                     displayAdjustmentWarning(cfg.navigation_jump_width, std::abs(adjustedDelta));
                 }
                 displayPosition();
-            } else if (ch == 77) {  // Right arrow
+            } else if (ch == 77 || ch == KEY_RIGHT) {  // Right arrow
                 int adjustedDelta = analyzer.movePositionWithBoundaryCheck(cfg.navigation_jump_width);
                 if (std::abs(adjustedDelta) != cfg.navigation_jump_width && adjustedDelta != 0) {
                     displayAdjustmentWarning(cfg.navigation_jump_width, std::abs(adjustedDelta));
                 }
                 displayPosition();
-            } else if (ch == 72) {  // Up arrow - increase jump width
+            } else if (ch == 72 || ch == KEY_UP) {  // Up arrow - increase jump width
                 if (cfg.navigation_jump_width == 1) cfg.navigation_jump_width = 10;
                 else if (cfg.navigation_jump_width == 10) cfg.navigation_jump_width = 100;
                 else if (cfg.navigation_jump_width == 100) cfg.navigation_jump_width = 500;
@@ -2181,7 +2130,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                 print("\r" + translation.format("ACOUSTIC_JUMP_WIDTH", "[Jump width: {0}]", cfg.navigation_jump_width) + " - " + translation.format("ACOUSTIC_POSITION", "Position: {0} / {1}", 
                               analyzer.getPosition(), analyzer.getDataSize() - 1) + "   ");
                 saveSettings();
-            } else if (ch == 80) {  // Down arrow - decrease jump width
+            } else if (ch == 80 || ch == KEY_DOWN) {  // Down arrow - decrease jump width
                 if (cfg.navigation_jump_width == 1000) cfg.navigation_jump_width = 500;
                 else if (cfg.navigation_jump_width == 500) cfg.navigation_jump_width = 100;
                 else if (cfg.navigation_jump_width == 100) cfg.navigation_jump_width = 10;
@@ -2195,8 +2144,16 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             } else {
                 // Regular key
                 char key = static_cast<char>(ch);
-                bool ctrlPressed = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
-                bool shiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                
+                // Check for modifier keys (Windows only)
+                // TODO: Implement cross-platform modifier key detection for volume control shortcuts
+                // on macOS/Linux (e.g., using ncurses or checking modifier sequences)
+                bool ctrlPressed = false;
+                bool shiftPressed = false;
+#if defined(_WIN32)
+                ctrlPressed = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+                shiftPressed = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+#endif
                 
                 // Convert uppercase to lowercase for letter keys
                 if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
@@ -2452,7 +2409,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                             exportMenu(latestPts, &analyzer);
                         }
                         print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
-                        _getch();
+                        consoleInput->getch();
                         break;
                         
                     case 'l':  // Set left marker
@@ -2599,14 +2556,14 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                             }
                         }
                         print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
-                        _getch();
+                        consoleInput->getch();
                         break;
                     
                     case 'g':  // Go To menu
                         analyzer.pause();  // Pause during Go To menu
                         goToMenuAcoustic(analyzer, pts);
                         print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
-                        _getch();
+                        consoleInput->getch();
                         break;
                     
                     case 'y':  // Y-Axis Ruler (Acoustic Y-Axis) - Toggle
@@ -2720,7 +2677,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                             print(translation.get("SMITH_MODE_6", "6 - Hybrid Multi") + "\n");
                             print("\n" + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
                             
-                            int modeChoice = _getch();
+                            int modeChoice = consoleInput->getch();
                             if (modeChoice >= '1' && modeChoice <= '6') {
                                 auto smith = analyzer.getSmithVisualizer();
                                 if (smith) {
@@ -2731,7 +2688,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 }
                             }
                             print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
-                            _getch();
+                            consoleInput->getch();
                         }
                         break;
                     
@@ -2780,10 +2737,8 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     
     print("\n" + translation.get("ACOUSTIC_EXITED", "Acoustic analysis mode exited.") + "\n");
     if (logger) logger->log("UI", "Exited acoustic analysis mode");
-#endif
 }
 
-#if defined(_WIN32)
 // Waveform type names (must match Waveform enum order exactly)
 static const char* WAVEFORM_NAMES[] = {
     "Sine",           // 0 = Waveform::SINE
@@ -2871,8 +2826,8 @@ bool ConsoleUI::readNumericInput(const std::string& prompt, int& result) {
     bool inputting = true;
     
     while (inputting) {
-        if (_kbhit()) {
-            int ch = _getch();
+        if (consoleInput->kbhit()) {
+            int ch = consoleInput->getch();
             if (ch == 27) {  // ESC
                 print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                 return false;  // Cancelled
@@ -3006,10 +2961,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
         bool hasInput = false;
         
         // Check for keyboard input
-        if (_kbhit()) {
-            ch = _getch();
+        if (consoleInput->kbhit()) {
+            ch = consoleInput->getch();
             if (ch == 0 || ch == 224) {
-                if (_kbhit()) _getch();
+                if (consoleInput->kbhit()) consoleInput->getch();
                 continue;
             }
             hasInput = true;
@@ -3028,8 +2983,8 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         std::string volumeInput;
                         bool inputting = true;
                         while (inputting) {
-                            if (_kbhit()) {
-                                int vch = _getch();
+                            if (consoleInput->kbhit()) {
+                                int vch = consoleInput->getch();
                                 if (vch == 27) {  // ESC
                                     print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                     inputting = false;
@@ -3082,7 +3037,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
                         print("> ");
                         
-                        int typeChoice = _getch();
+                        int typeChoice = consoleInput->getch();
                         if (typeChoice >= '1' && typeChoice <= '4') {
                             AppConfig::SmithNoiseType newType;
                             const char* newTypeName = "";
@@ -3145,7 +3100,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
                         print("> ");
                         
-                        int cpChoice = _getch();
+                        int cpChoice = consoleInput->getch();
                         switch (cpChoice) {
                             case 't':
                             case 'T':
@@ -3226,7 +3181,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_6", "  6 - Pulse wave (sharp, electronic)") + "\n\n");
                                     print("> ");
                                     
-                                    int waveChoice = _getch();
+                                    int waveChoice = consoleInput->getch();
                                     AppConfig::CenterPulseWaveform newWaveform = centerPulseWaveform;
                                     const char* waveName = nullptr;
                                     
@@ -3287,7 +3242,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
                         print("> ");
                         
-                        int aeChoice = _getch();
+                        int aeChoice = consoleInput->getch();
                         switch (aeChoice) {
                             case 't':
                             case 'T':
@@ -3407,7 +3362,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_5", "  5 - Percussion (sharp, distinctive)") + "\n\n");
                                     print("> ");
                                     
-                                    int soundChoice = _getch();
+                                    int soundChoice = consoleInput->getch();
                                     AppConfig::AxisCrossingSound newSound = axisCrossingSound;
                                     const char* soundTypeName = nullptr;
                                     
@@ -3451,7 +3406,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         
                         // TODO: Implement preview playback
                         print(translation.get("SMITH_CONFIG_PREVIEW_TODO", "[Preview not yet implemented in this screen]") + "\n");
-                        _getch();
+                        consoleInput->getch();
                     }
                     break;
                 
@@ -3528,9 +3483,9 @@ bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
         
         print(getPromptWithDepth("SURROUND_CONFIG_PROMPT", 5) + " ");
         
-        int ch = _getch();
+        int ch = consoleInput->getch();
         if (ch == 0 || ch == 224) {
-            if (_kbhit()) _getch();
+            if (consoleInput->kbhit()) consoleInput->getch();
             continue;
         }
         
@@ -3680,7 +3635,7 @@ bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
                     print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
                     print("> ");
                     
-                    int curveChoice = _getch();
+                    int curveChoice = consoleInput->getch();
                     if (curveChoice >= '1' && curveChoice <= '4') {
                         AppConfig::SurroundFadingCurve newCurve;
                         const char* newCurveName = "";
@@ -3820,7 +3775,7 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
         
         // Check for keyboard input if no web input
         if (!hasInput) {
-            ch = _getch();
+            ch = consoleInput->getch();
             hasInput = true;
         }
         
@@ -4058,13 +4013,13 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
         }
         
         // Check for keyboard input if no web input
-        if (!hasInput && _kbhit()) {
-            ch = _getch();
+        if (!hasInput && consoleInput->kbhit()) {
+            ch = consoleInput->getch();
             
             // Skip extended key sequences (arrow keys, function keys, etc.)
             if (ch == 0 || ch == 224) {
                 // Read and discard the second byte
-                if (_kbhit()) _getch();
+                if (consoleInput->kbhit()) consoleInput->getch();
                 continue;  // Ignore arrow keys and other extended keys
             }
             hasInput = true;
@@ -4107,8 +4062,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::string minInput;
                             bool inputting = true;
                             while (inputting) {
-                                if (_kbhit()) {
-                                    int ch = _getch();
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n[Cancelled]\n");
                                         inputting = false;
@@ -4148,8 +4103,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::string maxInput;
                             inputting = true;
                             while (inputting) {
-                                if (_kbhit()) {
-                                    int ch = _getch();
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n[Cancelled]\n");
                                         inputting = false;
@@ -4258,8 +4213,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::string input;
                             bool inputting = true;
                             while (inputting) {
-                                if (_kbhit()) {
-                                    int ch = _getch();
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n[Cancelled]\n");
                                         if (logger) {
@@ -4321,8 +4276,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::string input;
                             bool inputting = true;
                             while (inputting) {
-                                if (_kbhit()) {
-                                    int ch = _getch();
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                         if (logger) {
@@ -4482,7 +4437,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     previewEngine->setCurveInstrument(i, cfg.midi_instruments[i]);
                                     print(std::string("[") + curveNames[i] + ": " + MIDI_INSTRUMENT_NAMES[cfg.midi_instruments[i]] + "]\n");
                                     previewEngine->playPreview(cfg.midi_instruments[i], 500);
-                                    Sleep(200);  // Pause between previews
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(200));  // Pause between previews
                                 }
                                 previewEngine->close();
                                 print(translation.get("PREVIEW_COMPLETE", "[Preview complete]") + "\n");
@@ -4512,7 +4467,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     previewEngine->setCurveWaveform(i, cfg.synth_waveforms[i]);
                                     print(std::string("[") + curveNames[i] + ": " + getWaveformName(cfg.synth_waveforms[i]) + "]\n");
                                     previewEngine->playPreview(i, 500);
-                                    Sleep(200);  // Pause between previews
+                                    std::this_thread::sleep_for(std::chrono::milliseconds(200));  // Pause between previews
                                 }
                                 previewEngine->close();
                                 print(translation.get("PREVIEW_COMPLETE", "[Preview complete]") + "\n");
@@ -4546,8 +4501,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         std::string curveInput;
                         bool inputting = true;
                         while (inputting) {
-                            if (_kbhit()) {
-                                int ch = _getch();
+                            if (consoleInput->kbhit()) {
+                                int ch = consoleInput->getch();
                                 if (ch == 27) {  // ESC
                                     print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                     inputting = false;
@@ -4558,8 +4513,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     std::string volumeInput;
                                     bool volumeInputting = true;
                                     while (volumeInputting) {
-                                        if (_kbhit()) {
-                                            int vch = _getch();
+                                        if (consoleInput->kbhit()) {
+                                            int vch = consoleInput->getch();
                                             if (vch == 27) {  // ESC
                                                 print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                                 volumeInputting = false;
@@ -4617,8 +4572,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     std::string volumeInput;
                                     bool volumeInputting = true;
                                     while (volumeInputting) {
-                                        if (_kbhit()) {
-                                            int vch = _getch();
+                                        if (consoleInput->kbhit()) {
+                                            int vch = consoleInput->getch();
                                             if (vch == 27) {  // ESC
                                                 print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                                 volumeInputting = false;
@@ -4676,8 +4631,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     std::string volumeInput;
                                     bool volumeInputting = true;
                                     while (volumeInputting) {
-                                        if (_kbhit()) {
-                                            int vch = _getch();
+                                        if (consoleInput->kbhit()) {
+                                            int vch = consoleInput->getch();
                                             if (vch == 27) {  // ESC
                                                 print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                                 volumeInputting = false;
@@ -4740,8 +4695,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 std::string volumeInput;
                                                 bool volumeInputting = true;
                                                 while (volumeInputting) {
-                                                    if (_kbhit()) {
-                                                        int vch = _getch();
+                                                    if (consoleInput->kbhit()) {
+                                                        int vch = consoleInput->getch();
                                                         if (vch == 27) {  // ESC
                                                             print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                                             volumeInputting = false;
@@ -4847,10 +4802,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print("\n=== " + translation.get("RULER_CONFIG_TITLE", "Y-Axis Ruler Configuration") + " ===\n");
                         
                         // Display current settings
-                        const char* soundMode = (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE) 
-                            ? translation.get("RULER_SOUND_MODE_FOLLOW", "Follow last curve").c_str()
-                            : translation.get("RULER_SOUND_MODE_CUSTOM", "Custom sound").c_str();
-                        print(translation.format("RULER_CONFIG_SOUND_MODE", "Current sound mode: {0}", soundMode) + "\n");
+                        std::string soundMode = (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE) 
+                            ? translation.get("RULER_SOUND_MODE_FOLLOW", "Follow last curve")
+                            : translation.get("RULER_SOUND_MODE_CUSTOM", "Custom sound");
+                        print(translation.format("RULER_CONFIG_SOUND_MODE", "Current sound mode: {0}", soundMode.c_str()) + "\n");
                         
                         if (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::CUSTOM_SOUND) {
                             // Show custom sound settings
@@ -4877,12 +4832,12 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(getPromptWithDepth("RULER_CONFIG", 4) + " ");
                         
                         while (rulerRunning) {
-                            if (_kbhit()) {
-                                int rch = _getch();
+                            if (consoleInput->kbhit()) {
+                                int rch = consoleInput->getch();
                                 
                                 // Skip extended key sequences
                                 if (rch == 0 || rch == 224) {
-                                    if (_kbhit()) _getch();
+                                    if (consoleInput->kbhit()) consoleInput->getch();
                                     continue;
                                 }
                                 
@@ -4903,11 +4858,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 ? AppConfig::RulerSoundMode::CUSTOM_SOUND 
                                                 : AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE;
                                             
-                                            const char* newMode = (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE) 
-                                                ? translation.get("RULER_SOUND_MODE_FOLLOW", "Follow last curve").c_str()
-                                                : translation.get("RULER_SOUND_MODE_CUSTOM", "Custom sound").c_str();
+                                            std::string newMode = (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE) 
+                                                ? translation.get("RULER_SOUND_MODE_FOLLOW", "Follow last curve")
+                                                : translation.get("RULER_SOUND_MODE_CUSTOM", "Custom sound");
                                             
-                                            print("M\n" + translation.format("RULER_MODE_TOGGLED", "Ruler sound mode: {0}", newMode) + "\n");
+                                            print("M\n" + translation.format("RULER_MODE_TOGGLED", "Ruler sound mode: {0}", newMode.c_str()) + "\n");
                                             saveSettings();
                                             // Update analyzer if available
                                             if (analyzer) {
@@ -5117,12 +5072,12 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(getPromptWithDepth("X_RULER_CONFIG", 4) + " ");
                         
                         while (xRulerRunning) {
-                            if (_kbhit()) {
-                                int xch = _getch();
+                            if (consoleInput->kbhit()) {
+                                int xch = consoleInput->getch();
                                 
                                 // Skip extended key sequences
                                 if (xch == 0 || xch == 224) {
-                                    if (_kbhit()) _getch();
+                                    if (consoleInput->kbhit()) consoleInput->getch();
                                     continue;
                                 }
                                 
@@ -5278,12 +5233,12 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(getPromptWithDepth("STATUS_LINE_CONFIG", 4) + " ");
                         
                         while (statusLineRunning) {
-                            if (_kbhit()) {
-                                int sch = _getch();
+                            if (consoleInput->kbhit()) {
+                                int sch = consoleInput->getch();
                                 
                                 // Skip extended key sequences
                                 if (sch == 0 || sch == 224) {
-                                    if (_kbhit()) _getch();
+                                    if (consoleInput->kbhit()) consoleInput->getch();
                                     continue;
                                 }
                                 
@@ -5420,8 +5375,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::string input;
                             bool inputting = true;
                             while (inputting) {
-                                if (_kbhit()) {
-                                    int ch = _getch();
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                         inputting = false;
@@ -5539,7 +5494,6 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     
     return engineTypeChanged || instrumentsChanged || freqRangeChanged || waveformsChanged;
 }
-#endif
 
 std::string ConsoleUI::formatOhm() const {
     // Always use text representation for accessibility
@@ -5563,7 +5517,6 @@ void ConsoleUI::optionsMenu() {
     
     while (true) {
         print(getPromptWithDepth("OPTIONS_PROMPT", 2) + " ");
-#if defined(_WIN32)
         int ch = 0;
         bool hasInput = false;
         
@@ -5587,7 +5540,7 @@ void ConsoleUI::optionsMenu() {
         
         // Check for keyboard input if no web input
         if (!hasInput) {
-            ch = _getch();
+            ch = consoleInput->getch();
             hasInput = true;
         }
         
@@ -5595,15 +5548,8 @@ void ConsoleUI::optionsMenu() {
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         // Echo printable ASCII characters only (32-126), filtering control characters like ESC
         if (key >= 32 && key <= 126) {
-            print(key + "\n");
+            print(std::string(1, key) + "\n");
         }
-#else
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;
-        if (cmd.empty()) continue;
-        char key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == 'l' || key == 's') {  // L in English, S in German (Sprache)
             languageSelectionMenu();
@@ -5811,7 +5757,6 @@ void ConsoleUI::braillePrinterSettingsMenu() {
     
     while (true) {
         print(getPromptWithDepth("BRAILLE_SETTINGS_PROMPT", 3) + " ");
-#if defined(_WIN32)
         int ch = 0;
         bool hasInput = false;
         
@@ -5835,22 +5780,15 @@ void ConsoleUI::braillePrinterSettingsMenu() {
         
         // Check for keyboard input if no web input
         if (!hasInput) {
-            ch = _getch();
+            ch = consoleInput->getch();
             hasInput = true;
         }
         
         char key = static_cast<char>(ch);
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         if (key >= 32 && key <= 126) {
-            print(key + "\n");
+            print(std::string(1, key) + "\n");
         }
-#else
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) break;
-        if (cmd.empty()) continue;
-        char key = cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == 'p') {
             print("\n=== Select Protocol ===\n");
@@ -6087,19 +6025,11 @@ void ConsoleUI::braillePrinterSettingsMenu() {
             bool inAdvanced = true;
             while (inAdvanced) {
                 print("Advanced parameter to change: ");
-#if defined(_WIN32)
-                char advKey = static_cast<char>(_getch());
+                char advKey = static_cast<char>(consoleInput->getch());
                 if (advKey >= 'A' && advKey <= 'Z') advKey = advKey - 'A' + 'a';
                 if (advKey >= 32 && advKey <= 126) {
-                    print(advKey + "\n");
+                    print(std::string(1, advKey) + "\n");
                 }
-#else
-                std::string advCmd;
-                if (!std::getline(std::cin, advCmd)) break;
-                if (advCmd.empty()) continue;
-                char advKey = advCmd[0];
-                if (advKey >= 'A' && advKey <= 'Z') advKey = advKey - 'A' + 'a';
-#endif
                 
                 if (advKey == 27) {  // ESC
                     inAdvanced = false;
@@ -6404,18 +6334,11 @@ void ConsoleUI::webInterfaceMenu() {
         
         print(translation.get("WEB_INTERFACE_STOP_PROMPT", "Press 'S' to stop the web interface, or ESC to go back: "));
         
-#if defined(_WIN32)
-        char key = static_cast<char>(_getch());
+        char key = static_cast<char>(consoleInput->getch());
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         if (key >= 32 && key <= 126) {
-            print(key + "\n");
+            print(std::string(1, key) + "\n");
         }
-#else
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) return;
-        char key = cmd.empty() ? '\0' : cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == 's') {
             print(translation.get("WEB_INTERFACE_STOPPING", "Stopping web interface...") + "\n");
@@ -6438,18 +6361,11 @@ void ConsoleUI::webInterfaceMenu() {
         
         print(translation.get("WEB_INTERFACE_START_PROMPT", "Press 'S' to start the web interface, or ESC to go back: "));
         
-#if defined(_WIN32)
-        char key = static_cast<char>(_getch());
+        char key = static_cast<char>(consoleInput->getch());
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
         if (key >= 32 && key <= 126) {
-            print(key + "\n");
+            print(std::string(1, key) + "\n");
         }
-#else
-        std::string cmd;
-        if (!std::getline(std::cin, cmd)) return;
-        char key = cmd.empty() ? '\0' : cmd[0];
-        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
         
         if (key == 's') {
             print(translation.get("WEB_INTERFACE_STARTING", "Starting web interface...") + "\n");
@@ -6480,11 +6396,7 @@ void ConsoleUI::webInterfaceMenu() {
             }
             
             print(translation.get("MSG_PRESS_ANY_KEY", "\nPress any key to continue...") + "\n");
-#if defined(_WIN32)
-            _getch();
-#else
-            std::cin.get();
-#endif
+            consoleInput->getch();
         }
     }
     
@@ -6666,20 +6578,12 @@ void ConsoleUI::goToMenu(std::vector<MeasurementPoint>& pts, size_t& currentPage
     print(translation.get("HELP_COMMAND", "(H)elp") + "\n");
     print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
     
-#if defined(_WIN32)
-    char key = static_cast<char>(_getch());
+    char key = static_cast<char>(consoleInput->getch());
     if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
     // Echo printable ASCII characters only (32-126), filtering control characters like ESC
     if (key >= 32 && key <= 126) {
-        print(key + "\n");
+        print(std::string(1, key) + "\n");
     }
-#else
-    std::string cmd;
-    if (!std::getline(std::cin, cmd)) return;
-    if (cmd.empty()) return;
-    char key = cmd[0];
-    if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
     
     if (key == 'p') {
         // Go to point
@@ -6868,20 +6772,12 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
     print(translation.get("HELP_COMMAND", "(H)elp") + "\n");
     print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
     
-#if defined(_WIN32)
-    char key = static_cast<char>(_getch());
+    char key = static_cast<char>(consoleInput->getch());
     if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
     // Echo printable ASCII characters only (32-126), filtering control characters like ESC
     if (key >= 32 && key <= 126) {
-        print(key + "\n");
+        print(std::string(1, key) + "\n");
     }
-#else
-    std::string cmd;
-    if (!std::getline(std::cin, cmd)) return;
-    if (cmd.empty()) return;
-    char key = cmd[0];
-    if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
-#endif
     
     // Store current playback state
     PlaybackState previousState = analyzer.getState();
@@ -7179,13 +7075,11 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
             print(translation.get("GOTO_CROSSPOINT_CHOOSE", "Enter cross point number to jump to, or ESC to cancel: ") + " ");
             std::string cpInput;
             
-#if defined(_WIN32)
-            // Windows: Allow ESC cancellation while typing
             cpInput = "";
             bool inputting = true;
             while (inputting) {
-                if (_kbhit()) {
-                    int ch = _getch();
+                if (consoleInput->kbhit()) {
+                    int ch = consoleInput->getch();
                     if (ch == 27) {  // ESC
                         print("\n[Cancelled]\n");
                         return;
@@ -7201,9 +7095,6 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
                     }
                 }
             }
-#else
-            std::getline(std::cin, cpInput);
-#endif
             
             if (cpInput.empty()) return;
             
@@ -7336,7 +7227,6 @@ bool ConsoleUI::readLine(std::string& result) {
     // This function handles line-based input from both keyboard and web interface
     // It waits for a complete line (terminated with Enter/newline)
     
-#if defined(_WIN32)
     // Check if web interface is active
     if (webServer && webServer->isRunning()) {
         std::string line;
@@ -7364,9 +7254,21 @@ bool ConsoleUI::readLine(std::string& result) {
             }
             
             // Check keyboard input (non-blocking check)
-            if (_kbhit()) {
+            if (consoleInput->kbhit()) {
+                // Switch to canonical mode for line input with echo and backspace support
+                if (!consoleInput->enableCanonicalMode()) {
+                    if (logger) logger->log("UI", "Warning: Failed to enable canonical mode for input");
+                }
+                
                 // Use standard getline for keyboard input
-                if (!std::getline(std::cin, result)) {
+                bool success = std::getline(std::cin, result).good();
+                
+                // Switch back to raw mode for kbhit() to work
+                if (!consoleInput->enableRawMode()) {
+                    if (logger) logger->log("UI", "Warning: Failed to restore raw mode after input");
+                }
+                
+                if (!success) {
                     return false;
                 }
                 // Echo to web interface
@@ -7380,10 +7282,21 @@ bool ConsoleUI::readLine(std::string& result) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
-#endif
     
-    // Fallback to standard getline (no web interface or non-Windows)
-    return std::getline(std::cin, result).good();
+    // Fallback to standard getline (no web interface)
+    // Switch to canonical mode for line input with echo and backspace support
+    if (!consoleInput->enableCanonicalMode()) {
+        if (logger) logger->log("UI", "Warning: Failed to enable canonical mode for input");
+    }
+    
+    bool success = std::getline(std::cin, result).good();
+    
+    // Switch back to raw mode for kbhit() to work
+    if (!consoleInput->enableRawMode()) {
+        if (logger) logger->log("UI", "Warning: Failed to restore raw mode after input");
+    }
+    
+    return success;
 }
 
 void ConsoleUI::documentationMenu() {
@@ -7396,10 +7309,9 @@ void ConsoleUI::documentationMenu() {
     
     print(translation.get("DOCS_MENU_PROMPT", "Select an option (1-4, or ESC to go back):") + " > ");
     
-#if defined(_WIN32)
     while (true) {
-        if (_kbhit()) {
-            char key = static_cast<char>(_getch());
+        if (consoleInput->kbhit()) {
+            char key = static_cast<char>(consoleInput->getch());
             if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
             
             if (key == 27) {  // ESC
@@ -7428,24 +7340,6 @@ void ConsoleUI::documentationMenu() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-#else
-    std::string input;
-    if (!std::getline(std::cin, input)) return;
-    if (input.empty() || input == "esc") return;
-    
-    if (input == "1") {
-        std::string docPath = translation.get("DOC_PATH_MANUAL", "doc/manuals/USER_MANUAL_EN.html");
-        openDocumentation(docPath);
-    } else if (input == "2") {
-        std::string docPath = translation.get("DOC_PATH_TRAINING", "doc/training/en/Training_Index.html");
-        openDocumentation(docPath);
-    } else if (input == "3") {
-        std::string docPath = translation.get("DOC_PATH_BETA", "doc/beta-testing/BETA_TESTING_EN.html");
-        openDocumentation(docPath);
-    } else if (input == "4") {
-        feedbackToDeveloper();
-    }
-#endif
 }
 
 void ConsoleUI::openDocumentation(const std::string& docPath) {
@@ -7490,10 +7384,9 @@ void ConsoleUI::feedbackToDeveloper() {
     
     bool attachFiles = false;
     
-#if defined(_WIN32)
     while (true) {
-        if (_kbhit()) {
-            char key = static_cast<char>(_getch());
+        if (consoleInput->kbhit()) {
+            char key = static_cast<char>(consoleInput->getch());
             if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
             
             std::string yesKey = translation.get("YES_KEY", "y");
@@ -7514,17 +7407,6 @@ void ConsoleUI::feedbackToDeveloper() {
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
-#else
-    std::string input;
-    if (!std::getline(std::cin, input)) return;
-    if (input.empty()) return;
-    
-    std::string yesKey = translation.get("YES_KEY", "y");
-    char inputChar = input[0];
-    if (inputChar >= 'A' && inputChar <= 'Z') inputChar = inputChar - 'A' + 'a';
-    
-    attachFiles = (inputChar == yesKey[0] || inputChar == 'y');
-#endif
     
     // Show warning message about manual attachment BEFORE opening email
     if (attachFiles) {
@@ -7535,10 +7417,9 @@ void ConsoleUI::feedbackToDeveloper() {
         print("  - Export/* (if relevant)\n\n");
         print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to cancel, or any other key to continue...") + " ");
         
-#if defined(_WIN32)
         while (true) {
-            if (_kbhit()) {
-                char key = static_cast<char>(_getch());
+            if (consoleInput->kbhit()) {
+                char key = static_cast<char>(consoleInput->getch());
                 if (key == 27) {  // ESC
                     print("\n");
                     return;
@@ -7548,10 +7429,6 @@ void ConsoleUI::feedbackToDeveloper() {
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
-#else
-        std::string dummy;
-        std::getline(std::cin, dummy);
-#endif
     }
     
     print(translation.get("FEEDBACK_PREPARING", "Preparing email...") + "\n");

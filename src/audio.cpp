@@ -1,23 +1,30 @@
 #include "audio.h"
-#include <windows.h>
-#include <mmsystem.h>
-#include <mmdeviceapi.h>
-#include <audioclient.h>
-#include <functiondiscoverykeys_devpkey.h>
+#include "audio_backend.h"
+#include "waveform_utils.h"
 #include <vector>
 #include <cmath>
 #include <random>
 #include <ctime>
 #include <sstream>
+#include <chrono>
+#include <thread>
 
-#pragma comment(lib, "winmm.lib")
-#pragma comment(lib, "ole32.lib")
+using namespace WaveformUtils;
 
-static constexpr double PI_CONST = 3.14159265358979323846;
-static constexpr double AUDIO_AMPLITUDE_SCALE = 30000.0;  // Amplitude scaling for 16-bit audio
+AudioEngine::AudioEngine() : backend(createAudioBackend()) {
+    if (backend) {
+        backend->initialize();
+    }
+}
 
-AudioEngine::AudioEngine() {}
-AudioEngine::~AudioEngine() { close(); }
+AudioEngine::~AudioEngine() { 
+    close();
+    if (backend) {
+        backend->shutdown();
+        delete backend;
+        backend = nullptr;
+    }
+}
 
 bool AudioEngine::open() {
     std::lock_guard<std::mutex> l(mtx);
@@ -39,72 +46,25 @@ void AudioEngine::close() {
     opened = false;
 }
 
-double AudioEngine::waveformSample(double t, Waveform wf) {
-    switch (wf) {
-        case Waveform::SINE:
-            return std::sin(2.0 * PI_CONST * t);
-        case Waveform::SQUARE:
-            return (std::sin(2.0 * PI_CONST * t) >= 0.0) ? 1.0 : -1.0;
-        case Waveform::TRIANGLE: {
-            double v = 2.0 * fabs(2.0 * (t - floor(t + 0.5))) - 1.0;
-            return v;
-        }
-        case Waveform::SAWTOOTH:
-            // Rising sawtooth waveform (ramp from -1 to +1)
-            return 2.0 * (t - floor(t)) - 1.0;
-        case Waveform::SAWTOOTH_INV:
-            // Falling sawtooth waveform (ramp from +1 to -1)
-            return 1.0 - 2.0 * (t - floor(t));
-        case Waveform::PULSE:
-            // Pulse wave with 25% duty cycle
-            return ((t - floor(t)) < 0.25) ? 1.0 : -1.0;
-    }
-    return 0.0;
-}
-
 void AudioEngine::synthAndPlay(double freqHz, double panL, double panR, Waveform wf, int msDuration) {
-    if (!opened) return;
+    if (!opened || !backend) return;
     const int samples = (int)(sampleRate * (msDuration / 1000.0));
     if (samples <= 0) return;
     std::vector<int16_t> buffer(samples * channels);
     double phase = 0.0;
     double phaseInc = freqHz / sampleRate;
     for (int i = 0; i < samples; ++i) {
-        double t = phase;
-        double s = waveformSample(t, wf);
-        phase += phaseInc;
-        if (phase >= 1.0) phase -= 1.0;
+        double s = generateWaveformSample(phase, wf);
+        phase = advancePhase(phase, phaseInc);
         double left = s * panL;
         double right = s * panR;
         int16_t li = (int16_t)std::lround(left * AUDIO_AMPLITUDE_SCALE);
         int16_t ri = (int16_t)std::lround(right * AUDIO_AMPLITUDE_SCALE);
-        buffer[i*2+0] = li;
-        buffer[i*2+1] = ri;
+        writeStereoSample(buffer, i, li, ri);
     }
 
-    WAVEFORMATEX wfx = {0};
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nChannels = channels;
-    wfx.nSamplesPerSec = sampleRate;
-    wfx.wBitsPerSample = bits;
-    wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
-    wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-
-    HWAVEOUT hWave = NULL;
-    MMRESULT res = waveOutOpen(&hWave, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
-    if (res != MMSYSERR_NOERROR) return;
-
-    WAVEHDR hdr = {0};
-    hdr.lpData = (LPSTR)buffer.data();
-    hdr.dwBufferLength = (DWORD)(buffer.size() * sizeof(int16_t));
-    hdr.dwFlags = 0;
-    waveOutPrepareHeader(hWave, &hdr, sizeof(hdr));
-    waveOutWrite(hWave, &hdr, sizeof(hdr));
-    while (!(hdr.dwFlags & WHDR_DONE)) {
-        Sleep(5);
-    }
-    waveOutUnprepareHeader(hWave, &hdr, sizeof(hdr));
-    waveOutClose(hWave);
+    // Use platform audio backend
+    backend->playBuffer(buffer.data(), samples, sampleRate, channels, bits);
 }
 
 void AudioEngine::playTone(double pitchHz, double panL, double panR, Waveform wf, int msDuration) {
@@ -113,79 +73,29 @@ void AudioEngine::playTone(double pitchHz, double panL, double panR, Waveform wf
 
 // Detect maximum number of audio channels supported by hardware
 int AudioEngine::detectMaxChannels() {
-    int maxChannels = 2; // Default to stereo
+    if (!backend) {
+        return 2; // Default to stereo if no backend
+    }
     
-    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    bool comInitialized = SUCCEEDED(hr);
+    int maxChannels = backend->detectMaxChannels();
     
-    if (comInitialized || hr == RPC_E_CHANGED_MODE) {
-        IMMDeviceEnumerator* pEnumerator = NULL;
-        hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL,
-                            CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
-                            (void**)&pEnumerator);
+    if (logger) {
+        std::ostringstream oss;
+        oss << "Audio hardware detected: " << maxChannels << " channels available";
+        logger->log("AUDIO", oss.str());
         
-        if (SUCCEEDED(hr) && pEnumerator) {
-            IMMDevice* pDevice = NULL;
-            hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
-            
-            if (SUCCEEDED(hr) && pDevice) {
-                IAudioClient* pAudioClient = NULL;
-                hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL,
-                                     NULL, (void**)&pAudioClient);
-                
-                if (SUCCEEDED(hr) && pAudioClient) {
-                    WAVEFORMATEX* pWaveFormat = NULL;
-                    hr = pAudioClient->GetMixFormat(&pWaveFormat);
-                    
-                    if (SUCCEEDED(hr) && pWaveFormat) {
-                        maxChannels = pWaveFormat->nChannels;
-                        
-                        if (logger) {
-                            std::ostringstream oss;
-                            oss << "Audio device: " << pWaveFormat->nChannels << " channels, "
-                                << pWaveFormat->nSamplesPerSec << " Hz, "
-                                << pWaveFormat->wBitsPerSample << " bits";
-                            logger->log("AUDIO", oss.str());
-                            
-                            // Log channel configuration
-                            if (pWaveFormat->nChannels == 2) {
-                                logger->log("AUDIO", "Configuration: STEREO (2.0)");
-                            } else if (pWaveFormat->nChannels == 6) {
-                                logger->log("AUDIO", "Configuration: SURROUND 5.1 detected");
-                            } else if (pWaveFormat->nChannels == 8) {
-                                logger->log("AUDIO", "Configuration: SURROUND 7.1 detected");
-                            } else {
-                                std::ostringstream oss2;
-                                oss2 << "Configuration: " << pWaveFormat->nChannels << " channels";
-                                logger->log("AUDIO", oss2.str());
-                            }
-                        }
-                        
-                        CoTaskMemFree(pWaveFormat);
-                    } else if (logger) {
-                        logger->log("AUDIO", "Failed to get audio mix format, defaulting to stereo");
-                    }
-                    
-                    pAudioClient->Release();
-                } else if (logger) {
-                    logger->log("AUDIO", "Failed to activate audio client, defaulting to stereo");
-                }
-                
-                pDevice->Release();
-            } else if (logger) {
-                logger->log("AUDIO", "Failed to get default audio endpoint, defaulting to stereo");
-            }
-            
-            pEnumerator->Release();
-        } else if (logger) {
-            logger->log("AUDIO", "Failed to create device enumerator, defaulting to stereo");
+        // Log channel configuration
+        if (maxChannels == 2) {
+            logger->log("AUDIO", "Configuration: STEREO (2.0)");
+        } else if (maxChannels == 6) {
+            logger->log("AUDIO", "Configuration: SURROUND 5.1 detected");
+        } else if (maxChannels == 8) {
+            logger->log("AUDIO", "Configuration: SURROUND 7.1 detected");
+        } else {
+            std::ostringstream oss2;
+            oss2 << "Configuration: " << maxChannels << " channels";
+            logger->log("AUDIO", oss2.str());
         }
-        
-        if (comInitialized) {
-            CoUninitialize();
-        }
-    } else if (logger) {
-        logger->log("AUDIO", "Failed to initialize COM for audio detection, defaulting to stereo");
     }
     
     return maxChannels;
@@ -235,7 +145,7 @@ void AudioEngine::playToneMultiChannel(double pitchHz, const AudioMultiChannelGa
 
 // Multi-channel synthesis and playback
 void AudioEngine::synthAndPlayMultiChannel(double freqHz, const AudioMultiChannelGains& gains, Waveform wf, int msDuration) {
-    if (!opened) return;
+    if (!opened || !backend) return;
     
     const int samples = (int)(sampleRate * (msDuration / 1000.0));
     if (samples <= 0) return;
@@ -260,10 +170,8 @@ void AudioEngine::synthAndPlayMultiChannel(double freqHz, const AudioMultiChanne
     }
     
     for (int i = 0; i < samples; ++i) {
-        double t = phase;
-        double s = waveformSample(t, wf);
-        phase += phaseInc;
-        if (phase >= 1.0) phase -= 1.0;
+        double s = generateWaveformSample(phase, wf);
+        phase = advancePhase(phase, phaseInc);
         
         if (channels == 8) {
             // 7.1 surround: FL, FR, FC, LFE, BL, BR, SL, SR
@@ -286,22 +194,12 @@ void AudioEngine::synthAndPlayMultiChannel(double freqHz, const AudioMultiChanne
         }
     }
 
-    WAVEFORMATEX wfx = {0};
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nChannels = channels;
-    wfx.nSamplesPerSec = sampleRate;
-    wfx.wBitsPerSample = bits;
-    wfx.nBlockAlign = (wfx.wBitsPerSample / 8) * wfx.nChannels;
-    wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-
-    HWAVEOUT hWave = NULL;
-    MMRESULT res = waveOutOpen(&hWave, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
+    // Use platform audio backend
+    bool success = backend->playBuffer(buffer.data(), samples, sampleRate, channels, bits);
     
-    if (res != MMSYSERR_NOERROR) {
+    if (!success) {
         if (logger) {
-            std::ostringstream oss;
-            oss << "waveOutOpen failed with error " << res << " for " << channels << " channels";
-            logger->log("AUDIO", oss.str());
+            logger->log("AUDIO", "Audio playback failed for " + std::to_string(channels) + " channels");
             logger->log("AUDIO", "Falling back to stereo mode");
         }
         
@@ -320,20 +218,7 @@ void AudioEngine::synthAndPlayMultiChannel(double freqHz, const AudioMultiChanne
             synthAndPlay(freqHz, left, right, wf, msDuration);
             channels = oldChannels;
         }
-        return;
     }
-
-    WAVEHDR hdr = {0};
-    hdr.lpData = (LPSTR)buffer.data();
-    hdr.dwBufferLength = (DWORD)(buffer.size() * sizeof(int16_t));
-    hdr.dwFlags = 0;
-    waveOutPrepareHeader(hWave, &hdr, sizeof(hdr));
-    waveOutWrite(hWave, &hdr, sizeof(hdr));
-    while (!(hdr.dwFlags & WHDR_DONE)) {
-        Sleep(5);
-    }
-    waveOutUnprepareHeader(hWave, &hdr, sizeof(hdr));
-    waveOutClose(hWave);
 }
 
 void AudioEngine::playSequence(const std::vector<double>& yValues, uint64_t startFreq, uint64_t endFreq, Waveform wf) {
@@ -342,8 +227,8 @@ void AudioEngine::playSequence(const std::vector<double>& yValues, uint64_t star
     if (n == 0) return;
     for (size_t i=0;i<n;i++) {
         double frac = (double)i / (double)(n-1);
-        double panL = 1.0 - frac;
-        double panR = frac;
+        double panL, panR;
+        linearPan(frac, panL, panR);
         double y = yValues[i];
         double minY = 1.0, maxY = 10.0;
         if (y < minY) y = minY;

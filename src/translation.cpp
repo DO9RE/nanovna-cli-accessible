@@ -226,39 +226,16 @@ bool TranslationManager::parseLanguageFile(const std::string& filepath, std::str
             
             translations[key] = quotedValue;
         } else {
+            // Task 1.19: Use processEscapeSequence() helper instead of inline duplicate switch
             // Unquoted value - process escape sequences for backward compatibility
-            // Use a single-pass approach with state machine to handle sequences correctly
             std::string processed;
+            bool inEscape = false;
+            
             for (size_t i = 0; i < value.length(); i++) {
-                if (value[i] == '\\' && i + 1 < value.length()) {
-                    // Escape sequence
-                    char next = value[i + 1];
-                    switch (next) {
-                        case 'n':
-                            processed += '\n';
-                            i++; // Skip next character
-                            break;
-                        case 't':
-                            processed += '\t';
-                            i++;
-                            break;
-                        case 'r':
-                            processed += '\r';
-                            i++;
-                            break;
-                        case '\\':
-                            processed += '\\';
-                            i++;
-                            break;
-                        case '"':
-                            processed += '"';
-                            i++;
-                            break;
-                        default:
-                            // Unknown escape - keep the backslash
-                            processed += value[i];
-                            break;
-                    }
+                if (inEscape) {
+                    processEscapeSequence(value[i], processed, inEscape);
+                } else if (value[i] == '\\') {
+                    inEscape = true;
                 } else {
                     processed += value[i];
                 }

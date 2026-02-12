@@ -1,4 +1,6 @@
 #include "synthesizer_engine.h"
+#include "audio_backend.h"
+#include "waveform_utils.h"
 #include <cmath>
 #include <algorithm>
 #include <random>
@@ -6,14 +8,9 @@
 #include <thread>
 #include <functional>
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <mmsystem.h>
-#endif
+using namespace WaveformUtils;
 
-static constexpr double PI_CONST = 3.14159265358979323846;
-
-SynthesizerEngine::SynthesizerEngine() {
+SynthesizerEngine::SynthesizerEngine() : backend(createAudioBackend()) {
     // Initialize default waveforms for each curve
     curveWaveforms[0] = Waveform::SINE;          // SWR
     curveWaveforms[1] = Waveform::SQUARE;        // Return Loss
@@ -36,45 +33,22 @@ SynthesizerEngine::~SynthesizerEngine() noexcept {
     } catch (...) {
         // Silently swallow any exception to prevent termination
     }
-}
-
-bool SynthesizerEngine::open() {
-    std::lock_guard<std::mutex> l(mtx);
-    opened = true;
-    return true;
-}
-
-void SynthesizerEngine::close() {
-    std::lock_guard<std::mutex> l(mtx);
-    opened = false;
-}
-
-double SynthesizerEngine::waveformSample(double t, Waveform wf, double pitchHz) {
-    switch (wf) {
-        case Waveform::SINE:
-            return std::sin(2.0 * PI_CONST * t);
-            
-        case Waveform::SQUARE:
-            return (std::sin(2.0 * PI_CONST * t) >= 0.0) ? 1.0 : -1.0;
-            
-        case Waveform::TRIANGLE: {
-            double v = 2.0 * fabs(2.0 * (t - floor(t + 0.5))) - 1.0;
-            return v;
-        }
-        
-        case Waveform::SAWTOOTH:
-            // Rising sawtooth waveform (ramp from -1 to +1)
-            return 2.0 * (t - floor(t)) - 1.0;
-        
-        case Waveform::SAWTOOTH_INV:
-            // Falling sawtooth waveform (ramp from +1 to -1)
-            return 1.0 - 2.0 * (t - floor(t));
-        
-        case Waveform::PULSE:
-            // Pulse wave with 25% duty cycle
-            return ((t - floor(t)) < 0.25) ? 1.0 : -1.0;
+    
+    // Clean up audio backend
+    // Memory automatically freed by unique_ptr, but shutdown() called explicitly to release audio resources
+    if (backend) {
+        backend->shutdown();
     }
-    return 0.0;
+}
+
+// Task 1.8: onInitialize hook replaces old open() implementation
+bool SynthesizerEngine::onInitialize() {
+    // Initialize audio backend if not already initialized
+    // Note: mutex already locked by AudioEngineBase::open()
+    if (backend) {
+        backend->initialize();
+    }
+    return true;
 }
 
 void SynthesizerEngine::generateAudio(
@@ -90,9 +64,7 @@ void SynthesizerEngine::generateAudio(
     if (samples <= 0) return;
     
     // Ensure buffer is large enough (stereo)
-    if (buffer.size() < static_cast<size_t>(samples * 2)) {
-        buffer.resize(samples * 2, 0);
-    }
+    ensureStereoBuffer(buffer, samples);
     
     // Get waveform and phase for this curve
     Waveform wf = curveWaveforms[curveIndex];
@@ -101,26 +73,19 @@ void SynthesizerEngine::generateAudio(
     // Calculate phase increment per sample
     double phaseInc = pitchHz / sampleRate;
     
-    // Calculate stereo panning (0.0 = left, 1.0 = right)
-    // Use constant-power panning to maintain equal loudness regardless of pan position
-    // This prevents intermodulation when multiple signals overlap in the stereo field
-    // Formula: L = cos(pan * π/2), R = sin(pan * π/2)
-    // This ensures L² + R² = 1 (constant power)
-    // panFraction ranges from 0.0 (left) to 1.0 (right), so multiplying by π/2
-    // gives the angle range 0 to π/2 radians needed for cos/sin panning
-    double panAngle = panFraction * (PI_CONST / 2.0);
-    double panL = std::cos(panAngle);
-    double panR = std::sin(panAngle);
+    // Calculate stereo panning using constant-power panning
+    double panL, panR;
+    constantPowerPan(panFraction, panL, panR);
     
-    // Apply volume scaling (100% = normal, 0% = silent, 200% = double)
-    double volumeScale = std::clamp(volumePercent, 0, 200) / 100.0;
+    // Apply volume scaling
+    double volumeScale = normalizeVolume(volumePercent, 0, 200);
     
     // Headroom management: Scale down to prevent clipping when multiple curves are mixed
     // With up to 5 curves potentially active, divide amplitude by 5 to ensure headroom
     // This prevents intermodulation distortion when signals mix in the stereo field
     constexpr int MAX_CONCURRENT_CURVES = 5;
     const double headroomScale = 1.0 / MAX_CONCURRENT_CURVES;
-    const double baseAmplitude = 30000.0 * headroomScale;  // ±6000 per curve
+    const double baseAmplitude = AUDIO_AMPLITUDE_SCALE * headroomScale;  // ±6000 per curve
     
     // Soft limiting constants (declared once, outside loop)
     constexpr double SOFT_LIMIT_THRESHOLD = 30000.0;
@@ -128,12 +93,10 @@ void SynthesizerEngine::generateAudio(
     
     // Generate samples
     for (int i = 0; i < samples; ++i) {
-        double t = phase;
-        double s = waveformSample(t, wf, pitchHz);
+        double s = generateWaveformSample(phase, wf);
         
         // Update phase for next sample
-        phase += phaseInc;
-        while (phase >= 1.0) phase -= 1.0;
+        phase = advancePhase(phase, phaseInc);
         
         // Apply panning and volume
         double left = s * panL * volumeScale;
@@ -181,8 +144,7 @@ Waveform SynthesizerEngine::getCurveWaveform(int curveIndex) const {
 }
 
 void SynthesizerEngine::playPreview(int curveIndex, int durationMs) {
-#if defined(_WIN32)
-    if (!opened) return;
+    if (!opened || !backend) return;
     if (curveIndex < 0 || curveIndex >= 5) return;
     
     // Generate a preview tone at 440 Hz (A4) with the curve's waveform
@@ -195,40 +157,8 @@ void SynthesizerEngine::playPreview(int curveIndex, int durationMs) {
     // Generate audio with center panning and 80% volume
     generateAudio(buffer, samples, curveIndex, previewFreqHz, 0.5, 80);
     
-    // Open Windows audio device for playback
-    WAVEFORMATEX wfx = {};
-    wfx.wFormatTag = WAVE_FORMAT_PCM;
-    wfx.nChannels = channels;
-    wfx.nSamplesPerSec = sampleRate;
-    wfx.wBitsPerSample = bits;
-    wfx.nBlockAlign = (wfx.nChannels * wfx.wBitsPerSample) / 8;
-    wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * wfx.nBlockAlign;
-    wfx.cbSize = 0;
-    
-    HWAVEOUT hWaveOut;
-    MMRESULT result = waveOutOpen(&hWaveOut, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
-    if (result != MMSYSERR_NOERROR) {
-        return;
-    }
-    
-    // Prepare and play the buffer
-    WAVEHDR waveHdr = {};
-    waveHdr.lpData = reinterpret_cast<LPSTR>(buffer.data());
-    waveHdr.dwBufferLength = buffer.size() * sizeof(int16_t);
-    waveHdr.dwFlags = 0;
-    
-    waveOutPrepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
-    waveOutWrite(hWaveOut, &waveHdr, sizeof(WAVEHDR));
-    
-    // Wait for playback to complete
-    while (!(waveHdr.dwFlags & WHDR_DONE)) {
-        Sleep(10);
-    }
-    
-    // Cleanup
-    waveOutUnprepareHeader(hWaveOut, &waveHdr, sizeof(WAVEHDR));
-    waveOutClose(hWaveOut);
-#endif
+    // Play the buffer using the platform audio backend
+    backend->playBuffer(buffer.data(), samples, sampleRate, channels, bits);
 }
 
 void SynthesizerEngine::generateRulerAudio(
@@ -243,9 +173,7 @@ void SynthesizerEngine::generateRulerAudio(
     if (samples <= 0) return;
     
     // Ensure buffer is large enough (stereo)
-    if (buffer.size() < static_cast<size_t>(samples * 2)) {
-        buffer.resize(samples * 2, 0);
-    }
+    ensureStereoBuffer(buffer, samples);
     
     // Number of curves in the system
     constexpr int NUM_CURVES = 5;
@@ -268,25 +196,22 @@ void SynthesizerEngine::generateRulerAudio(
     // Calculate phase increment per sample
     double phaseInc = pitchHz / sampleRate;
     
-    // Calculate stereo panning (0.0 = left, 1.0 = right)
-    double panAngle = panFraction * (PI_CONST / 2.0);
-    double panL = std::cos(panAngle);
-    double panR = std::sin(panAngle);
+    // Calculate stereo panning using constant-power panning
+    double panL, panR;
+    constantPowerPan(panFraction, panL, panR);
     
     // Apply volume scaling
-    double volumeScale = std::clamp(volumePercent, 0, 200) / 100.0;
+    double volumeScale = normalizeVolume(volumePercent, 0, 200);
     
     // Ruler uses full amplitude (no headroom reduction needed for single source)
-    const double baseAmplitude = 30000.0;
+    const double baseAmplitude = AUDIO_AMPLITUDE_SCALE;
     
     // Generate samples
     for (int i = 0; i < samples; ++i) {
-        double t = rulerPhase;
-        double s = waveformSample(t, wf, pitchHz);
+        double s = generateWaveformSample(rulerPhase, wf);
         
         // Update phase for next sample
-        rulerPhase += phaseInc;
-        while (rulerPhase >= 1.0) rulerPhase -= 1.0;
+        rulerPhase = advancePhase(rulerPhase, phaseInc);
         
         // Apply panning and volume
         double left = s * panL * volumeScale;
@@ -296,13 +221,9 @@ void SynthesizerEngine::generateRulerAudio(
         int16_t li = static_cast<int16_t>(std::lround(std::clamp(left * baseAmplitude, -32768.0, 32767.0)));
         int16_t ri = static_cast<int16_t>(std::lround(std::clamp(right * baseAmplitude, -32768.0, 32767.0)));
         
-        // Mix into buffer (add to existing samples)
-        int32_t leftSum = static_cast<int32_t>(buffer[i * 2 + 0]) + static_cast<int32_t>(li);
-        int32_t rightSum = static_cast<int32_t>(buffer[i * 2 + 1]) + static_cast<int32_t>(ri);
-        
-        // Clamp to 16-bit range
-        buffer[i * 2 + 0] = static_cast<int16_t>(std::clamp(leftSum, static_cast<int32_t>(-32768), static_cast<int32_t>(32767)));
-        buffer[i * 2 + 1] = static_cast<int16_t>(std::clamp(rightSum, static_cast<int32_t>(-32768), static_cast<int32_t>(32767)));
+        // Mix into buffer using mixSamples helper
+        buffer[i * 2 + 0] = mixSamples(buffer[i * 2 + 0], li);
+        buffer[i * 2 + 1] = mixSamples(buffer[i * 2 + 1], ri);
     }
 }
 
@@ -316,20 +237,17 @@ void SynthesizerEngine::generateXAxisRulerAudio(
     if (samples <= 0) return;
     
     // Ensure buffer is large enough (stereo)
-    if (buffer.size() < static_cast<size_t>(samples * 2)) {
-        buffer.resize(samples * 2, 0);
-    }
+    ensureStereoBuffer(buffer, samples);
     
-    // Calculate stereo panning (0.0 = left, 1.0 = right)
-    double panAngle = panFraction * (PI_CONST / 2.0);
-    double panL = std::cos(panAngle);
-    double panR = std::sin(panAngle);
+    // Calculate stereo panning using constant-power panning
+    double panL, panR;
+    constantPowerPan(panFraction, panL, panR);
     
     // Apply volume scaling
-    double volumeScale = std::clamp(volumePercent, 0, 200) / 100.0;
+    double volumeScale = normalizeVolume(volumePercent, 0, 200);
     
     // Base amplitude for noise
-    const double baseAmplitude = 30000.0;
+    const double baseAmplitude = AUDIO_AMPLITUDE_SCALE;
     
     // Generate noise based on type
     // Using thread-local storage for thread-safe pseudo-random number generation
@@ -383,8 +301,7 @@ void SynthesizerEngine::generateXAxisRulerAudio(
         int16_t li = static_cast<int16_t>(std::lround(std::clamp(left * baseAmplitude, -32768.0, 32767.0)));
         int16_t ri = static_cast<int16_t>(std::lround(std::clamp(right * baseAmplitude, -32768.0, 32767.0)));
         
-        // Write directly to buffer (overwrite, don't mix)
-        buffer[i * 2 + 0] = li;
-        buffer[i * 2 + 1] = ri;
+        // Write directly to buffer using writeStereoSample
+        writeStereoSample(buffer, i, li, ri);
     }
 }

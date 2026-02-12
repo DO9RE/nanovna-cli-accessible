@@ -6,6 +6,9 @@
 #include <string>
 #include <mutex>
 
+// Forward declaration to avoid circular dependency
+class IAudioBackend;
+
 // Multi-channel audio gains for 7.1 surround
 struct AudioMultiChannelGains {
     float frontLeft = 0.0f;
@@ -49,8 +52,8 @@ private:
     int bits = 16;
     Logger* logger = nullptr;
     MathLogger* mathLogger = nullptr;
+    IAudioBackend* backend = nullptr;
 
     void synthAndPlay(double freqHz, double panL, double panR, Waveform wf, int msDuration);
     void synthAndPlayMultiChannel(double freqHz, const AudioMultiChannelGains& gains, Waveform wf, int msDuration);
-    double waveformSample(double t, Waveform wf);
 };

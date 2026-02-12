@@ -10,12 +10,14 @@
 #include "translation.h"
 #include "comfort_functions.h"
 #include "web_server.h"
+#include "console_input.h"
 #include <vector>
 #include <memory>
 
 class ConsoleUI {
 public:
     ConsoleUI(AppConfig cfg, Logger* logger, MathLogger* mathLogger, SerialComm* serial);
+    ~ConsoleUI();
     void run(NanoVNAProtocol* proto);
 
 private:
@@ -23,6 +25,7 @@ private:
     Logger* logger;
     MathLogger* mathLogger;
     SerialComm* serial;
+    std::unique_ptr<IConsoleInput> consoleInput;
 
     std::vector<std::string> activeColumns;
     AudioEngine audio;
@@ -112,10 +115,21 @@ private:
     void autoMarkerPlacement(std::vector<MeasurementPoint>& pts, NanoVNAProtocol* proto);
     void comfortConfiguration();
     
-    // Helper for reading input
+    // Helper for reading input (Task 1.18: Input validation helpers)
     bool getYesNo(const std::string& prompt);
     uint64_t getFrequencyInput(const std::string& prompt);
     double getDoubleInput(const std::string& prompt, double min_val, double max_val);
+    char getMenuChoice(const std::string& prompt = "");  // Single character menu choice
+    std::string getLineInput(const std::string& prompt = "");  // Line input with empty check
+    
+    // Task 1.17: Cable preset selection helper
+    struct CableSelection {
+        double velocity_factor;
+        double loss_db_per_m;
+        std::string name;
+        bool selected;  // false if user cancelled
+    };
+    CableSelection selectCablePreset();
     
     // Helper for generating prompts with depth indication
     std::string getPromptWithDepth(const std::string& promptKey, int depth = 1) const;

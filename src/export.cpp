@@ -8,6 +8,16 @@
 #include <cmath>
 #include <algorithm>
 
+// Task 1.14: Helper to generate CSV header from centralized schema
+static std::string generateCSVHeader() {
+    std::string header;
+    for (size_t i = 0; i < CSVSchema::FIELD_NAMES.size(); ++i) {
+        if (i > 0) header += ",";
+        header += CSVSchema::FIELD_NAMES[i];
+    }
+    return header;
+}
+
 // Helper function to generate filename with timestamp and parameters
 static std::string generateFilename(const std::string& extension,
                                    uint64_t startFreq, uint64_t endFreq, uint64_t step) {
@@ -47,8 +57,8 @@ bool ExportModule::exportCSV(const std::vector<MeasurementPoint>& pts,
         return false; 
     }
     
-    ofs << "freq_hz,s11_re,s11_im,swr,return_loss_db,r_ohm,x_ohm";
-    ofs << ",s21_re,s21_im\n";
+    // Task 1.14: Use centralized schema for header
+    ofs << generateCSVHeader() << "\n";
     
     for (auto &p : pts) {
         ofs << p.freq << ","
@@ -97,8 +107,8 @@ bool ExportModule::exportTXT(const std::vector<MeasurementPoint>& pts,
 bool ExportModule::exportCSV(const std::string& filename, const std::vector<MeasurementPoint>& pts, std::string& err) {
     std::ofstream ofs(filename);
     if (!ofs) { err = "Cannot open file"; return false; }
-    ofs << "freq_hz,s11_re,s11_im,swr,return_loss_db,r_ohm,x_ohm";
-    ofs << ",s21_re,s21_im\n";
+    // Task 1.14: Use centralized schema for header
+    ofs << generateCSVHeader() << "\n";
     for (auto &p : pts) {
         ofs << p.freq << ","
             << std::fixed << std::setprecision(9) << p.s11_re << ","

@@ -1,13 +1,12 @@
 #include "midi_engine.h"
+#include "platform/midi_platform.h"
+#include "pitch_mapping.h"
 #include <cmath>
 #include <algorithm>
+#include <chrono>
+#include <thread>
 
-#if defined(_WIN32)
-#pragma comment(lib, "winmm.lib")
-#endif
-
-static constexpr double A4_FREQ = 440.0;  // A4 = 440 Hz
-static constexpr int A4_NOTE = 69;         // MIDI note number for A4
+// Note: A4_FREQ and A4_NOTE constants moved to pitch_mapping.h
 
 // Pitch bend range constant
 // We always use 24 semitones (2 octaves) for maximum flexibility
@@ -19,11 +18,9 @@ static constexpr int PITCH_BEND_SEMITONES = 24; // 24 semitones (2 octaves)
 // Note velocity is kept constant to ensure consistent attack
 static constexpr uint8_t GLIDING_MODE_VELOCITY = 100;
 
-MIDIEngine::MIDIEngine() 
-#if defined(_WIN32)
-    : hMidiOut(nullptr)
-#endif
-{
+MIDIEngine::MIDIEngine() {
+    // Create platform-specific MIDI implementation
+    platform.reset(createMIDIPlatform());
     // Initialize default instruments for each curve
     // Using General MIDI instrument numbers - selected for sustained, non-percussive tones
     curveInstruments[0] = 19;  // SWR: Church Organ (sustained)
@@ -63,7 +60,6 @@ MIDIEngine::~MIDIEngine() noexcept {
 }
 
 bool MIDIEngine::open() {
-#if defined(_WIN32)
     std::lock_guard<std::mutex> l(mtx);
     
     if (opened) {
@@ -71,18 +67,36 @@ bool MIDIEngine::open() {
         return true;
     }
     
-    // Open the default MIDI output device
-    MMRESULT result = midiOutOpen(&hMidiOut, MIDI_MAPPER, 0, 0, CALLBACK_NULL);
-    if (result != MMSYSERR_NOERROR) {
+    // Log attempt to open with platform details
+    if (logger && platform) {
+        std::string msg = "Attempting to open MIDI device using: ";
+        msg += platform->getPlatformName();
+        logger->log("MIDI", msg);
+    }
+    
+    // Open platform-specific MIDI
+    if (!platform->open()) {
         if (logger) {
-            char errMsg[512];
-            snprintf(errMsg, sizeof(errMsg), "midiOutOpen failed with error code: %d", result);
-            logger->log("MIDI", errMsg);
+            std::string err = "Failed to open MIDI on ";
+            err += platform->getPlatformName();
+            err += ": ";
+            if (platform->getLastError()) {
+                err += platform->getLastError();
+            } else {
+                err += "(no error details available)";
+            }
+            logger->log("MIDI", err);
         }
         return false;
     }
     
-    if (logger) logger->log("MIDI", "MIDI device opened successfully");
+    if (logger) {
+        std::string msg = "MIDI device opened successfully (";
+        msg += platform->getPlatformName();
+        msg += ")";
+        logger->log("MIDI", msg);
+    }
+    
     opened = true;
     
     // Calculate reference note from synth range
@@ -100,12 +114,24 @@ bool MIDIEngine::open() {
         // Set default volume
         sendVolume(midiChannel, 100);
         
-        // Disable vibrato and modulation effects for clean waveforms
+        // Disable all audio effects for clean, precise measurement signals
         uint8_t status = 0xB0 | (midiChannel & 0x0F);  // Control Change
+        
+        // Disable modulation and vibrato effects
         sendMIDIMessage(status, 1, 0);    // CC 1: Modulation Wheel = 0 (off)
         sendMIDIMessage(status, 76, 0);   // CC 76: Vibrato Rate = 0 (off)
         sendMIDIMessage(status, 77, 0);   // CC 77: Vibrato Depth = 0 (off)
         sendMIDIMessage(status, 78, 0);   // CC 78: Vibrato Delay = 0 (off)
+        
+        // Disable reverb, chorus, and other effects (critical for macOS DLS Synth)
+        sendMIDIMessage(status, 91, 0);   // CC 91: Reverb Send Level = 0 (no reverb)
+        sendMIDIMessage(status, 93, 0);   // CC 93: Chorus Send Level = 0 (no chorus)
+        sendMIDIMessage(status, 94, 0);   // CC 94: Detune/Celeste = 0 (no detune)
+        
+        // Disable portamento for immediate pitch changes
+        sendMIDIMessage(status, 5, 0);    // CC 5: Portamento Time = 0 (instant)
+        sendMIDIMessage(status, 65, 0);   // CC 65: Portamento Off
+        sendMIDIMessage(status, 84, 0);   // CC 84: Portamento Control = 0
         
         // Set pitch bend range to 24 semitones (2 octaves) for maximum flexibility
         // This wide range allows:
@@ -121,20 +147,15 @@ bool MIDIEngine::open() {
         
         if (logger) {
             char msg[512];
-            snprintf(msg, sizeof(msg), "Initialized channel %d with instrument %d (vibrato off, pitch bend range: 24 semitones)", midiChannel, curveInstruments[i]);
+            snprintf(msg, sizeof(msg), "Initialized channel %d with instrument %d (all effects off, pitch bend range: 24 semitones)", midiChannel, curveInstruments[i]);
             logger->log("MIDI", msg);
         }
     }
     
     return true;
-#else
-    if (logger) logger->log("MIDI", "MIDI engine not supported on this platform");
-    return false;  // MIDI engine only supported on Windows
-#endif
 }
 
 void MIDIEngine::close() {
-#if defined(_WIN32)
     std::lock_guard<std::mutex> l(mtx);
     
     if (!opened) return;
@@ -144,25 +165,16 @@ void MIDIEngine::close() {
     // Stop all playing notes
     allNotesOff();
     
-    // Close MIDI device
-    if (hMidiOut != nullptr) {
-        midiOutReset(hMidiOut);
-        midiOutClose(hMidiOut);
-        hMidiOut = nullptr;
-    }
+    // Close platform-specific MIDI
+    platform->close();
     
     opened = false;
     if (logger) logger->log("MIDI", "MIDI device closed");
-#endif
 }
 
 void MIDIEngine::sendMIDIMessage(uint8_t status, uint8_t data1, uint8_t data2) {
-#if defined(_WIN32)
-    if (!opened || hMidiOut == nullptr) return;
-    
-    DWORD message = status | (data1 << 8) | (data2 << 16);
-    midiOutShortMsg(hMidiOut, message);
-#endif
+    if (!opened) return;
+    platform->sendMessage(status, data1, data2);
 }
 
 void MIDIEngine::sendProgramChange(int channel, int program) {
@@ -216,29 +228,37 @@ void MIDIEngine::sendVolume(int channel, uint8_t volume) {
 }
 
 void MIDIEngine::frequencyToMIDI(double freqHz, uint8_t& outNote, int16_t& outBend) {
-    // Convert frequency to MIDI note number with fractional part
-    // Formula: note = 69 + 12 * log2(freq / 440)
-    double noteFloat = A4_NOTE + 12.0 * std::log2(freqHz / A4_FREQ);
+    // Task 1.9: Use centralized pitch mapping function
+    PitchMapping::frequencyToMIDINote(freqHz, outNote, outBend);
     
-    // Clamp to valid MIDI range
+    // Adjust bend for our 24-semitone range (the centralized function uses ±2 semitones)
+    // Our hardware is configured for ±24 semitones via RPN
+    // The centralized function returns bend in ±2 semitone range (±8192)
+    // We need to scale to ±24 semitone range
+    // Scale factor: (8192 / 2 semitones) / (8192 / 24 semitones) = 24/2 = 12
+    // Actually, we need to scale DOWN since we have MORE range
+    // 1 semitone in our system = 8192/24 = 341.33 bend units
+    // But centralized function gives us bend for ±2 semitones (8192 per 2 semitones)
+    // So we need to divide by 12 to get the right scaling
+    int16_t adjustedBend = (outBend - 8192) / 12;  // Center at 0, scale down, then re-center would be: 8192 + adjustedBend
+    // But actually let's recalculate from the note fraction directly
+    
+    // Get the fraction from the note
+    double noteFloat = 69.0 + 12.0 * std::log2(freqHz / 440.0);
     noteFloat = std::clamp(noteFloat, 0.0, 127.0);
+    double fraction = noteFloat - std::floor(noteFloat);
     
-    // Get integer note and fractional part
-    outNote = static_cast<uint8_t>(std::floor(noteFloat));
-    double fraction = noteFloat - outNote;
-    
-    // Convert fraction to pitch bend (-8192 to +8191)
-    // NOTE: This method is used for DOTTED mode where notes are retriggered
-    // The pitch bend range is always set to 24 semitones (hardware setting via RPN)
-    // fraction (0-1 semitone) needs to be scaled to the pitch bend range
-    // Full bend range ±8192 corresponds to ±24 semitones
-    // So 1 semitone = 8192/24 = 341.33 bend units
+    // Convert fraction to pitch bend for 24-semitone range
+    // fraction (0-1 semitone) scaled to pitch bend units
+    // 1 semitone = 8192/24 = 341.33 bend units
     outBend = static_cast<int16_t>(fraction * (8192.0 / PITCH_BEND_SEMITONES));
 }
 
 void MIDIEngine::frequencyToPitchBend(double freqHz, int16_t& outBend) {
     // Convert the reference note to its frequency
     // Formula: freq = 440 * 2^((note - 69) / 12)
+    constexpr double A4_FREQ = 440.0;
+    constexpr int A4_NOTE = 69;
     double refFreqHz = A4_FREQ * std::pow(2.0, (referenceNote - A4_NOTE) / 12.0);
     
     // Calculate the semitone difference from reference
@@ -265,6 +285,8 @@ void MIDIEngine::calculateReferenceNote() {
     
     // Convert to MIDI note number
     // Formula: note = 69 + 12 * log2(freq / 440)
+    constexpr double A4_FREQ = 440.0;
+    constexpr int A4_NOTE = 69;
     double noteFloat = A4_NOTE + 12.0 * std::log2(midFreqHz / A4_FREQ);
     
     // Round to nearest integer note
@@ -598,7 +620,6 @@ int MIDIEngine::getCurveInstrument(int curveIndex) const {
 }
 
 void MIDIEngine::playPreview(int program, int durationMs) {
-#if defined(_WIN32)
     if (!opened) return;
     
     // Use channel 0 for preview
@@ -613,11 +634,10 @@ void MIDIEngine::playPreview(int program, int durationMs) {
     sendNoteOn(previewChannel, previewNote, previewVelocity);
     
     // Wait for duration
-    Sleep(durationMs);
+    std::this_thread::sleep_for(std::chrono::milliseconds(durationMs));
     
     // Stop note
     sendNoteOff(previewChannel, previewNote);
-#endif
 }
 
 void MIDIEngine::setGlidingMode(bool gliding) {
@@ -649,7 +669,6 @@ void MIDIEngine::reset() {
     
     // Reinitialize channels if MIDI is open
     if (opened) {
-#if defined(_WIN32)
         // Send all notes off and reset all controllers
         for (int i = 0; i < NUM_CURVES; i++) {
             int midiChannel = (i < 4) ? i : (i + 1);
@@ -670,11 +689,17 @@ void MIDIEngine::reset() {
             // Reset volume
             sendVolume(midiChannel, 100);
             
-            // Disable vibrato and modulation effects for clean waveforms
+            // Disable all audio effects for clean, precise measurement signals
             sendMIDIMessage(status, 1, 0);    // CC 1: Modulation Wheel = 0 (off)
             sendMIDIMessage(status, 76, 0);   // CC 76: Vibrato Rate = 0 (off)
             sendMIDIMessage(status, 77, 0);   // CC 77: Vibrato Depth = 0 (off)
             sendMIDIMessage(status, 78, 0);   // CC 78: Vibrato Delay = 0 (off)
+            sendMIDIMessage(status, 91, 0);   // CC 91: Reverb Send Level = 0 (no reverb)
+            sendMIDIMessage(status, 93, 0);   // CC 93: Chorus Send Level = 0 (no chorus)
+            sendMIDIMessage(status, 94, 0);   // CC 94: Detune/Celeste = 0 (no detune)
+            sendMIDIMessage(status, 5, 0);    // CC 5: Portamento Time = 0 (instant)
+            sendMIDIMessage(status, 65, 0);   // CC 65: Portamento Off
+            sendMIDIMessage(status, 84, 0);   // CC 84: Portamento Control = 0
             
             // Set pitch bend range to 24 semitones (2 octaves)
             sendMIDIMessage(status, 101, 0);  // RPN MSB = 0
@@ -687,7 +712,6 @@ void MIDIEngine::reset() {
             // Reset pitch bend to center
             sendPitchBend(midiChannel, 0);
         }
-#endif
     }
 }
 
@@ -753,6 +777,25 @@ void MIDIEngine::setInterpolationStrength(double strength) {
         char msg[256];
         snprintf(msg, sizeof(msg), 
             "Pan interpolation strength set to %.2f", interpolationStrength);
+        logger->log("MIDI", msg);
+    }
+}
+
+void MIDIEngine::setLogger(Logger* logger) {
+    this->logger = logger;
+    
+    // Sanity check: verify platform was created
+    if (!platform) {
+        if (logger) {
+            logger->log("MIDI", "CRITICAL ERROR: Platform implementation is NULL! Factory function failed.");
+        }
+        return;
+    }
+    
+    // Log platform information when logger is set
+    if (logger) {
+        std::string msg = "MIDI Platform: ";
+        msg += platform->getPlatformName();
         logger->log("MIDI", msg);
     }
 }

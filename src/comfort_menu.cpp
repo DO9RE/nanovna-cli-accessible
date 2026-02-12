@@ -10,10 +10,6 @@
 #include <thread>
 #include <chrono>
 
-#if defined(_WIN32)
-#include <conio.h>
-#endif
-
 // Helper function to generate prompts with depth indication
 std::string ConsoleUI::getPromptWithDepth(const std::string& promptKey, int depth) const {
     std::string prompt = translation.get(promptKey, promptKey);
@@ -51,7 +47,9 @@ bool ConsoleUI::configureMeasurementSettings() {
     std::cout << getPromptWithDepth("CONFIG_MEASURE_PROMPT", 3) << " " << std::flush;
     
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     
     if (input.empty()) {
         return false;
@@ -82,7 +80,9 @@ bool ConsoleUI::configureMeasurementSettings() {
         
         std::cout << getPromptWithDepth("CONFIG_MEASURE_BAND_PROMPT", 4) << " " << std::flush;
         std::string bandInput;
+        consoleInput->enableCanonicalMode();
         std::getline(std::cin, bandInput);
+        consoleInput->enableRawMode();
         
         if (bandInput.empty()) {
             return false;
@@ -121,11 +121,15 @@ bool ConsoleUI::configureMeasurementSettings() {
         // Custom frequency range
         std::cout << "\n" << translation.get("CONFIG_MEASURE_CUSTOM_START", "Enter start frequency in Hz: > ") << std::flush;
         std::string startInput;
+        consoleInput->enableCanonicalMode();
         std::getline(std::cin, startInput);
+        consoleInput->enableRawMode();
         
         std::cout << translation.get("CONFIG_MEASURE_CUSTOM_END", "Enter end frequency in Hz: > ") << std::flush;
         std::string endInput;
+        consoleInput->enableCanonicalMode();
         std::getline(std::cin, endInput);
+        consoleInput->enableRawMode();
         
         uint64_t start = 0;
         uint64_t end = 0;
@@ -186,7 +190,9 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
                     std::cout << "> " << std::flush;
                     
                     std::string choice;
+                    consoleInput->enableCanonicalMode();
                     std::getline(std::cin, choice);
+                    consoleInput->enableRawMode();
                     
                     if (choice == "1") {
                         return true;  // Use existing data
@@ -211,7 +217,9 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
                 std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
                 
                 std::string choice;
+                consoleInput->enableCanonicalMode();
                 std::getline(std::cin, choice);
+                consoleInput->enableRawMode();
                 
                 if (choice == "1") {
                     return true;  // Use existing data
@@ -240,7 +248,9 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
             std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
             
             std::string choice;
+            consoleInput->enableCanonicalMode();
             std::getline(std::cin, choice);
+            consoleInput->enableRawMode();
             
             if (choice == "2") {
                 // Configure new measurement
@@ -263,7 +273,9 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
             std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
             
             std::string choice;
+            consoleInput->enableCanonicalMode();
             std::getline(std::cin, choice);
+            consoleInput->enableRawMode();
             
             if (choice == "1") {
                 return true;  // Use existing data
@@ -318,17 +330,12 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
     
     std::cout << translation.get("MEASURE_CONFIRM", "Press Enter when ready to measure, or ESC to cancel") << std::flush;
     
-#if defined(_WIN32)
-    char key = static_cast<char>(_getch());
+    char key = static_cast<char>(consoleInput->getch());
     if (key == 27) {  // ESC
         std::cout << "\n" << translation.get("CANCELLED", "Measurement canceled.") << "\n";
         return false;
     }
     std::cout << "\n";
-#else
-    std::string input;
-    std::getline(std::cin, input);
-#endif
     
     // Perform measurement using existing functions
     std::cout << translation.get("MEASURE_PERFORMING", "Performing measurement...") << "\n";
@@ -359,8 +366,7 @@ bool ConsoleUI::getYesNo(const std::string& prompt) {
     // yesKey is guaranteed to be non-empty from this point forward
     
     std::cout << prompt << " " << yesNoPrompt << ": " << std::flush;
-#if defined(_WIN32)
-    char key = static_cast<char>(_getch());
+    char key = static_cast<char>(consoleInput->getch());
     
     // Handle ESC key as "No"
     if (key == 27) {
@@ -374,27 +380,15 @@ bool ConsoleUI::getYesNo(const std::string& prompt) {
     
     // Check against localized yes key (safe: yesKey is non-empty)
     return key == yesKey[0];
-#else
-    std::string input;
-    std::getline(std::cin, input);
-    
-    // Empty input or ESC is treated as "No"
-    if (input.empty()) return false;
-    
-    char firstChar = input[0];
-    // Convert to lowercase for comparison
-    if (firstChar >= 'A' && firstChar <= 'Z') firstChar = firstChar - 'A' + 'a';
-    
-    // Check against localized yes key (safe: yesKey is non-empty)
-    return firstChar == yesKey[0];
-#endif
 }
 
 // Helper function to read frequency
 uint64_t ConsoleUI::getFrequencyInput(const std::string& prompt) {
     std::cout << prompt << std::flush;
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     uint64_t result = 0;
     if (parseFrequencyString(input, result)) {
         return result;
@@ -406,7 +400,9 @@ uint64_t ConsoleUI::getFrequencyInput(const std::string& prompt) {
 double ConsoleUI::getDoubleInput(const std::string& prompt, double min_val, double max_val) {
     std::cout << prompt << std::flush;
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     try {
         double val = std::stod(input);
         if (val < min_val) return min_val;
@@ -415,6 +411,97 @@ double ConsoleUI::getDoubleInput(const std::string& prompt, double min_val, doub
     } catch (...) {
         return min_val;
     }
+}
+
+// Task 1.18: Input validation helper - get single character menu choice
+char ConsoleUI::getMenuChoice(const std::string& prompt) {
+    if (!prompt.empty()) {
+        std::cout << prompt << " " << std::flush;
+    }
+    std::string input;
+    std::getline(std::cin, input);
+    if (input.empty()) return '\0';  // Return null char for empty input
+    return input[0];
+}
+
+// Task 1.18: Input validation helper - get line input with empty check
+std::string ConsoleUI::getLineInput(const std::string& prompt) {
+    if (!prompt.empty()) {
+        std::cout << prompt << " " << std::flush;
+    }
+    std::string input;
+    
+    // Switch to canonical mode for line input with echo and backspace support
+    consoleInput->enableCanonicalMode();
+    
+    std::getline(std::cin, input);
+    
+    // Switch back to raw mode for kbhit() to work
+    consoleInput->enableRawMode();
+    
+    return input;  // Caller can check if empty
+}
+
+// Task 1.17: Cable preset selection helper
+ConsoleUI::CableSelection ConsoleUI::selectCablePreset() {
+    CableSelection result;
+    result.velocity_factor = 0.66;  // Default
+    result.loss_db_per_m = 0.0;
+    result.name = "Default";
+    result.selected = false;
+    
+    auto presets = getCablePresets();
+    std::cout << "\n" << translation.get("CABLE_PRESET_TITLE", "Select cable type:") << "\n";
+    
+    for (size_t i = 0; i < presets.size(); ++i) {
+        std::cout << (i + 1) << ". " << presets[i].name 
+                  << " (VF: " << presets[i].velocity_factor << ")";
+        if (!presets[i].description.empty()) {
+            std::cout << " - " << presets[i].description;
+        }
+        std::cout << "\n";
+    }
+    
+    std::cout << getPromptWithDepth("CABLE_PRESET_TITLE", 4) << " " << std::flush;
+    std::string presetInput = getLineInput("");
+    
+    if (presetInput.empty()) {
+        return result;  // User cancelled
+    }
+    
+    try {
+        size_t choice = std::stoull(presetInput);
+        if (choice >= 1 && choice <= presets.size()) {
+            const auto& preset = presets[choice - 1];
+            
+            if (preset.name == "Custom") {
+                // Custom entry
+                std::cout << translation.get("CONFIG_CABLE_CUSTOM_VF", "Enter custom values:") << "\n";
+                result.velocity_factor = getDoubleInput(
+                    translation.get("CABLE_LEN_VF", "Enter Velocity Factor (0.6-0.95): > "), 
+                    0.6, 0.95);
+                result.loss_db_per_m = getDoubleInput(
+                    translation.get("CONFIG_CABLE_CUSTOM_LOSS", "Enter loss in dB/100m at 100 MHz (0 to skip): > "),
+                    0.0, 200.0) / 100.0;
+                result.name = "Custom";
+                result.selected = true;
+            } else {
+                // Use preset
+                result.velocity_factor = preset.velocity_factor;
+                result.loss_db_per_m = preset.loss_db_per_100m_at_100mhz / 100.0;
+                result.name = preset.name;
+                result.selected = true;
+                std::cout << translation.format("CABLE_PRESET_SELECTED", 
+                    "Using {0}: VF = {1}", preset.name, preset.velocity_factor) << "\n";
+            }
+        } else {
+            std::cout << translation.get("INVALID_INPUT", "Invalid selection, using default") << "\n";
+        }
+    } catch (...) {
+        std::cout << translation.get("INVALID_INPUT", "Invalid input, using default") << "\n";
+    }
+    
+    return result;
 }
 
 // Main comfort functions menu
@@ -462,15 +549,14 @@ void ConsoleUI::comfortFunctionsMenu(std::vector<MeasurementPoint>& lastPts, Nan
         // Read input with Enter confirmation to allow multi-digit numbers
         std::string input;
         
-#if defined(_WIN32)
-        // On Windows, check for ESC key while allowing typing
+        // Check for ESC key while allowing typing
         // User can press ESC at any time, or Enter to submit
         bool escPressed = false;
         int maxIterations = 30000;  // Timeout after ~25 minutes (30000 * 50ms)
         int iterations = 0;
         while (iterations < maxIterations) {
-            if (_kbhit()) {
-                int ch = _getch();
+            if (consoleInput->kbhit()) {
+                int ch = consoleInput->getch();
                 if (ch == 27) {  // ESC key
                     escPressed = true;
                     std::cout << "\n";
@@ -501,10 +587,6 @@ void ConsoleUI::comfortFunctionsMenu(std::vector<MeasurementPoint>& lastPts, Nan
             }
             return;
         }
-#else
-        // On Linux, use getline (ESC must be typed as text)
-        std::getline(std::cin, input);
-#endif
         
         // Trim whitespace
         input.erase(0, input.find_first_not_of(" \t\n\r"));
@@ -611,7 +693,9 @@ void ConsoleUI::bandSuitabilityCheck(std::vector<MeasurementPoint>& pts, NanoVNA
     
     std::cout << getPromptWithDepth("BAND_SUIT_PROMPT", 3) << " " << std::flush;
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     
     // Empty input (ESC or just Enter) - break to return to parent menu
     if (input.empty()) break;
@@ -653,18 +737,13 @@ void ConsoleUI::bandSuitabilityCheck(std::vector<MeasurementPoint>& pts, NanoVNA
                 std::cout << translation.get("MEASURE_SETUP_S11", "Setup: Connect antenna or cable to Port 1") << "\n";
                 std::cout << translation.get("MEASURE_CONFIRM", "Press Enter when ready to measure, or ESC to cancel") << std::flush;
                 
-#if defined(_WIN32)
-                char key = static_cast<char>(_getch());
+                char key = static_cast<char>(consoleInput->getch());
                 if (key == 27) {  // ESC
                     std::cout << "\n" << translation.get("CANCELLED", "Measurement canceled.") << "\n";
                     std::cout << translation.format("BAND_SUIT_SKIPPED", "  Skipping band {0}", band.name) << "\n";
                     continue;
                 }
                 std::cout << "\n";
-#else
-                std::string confirmInput;
-                std::getline(std::cin, confirmInput);
-#endif
                 
                 // Perform measurement using existing functions
                 std::cout << translation.get("MEASURE_PERFORMING", "Performing measurement...") << "\n";
@@ -851,7 +930,9 @@ void ConsoleUI::swrBandwidthCalculator(std::vector<MeasurementPoint>& pts, NanoV
     std::cout << getPromptWithDepth("SWR_BW_PROMPT", 3) << " " << std::flush;
     
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     if (input.empty()) return;
     
     double target_swr = 2.0;
@@ -904,7 +985,9 @@ void ConsoleUI::feedpointImpedanceReport(std::vector<MeasurementPoint>& pts, Nan
     std::cout << "> " << std::flush;
     
     std::string input;
+    consoleInput->enableCanonicalMode();
     std::getline(std::cin, input);
+    consoleInput->enableRawMode();
     if (input.empty()) return;
     
     uint64_t freq_hz = 0;

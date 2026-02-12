@@ -64,28 +64,31 @@ bool ImportModule::importFile(const std::string& filename, std::vector<Measureme
         MeasurementPoint pt;
         
         if (isCSV) {
-            // Parse CSV: freq_hz,s11_re,s11_im,swr,return_loss_db,r_ohm,x_ohm,s21_re,s21_im
+            // Task 1.14: Parse CSV using centralized schema from export.h
+            // Field order: freq_hz, s11_re, s11_im, swr, return_loss_db, r_ohm, x_ohm, s21_re, s21_im
+            // See CSVSchema::FIELD_NAMES in export.h for canonical definition
             std::istringstream ss(line);
             std::string token;
             int field = 0;
             
             while (std::getline(ss, token, ',')) {
                 try {
+                    // Task 1.14: Field indices correspond to CSVSchema::FieldIndex enum
                     switch(field) {
-                        case 0: pt.freq = std::stoull(token); break;
-                        case 1: pt.s11_re = std::stod(token); break;
-                        case 2: pt.s11_im = std::stod(token); break;
-                        case 3: pt.swr = std::stod(token); break;
-                        case 4: pt.rl = std::stod(token); break;
-                        case 5: pt.R = std::stod(token); break;
-                        case 6: pt.X = std::stod(token); break;
-                        case 7: 
+                        case 0: pt.freq = std::stoull(token); break;  // FREQ_HZ
+                        case 1: pt.s11_re = std::stod(token); break;  // S11_RE
+                        case 2: pt.s11_im = std::stod(token); break;  // S11_IM
+                        case 3: pt.swr = std::stod(token); break;     // SWR
+                        case 4: pt.rl = std::stod(token); break;      // RETURN_LOSS_DB
+                        case 5: pt.R = std::stod(token); break;       // R_OHM
+                        case 6: pt.X = std::stod(token); break;       // X_OHM
+                        case 7:                                        // S21_RE 
                             if (!token.empty()) {
                                 pt.s21_re = std::stod(token);
                                 pt.hasS21 = true;
                             }
                             break;
-                        case 8:
+                        case 8:                                        // S21_IM
                             if (!token.empty()) {
                                 pt.s21_im = std::stod(token);
                             }

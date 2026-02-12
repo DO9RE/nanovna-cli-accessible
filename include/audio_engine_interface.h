@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <mutex>
 #include "config.h"  // For AudioEngineType enum
 
 /**
@@ -141,5 +142,78 @@ public:
             buffer[i * 2 + 0] = static_cast<int16_t>(scaledSample * panL);
             buffer[i * 2 + 1] = static_cast<int16_t>(scaledSample * panR);
         }
+    }
+};
+
+/**
+ * Task 1.8: Audio Engine Base Class
+ * 
+ * Provides common lifecycle management (open/close/isOpen) for all audio engines.
+ * Eliminates duplicate mutex-protected state management across AudioEngine,
+ * SynthesizerEngine, and AcousticAnalyzer.
+ * 
+ * Subclasses should:
+ * - Call the protected constructor
+ * - Override onInitialize() for engine-specific setup
+ * - Use isOpen() to check state before operations
+ */
+class AudioEngineBase : public IAudioEngine {
+protected:
+    std::mutex mtx;
+    bool opened;
+    
+    /**
+     * Constructor initializes the base state
+     */
+    AudioEngineBase() : opened(false) {}
+    
+    /**
+     * Virtual hook for subclass-specific initialization
+     * Called with mutex already locked during open()
+     * @return true on success, false on failure
+     */
+    virtual bool onInitialize() { return true; }
+    
+    /**
+     * Virtual hook for subclass-specific cleanup
+     * Called with mutex already locked during close()
+     */
+    virtual void onCleanup() {}
+    
+public:
+    /**
+     * Open the audio engine with thread-safe state management
+     * Calls onInitialize() hook for subclass-specific setup
+     * @return true on success, false on failure
+     */
+    bool open() override {
+        std::lock_guard<std::mutex> l(mtx);
+        if (!opened) {
+            if (!onInitialize()) {
+                return false;
+            }
+            opened = true;
+        }
+        return true;
+    }
+    
+    /**
+     * Close the audio engine with thread-safe state management
+     * Calls onCleanup() hook for subclass-specific cleanup
+     */
+    void close() override {
+        std::lock_guard<std::mutex> l(mtx);
+        if (opened) {
+            onCleanup();
+            opened = false;
+        }
+    }
+    
+    /**
+     * Check if the engine is currently open (thread-safe)
+     * @return true if open, false otherwise
+     */
+    bool isOpen() const override {
+        return opened;
     }
 };

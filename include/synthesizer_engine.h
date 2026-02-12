@@ -2,13 +2,17 @@
 #include "audio_engine_interface.h"
 #include "waveform.h"
 #include <mutex>
+#include <memory>
+
+// Forward declaration to avoid circular dependency
+class IAudioBackend;
 
 /**
  * Synthesizer Audio Engine
  * 
  * Waveform-based audio synthesis engine supporting multiple waveform types.
  * This is the original audio engine used in the application, now refactored
- * to implement the IAudioEngine interface.
+ * to implement the IAudioEngine interface and inherit from AudioEngineBase.
  * 
  * Features:
  * - Multiple waveform types (Sine, Square, Triangle, Noise)
@@ -16,15 +20,13 @@
  * - Volume control per curve
  * - Phase continuity for smooth audio
  */
-class SynthesizerEngine : public IAudioEngine {
+class SynthesizerEngine : public AudioEngineBase {
 public:
     SynthesizerEngine();
     ~SynthesizerEngine() noexcept override;
     
     // IAudioEngine interface implementation
-    bool open() override;
-    void close() override;
-    bool isOpen() const override { return opened; }
+    // Note: open(), close(), isOpen() inherited from AudioEngineBase
     
     void generateAudio(
         std::vector<int16_t>& buffer,
@@ -84,12 +86,16 @@ public:
      */
     void playPreview(int curveIndex, int durationMs = 500);
 
+protected:
+    // AudioEngineBase hooks
+    bool onInitialize() override;
+    
 private:
-    std::mutex mtx;
-    bool opened = false;
+    // Note: mtx and opened inherited from AudioEngineBase
     int sampleRate = 44100;
     int channels = 2;
     int bits = 16;
+    std::unique_ptr<IAudioBackend> backend;
     
     // Waveforms for each curve (0=SWR, 1=RL, 2=|Z|, 3=X, 4=Phase)
     Waveform curveWaveforms[5];
@@ -102,13 +108,4 @@ private:
     
     // X-axis ruler noise type (0=White, 1=Pink, 2=Click)
     int xAxisRulerNoiseType = 0;
-    
-    /**
-     * Generate a single sample for the given waveform
-     * @param t Phase position (0.0 to 1.0)
-     * @param wf Waveform type
-     * @param pitchHz Frequency in Hz (used for band-limited noise)
-     * @return Sample value (-1.0 to 1.0)
-     */
-    double waveformSample(double t, Waveform wf, double pitchHz);
 };

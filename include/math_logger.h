@@ -67,5 +67,4 @@ public:
 private:
     std::ofstream ofs;
     std::mutex mtx;
-    std::string timestr();
 };

@@ -1,15 +1,12 @@
 #include "math_logger.h"
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
+#include "platform_utils.h"
 
 bool MathLogger::open(const std::string& filename) {
     std::lock_guard<std::mutex> l(mtx);
     ofs.open(filename, std::ios::out | std::ios::app);
     if (ofs.is_open()) {
         ofs << "\n========================================\n";
-        ofs << "Math Debug Log Started: " << timestr() << "\n";
+        ofs << "Math Debug Log Started: " << currentTimestamp() << "\n";
         ofs << "========================================\n\n";
         ofs.flush();
     }
@@ -20,24 +17,10 @@ void MathLogger::close() {
     std::lock_guard<std::mutex> l(mtx);
     if (ofs.is_open()) {
         ofs << "\n========================================\n";
-        ofs << "Math Debug Log Closed: " << timestr() << "\n";
+        ofs << "Math Debug Log Closed: " << currentTimestamp() << "\n";
         ofs << "========================================\n";
         ofs.close();
     }
-}
-
-std::string MathLogger::timestr() {
-    auto now = std::chrono::system_clock::now();
-    std::time_t t = std::chrono::system_clock::to_time_t(now);
-    std::tm tm;
-#if defined(_WIN32)
-    localtime_s(&tm, &t);
-#else
-    localtime_r(&t, &tm);
-#endif
-    std::ostringstream ss;
-    ss << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
-    return ss.str();
 }
 
 void MathLogger::logRawMeasurement(size_t index, uint64_t frequency, 
@@ -46,7 +29,7 @@ void MathLogger::logRawMeasurement(size_t index, uint64_t frequency,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [RAW_MEASUREMENT]";
+    ofs << currentTimestamp() << " [RAW_MEASUREMENT]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Point Index: " << index << "\n";
@@ -61,7 +44,7 @@ void MathLogger::logGammaCalculation(double s11_re, double s11_im,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [GAMMA_CALC]";
+    ofs << currentTimestamp() << " [GAMMA_CALC]";
     if (!method.empty()) ofs << " [Method: " << method << "]";
     ofs << "\n";
     ofs << "  Input S11: " << s11_re << " + j" << s11_im << "\n";
@@ -79,7 +62,7 @@ void MathLogger::logImpedanceCalculation(double gamma_re, double gamma_im,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [IMPEDANCE_CALC]";
+    ofs << currentTimestamp() << " [IMPEDANCE_CALC]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Input Gamma: " << gamma_re << " + j" << gamma_im << "\n";
@@ -97,7 +80,7 @@ void MathLogger::logSWRCalculation(double gamma_mag, double swr,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [SWR_CALC]";
+    ofs << currentTimestamp() << " [SWR_CALC]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Input |Gamma|: " << gamma_mag << "\n";
@@ -113,7 +96,7 @@ void MathLogger::logReturnLossCalculation(double gamma_mag, double return_loss_d
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [RETURN_LOSS_CALC]";
+    ofs << currentTimestamp() << " [RETURN_LOSS_CALC]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Input |Gamma|: " << gamma_mag << "\n";
@@ -129,7 +112,7 @@ void MathLogger::logPhaseCalculation(double im, double re, double phase_deg,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [PHASE_CALC]";
+    ofs << currentTimestamp() << " [PHASE_CALC]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Input complex: " << re << " + j" << im << "\n";
@@ -143,7 +126,7 @@ void MathLogger::logMagnitudeCalculation(double re, double im, double magnitude,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [MAGNITUDE_CALC]";
+    ofs << currentTimestamp() << " [MAGNITUDE_CALC]";
     if (!context.empty()) ofs << " [" << context << "]";
     ofs << "\n";
     ofs << "  Input complex: " << re << " + j" << im << "\n";
@@ -158,7 +141,7 @@ void MathLogger::logAudioOutput(size_t position, const std::string& curve_name,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [AUDIO_OUTPUT] Position " << position << "\n";
+    ofs << currentTimestamp() << " [AUDIO_OUTPUT] Position " << position << "\n";
     ofs << "  Curve: " << curve_name << "\n";
     ofs << "  Value: " << value << "\n";
     ofs << "  => Audio Pitch: " << pitch_hz << " Hz\n";
@@ -177,7 +160,7 @@ void MathLogger::logUserOutput(const std::string& output_type,
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [USER_OUTPUT] Type: " << output_type << "\n";
+    ofs << currentTimestamp() << " [USER_OUTPUT] Type: " << output_type << "\n";
     ofs << "  Content: " << content << "\n";
     ofs.flush();
 }
@@ -186,7 +169,7 @@ void MathLogger::logDataFlow(const std::string& stage, const std::string& descri
     std::lock_guard<std::mutex> l(mtx);
     if (!ofs.is_open()) return;
     
-    ofs << timestr() << " [DATA_FLOW] Stage: " << stage << "\n";
+    ofs << currentTimestamp() << " [DATA_FLOW] Stage: " << stage << "\n";
     ofs << "  " << description << "\n";
     ofs.flush();
 }

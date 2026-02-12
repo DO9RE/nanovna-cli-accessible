@@ -10,6 +10,18 @@
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <errno.h>
+// Define Windows-compatible types for POSIX
+typedef int SOCKET;
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
 #endif
 
 // Forward declarations
@@ -97,10 +109,8 @@ private:
     int serverPort;
     std::string bindAddr;
     
-#if defined(_WIN32)
     SOCKET listenSocket;
     std::vector<SOCKET> clientSockets;
-#endif
     
     std::thread serverThread;
     std::mutex clientMutex;

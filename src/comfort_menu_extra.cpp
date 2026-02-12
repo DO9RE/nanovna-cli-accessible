@@ -5,6 +5,7 @@
 #include <limits>
 #include <cmath>
 #include <ctime>
+#include <functional>
 
 // Cable length measurement
 void ConsoleUI::cableLengthMeasurement(std::vector<MeasurementPoint>& pts, NanoVNAProtocol* proto) {
@@ -25,54 +26,17 @@ void ConsoleUI::cableLengthMeasurement(std::vector<MeasurementPoint>& pts, NanoV
     std::cout << translation.get("CABLE_LEN_SHORT", "2. Short (far end shorted)") << "\n";
     std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     bool open_end = (input[0] == '1');
     
-    // Cable type selection
-    auto cablePresets = getCablePresets();
-    std::cout << "\n" << translation.get("CABLE_LEN_SELECT_TYPE", "Select cable type:") << "\n";
+    // Cable type selection (Task 1.17: Use extracted helper)
+    auto cableSelection = selectCablePreset();
+    if (!cableSelection.selected) return;
     
-    for (size_t i = 0; i < cablePresets.size(); ++i) {
-        std::cout << (i + 1) << ". " << cablePresets[i].name 
-                  << " (VF: " << cablePresets[i].velocity_factor << ")";
-        if (!cablePresets[i].description.empty()) {
-            std::cout << " - " << cablePresets[i].description;
-        }
-        std::cout << "\n";
-    }
-    
-    std::cout << getPromptWithDepth("CABLE_PRESET_TITLE", 4) << " " << std::flush;
-    std::string cableInput;
-    std::getline(std::cin, cableInput);
-    if (cableInput.empty()) return;
-    
-    double vf = 0.66;  // Default
-    try {
-        size_t choice_size_t = std::stoull(cableInput);
-        // Bounds check to prevent overflow and ensure valid range
-        if (choice_size_t >= 1 && choice_size_t <= cablePresets.size()) {
-            const auto& preset = cablePresets[choice_size_t - 1];
-            
-            if (preset.name == "Custom") {
-                // Manual VF entry for custom cable
-                std::cout << translation.get("CABLE_LEN_MANUAL_VF", "Manual entry:") << "\n";
-                vf = getDoubleInput(translation.get("CABLE_LEN_VF", "Enter Velocity Factor (0.6-0.95): > "), 0.6, 0.95);
-                if (vf < 0.6) vf = 0.66;  // Default fallback
-            } else {
-                vf = preset.velocity_factor;
-                std::cout << translation.format("CABLE_LEN_USING_CABLE", "Using {0} with VF = {1}", preset.name, vf) << "\n";
-            }
-        } else {
-            std::cout << translation.get("INVALID_INPUT", "Invalid selection, using default VF = 0.66") << "\n";
-            vf = 0.66;
-        }
-    } catch (...) {
-        std::cout << translation.get("INVALID_INPUT", "Invalid input, using default VF = 0.66") << "\n";
-        vf = 0.66;
-    }
+    double vf = cableSelection.velocity_factor;
     
     std::cout << translation.get("CABLE_LEN_ANALYZING", "Analyzing phase response...") << "\n";
     
@@ -142,8 +106,8 @@ void ConsoleUI::cableFaultDetection(std::vector<MeasurementPoint>& pts, NanoVNAP
     std::cout << translation.get("CABLE_FAULT_UNKNOWN", "3. Unknown") << "\n";
     std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     std::string termination = "unknown";
@@ -215,8 +179,8 @@ void ConsoleUI::cableAttenuationMeasurement(std::vector<MeasurementPoint>& pts, 
     std::cout << translation.get("CABLE_ATT_MANUAL", "2. Manual frequency") << "\n";
     std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     uint64_t freq_hz = 0;
@@ -262,8 +226,8 @@ void ConsoleUI::filterQuickCheck(std::vector<MeasurementPoint>& pts, NanoVNAProt
     std::cout << translation.get("FILTER_NOTCH", "4. Notch/Band-stop") << "\n";
     std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     std::string filter_type = "bandpass";
@@ -311,8 +275,8 @@ void ConsoleUI::beforeAfterComparison(const std::vector<MeasurementPoint>& pts) 
     std::cout << translation.get("COMPARE_MENU", "1. Save Snapshot A\n2. Save Snapshot B\n3. Compare A vs B\n4. Clear snapshots") << "\n";
     std::cout << getPromptWithDepth("CONFIG_CHOICE_PROMPT", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     if (input[0] == '1') {
@@ -434,8 +398,8 @@ void ConsoleUI::comfortConfiguration() {
     std::cout << translation.get("CONFIG_MENU", "1. Set Velocity Factor\n2. Set SWR Threshold\n3. Set Cable Loss\n4. Select Cable Type Preset") << "\n";
     std::cout << getPromptWithDepth("CONFIG_TITLE", 3) << " " << std::flush;
     
-    std::string input;
-    std::getline(std::cin, input);
+    // Task 1.18: Use input helper
+    std::string input = getLineInput("");
     if (input.empty()) return;
     
     if (input[0] == '1') {
@@ -454,52 +418,11 @@ void ConsoleUI::comfortConfiguration() {
         config.cable_loss_db_per_m = loss;
         std::cout << translation.format("CONFIG_LOSS_SET", "Cable Loss set to {0} dB/m", loss) << "\n";
     } else if (input[0] == '4') {
-        // Cable type preset selection
-        auto presets = getCablePresets();
-        std::cout << "\n" << translation.get("CABLE_PRESET_TITLE", "Select cable type:") << "\n";
-        std::cout << translation.get("CONFIG_CABLE_LIST", "Available cable types:") << "\n";
-        
-        for (size_t i = 0; i < presets.size(); ++i) {
-            std::cout << (i + 1) << ". " << presets[i].name 
-                      << " (VF: " << presets[i].velocity_factor << ")";
-            if (presets[i].loss_db_per_100m_at_100mhz > 0) {
-                std::cout << " - " << presets[i].description;
-            }
-            std::cout << "\n";
-        }
-        
-        std::cout << getPromptWithDepth("CABLE_PRESET_TITLE", 4) << " " << std::flush;
-        std::string presetInput;
-        std::getline(std::cin, presetInput);
-        
-        if (!presetInput.empty()) {
-            try {
-                int choice = std::stoi(presetInput);
-                if (choice >= 1 && choice <= static_cast<int>(presets.size())) {
-                    const auto& preset = presets[choice - 1];
-                    
-                    if (preset.name == "Custom") {
-                        // Custom entry
-                        double customVF = getDoubleInput(translation.get("CONFIG_CABLE_CUSTOM_VF", "Enter Velocity Factor (0.6-0.95): >"), 0.6, 0.95);
-                        config.velocity_factor = customVF;
-                        
-                        double customLoss = getDoubleInput(translation.get("CONFIG_CABLE_CUSTOM_LOSS", "Enter loss in dB/100m at 100 MHz (optional, 0 to skip): >"), 0.0, 200.0);
-                        if (customLoss > 0) {
-                            config.cable_loss_db_per_m = customLoss / 100.0;
-                        }
-                        std::cout << translation.format("CABLE_PRESET_SELECTED", "Using {0}: VF = {1}", "Custom", config.velocity_factor) << "\n";
-                    } else {
-                        // Use preset
-                        config.velocity_factor = preset.velocity_factor;
-                        if (preset.loss_db_per_100m_at_100mhz > 0) {
-                            config.cable_loss_db_per_m = preset.loss_db_per_100m_at_100mhz / 100.0;
-                        }
-                        std::cout << translation.format("CABLE_PRESET_SELECTED", "Using {0}: VF = {1}", preset.name, preset.velocity_factor) << "\n";
-                    }
-                }
-            } catch (...) {
-                std::cout << translation.get("INVALID_INPUT", "Invalid input") << "\n";
-            }
+        // Cable type preset selection (Task 1.17: Use extracted helper)
+        auto cableSelection = selectCablePreset();
+        if (cableSelection.selected) {
+            config.velocity_factor = cableSelection.velocity_factor;
+            config.cable_loss_db_per_m = cableSelection.loss_db_per_m;
         }
     }
 }

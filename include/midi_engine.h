@@ -4,31 +4,30 @@
 #include <mutex>
 #include <cstdint>
 #include <algorithm>
+#include <memory>
 
-#if defined(_WIN32)
-#include <windows.h>
-#include <mmsystem.h>
-#endif
+// Forward declaration of platform interface
+class MIDIPlatformInterface;
 
 /**
  * MIDI Audio Engine
  * 
- * MIDI-based audio synthesis engine using Windows MIDI API (WinMM).
+ * Platform-independent MIDI audio synthesis engine.
  * Each curve uses a separate MIDI channel with its own instrument.
  * 
  * Features:
- * - Uses Windows MIDI synthesizer (GS MIDI Synth)
+ * - Cross-platform MIDI synthesis (Windows/macOS/Linux)
  * - 5 MIDI channels (one per curve)
  * - Configurable instrument per channel (General MIDI)
  * - Two playback modes:
  *   - Gliding mode: For sustained instruments (strings, organs, pads) - no retriggering
  *   - Dotted mode: For percussive instruments (vibraphone, bells) - with retriggering
  * - Default instruments optimized for continuous tone playback:
- *   - SWR: String Ensemble 1 (sustained)
+ *   - SWR: Church Organ (sustained)
  *   - Return Loss: Drawbar Organ (sustained)
- *   - Impedance Magnitude: Church Organ (sustained)
- *   - Reactance: Violin (sustained)
- *   - Phase: Lead 2 (sawtooth) (sustained)
+ *   - Impedance Magnitude: Lead 2 (sawtooth) (sustained)
+ *   - Reactance: Lead 1 (square) (sustained)
+ *   - Phase: String Ensemble 1 (sustained)
  * - Pitch bend for fine-grained pitch control (14-bit resolution)
  * - PCM-layer panning via stereo note velocity/expression
  * - Smooth transitions and volume control
@@ -38,9 +37,9 @@
  * - Channel 1: Return Loss
  * - Channel 2: Impedance Magnitude
  * - Channel 3: Reactance
- * - Channel 4: Phase
+ * - Channel 5: Phase (skipping channel 4)
  * 
- * Note: Uses channel 10 skipping (channel 10 is reserved for drums in GM)
+ * Note: Uses channel 10 skipping (channel 9 is reserved for drums in GM)
  */
 class MIDIEngine : public IAudioEngine {
 public:
@@ -125,7 +124,7 @@ public:
      * Set logger for debug output
      * @param logger Pointer to logger instance
      */
-    void setLogger(Logger* logger) { this->logger = logger; }
+    void setLogger(Logger* logger);
     
     /**
      * Set the synth frequency range for pitch bend calculations
@@ -189,9 +188,8 @@ private:
     bool interpolatedPanMode = false;      // Enable volume-based pan interpolation
     double interpolationStrength = 0.3;    // Default: 30% volume modulation
     
-#if defined(_WIN32)
-    HMIDIOUT hMidiOut;  // MIDI output device handle
-#endif
+    // Platform-specific MIDI implementation
+    std::unique_ptr<MIDIPlatformInterface> platform;
     
     // MIDI instrument (program) for each curve
     int curveInstruments[NUM_CURVES];

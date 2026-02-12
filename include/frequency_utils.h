@@ -6,6 +6,22 @@
 #include <sstream>
 #include <iomanip>
 
+// Task 1.23: Helper function to remove trailing zeros after decimal point
+// Eliminates code duplication in formatFrequencyWithUnit
+inline void stripTrailingZeros(std::string& s) {
+    size_t dot = s.find('.');
+    if (dot != std::string::npos) {
+        size_t end = s.find_last_not_of('0');
+        if (end > dot) {
+            s = s.substr(0, end + 1);
+        }
+        // Remove decimal point if no fractional part
+        if (!s.empty() && s.back() == '.') {
+            s.pop_back();
+        }
+    }
+}
+
 // Parse frequency string with optional units (K/M/G, kHz/MHz/GHz, etc.)
 // Accepts: "144000000", "144M", "144 MHz", "144.5m", "144.5 mhz", etc.
 // Returns true if parsing succeeded, false otherwise
@@ -136,57 +152,26 @@ inline std::string formatFrequencyWithUnit(uint64_t freq_hz) {
     if (freq_hz >= 1000000000) {
         // GHz range
         double ghz = static_cast<double>(freq_hz) / 1e9;
-        // Remove trailing zeros and unnecessary decimal point
         oss << ghz;
         std::string result = oss.str();
-        // Remove trailing zeros after decimal point
-        size_t dot = result.find('.');
-        if (dot != std::string::npos) {
-            size_t end = result.find_last_not_of('0');
-            if (end > dot) {
-                result = result.substr(0, end + 1);
-            }
-            // Remove decimal point if no fractional part
-            if (result.back() == '.') {
-                result.pop_back();
-            }
-        }
+        // Task 1.23: Use helper function instead of inline duplicate code
+        stripTrailingZeros(result);
         return result + " GHz";
     } else if (freq_hz >= 1000000) {
         // MHz range
         double mhz = static_cast<double>(freq_hz) / 1e6;
         oss << mhz;
         std::string result = oss.str();
-        // Remove trailing zeros after decimal point
-        size_t dot = result.find('.');
-        if (dot != std::string::npos) {
-            size_t end = result.find_last_not_of('0');
-            if (end > dot) {
-                result = result.substr(0, end + 1);
-            }
-            // Remove decimal point if no fractional part
-            if (result.back() == '.') {
-                result.pop_back();
-            }
-        }
+        // Task 1.23: Use helper function instead of inline duplicate code
+        stripTrailingZeros(result);
         return result + " MHz";
     } else if (freq_hz >= 1000) {
         // kHz range
         double khz = static_cast<double>(freq_hz) / 1e3;
         oss << khz;
         std::string result = oss.str();
-        // Remove trailing zeros after decimal point
-        size_t dot = result.find('.');
-        if (dot != std::string::npos) {
-            size_t end = result.find_last_not_of('0');
-            if (end > dot) {
-                result = result.substr(0, end + 1);
-            }
-            // Remove decimal point if no fractional part
-            if (result.back() == '.') {
-                result.pop_back();
-            }
-        }
+        // Task 1.23: Use helper function instead of inline duplicate code
+        stripTrailingZeros(result);
         return result + " kHz";
     } else {
         // Hz range

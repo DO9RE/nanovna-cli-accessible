@@ -13,13 +13,8 @@
 #include <cstdint>
 #include <memory>
 
-// Forward declarations for Windows types
-#if defined(_WIN32)
-struct HWAVEOUT__;
-typedef struct HWAVEOUT__* HWAVEOUT;
-struct wavehdr_tag;
-typedef struct wavehdr_tag WAVEHDR;
-#endif
+// Forward declaration to avoid circular dependency
+class IAudioBackend;
 
 enum class PlaybackState {
     STOPPED,    // Not playing
@@ -348,30 +343,12 @@ private:
     bool hasSharpDirectionChange(size_t idx, int curveIndex) const;
     void checkAndWarnDownsamplingQuality(size_t originalCount, size_t selectedCount, double timePerPointMs) const;
     
-#if defined(_WIN32)
-    // Windows audio handle for continuous playback with double-buffering
-    HWAVEOUT hWaveOut;  // Persistent audio device handle
+    // Audio backend for cross-platform audio output
+    std::unique_ptr<IAudioBackend> backend;
     std::mutex audioMutex;
-    bool audioDeviceOpen;
     
-    // Multi-buffering for seamless audio streaming without crackling
-    static constexpr int NUM_AUDIO_BUFFERS = 8;  // 8 buffers for smooth playback without crackling (400ms latency)
-    static constexpr int AUDIO_BUFFER_SIZE_BYTES = 16384;  // 16KB per buffer (enough for ~90ms at 44.1kHz stereo)
-    static constexpr int PLAYBACK_POLLING_INTERVAL_MS = 1;  // 1ms polling
-    
-    std::vector<WAVEHDR> playbackHeaders;  // Array of WAVEHDR structures for circular buffering (RAII-safe)
-    std::vector<std::vector<int16_t>> bufferData;  // Circular buffer data storage
-    int nextBufferToQueue;  // Index of next buffer to queue
-    int nextBufferToCheck;  // Index of next buffer to check for completion
-    int buffersInFlight;  // Number of buffers currently queued/playing
-    
-    bool openAudioDevice();
-    void closeAudioDevice();
+    // Audio playback helper
     void playAudioBuffer(const std::vector<int16_t>& buffer);
-    void initializeBuffers();
-    void cleanupBuffers();
-    void flushAudioBuffers();  // Flush pending audio buffers for immediate response
-#endif
     
     void audioThreadFunc();
     void playCurrentPosition(int durationMs = 20);  // Play with configurable duration (default 20ms for smooth mode)
