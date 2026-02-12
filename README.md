@@ -303,5 +303,9 @@ Cross-platform compilation is not supported due to these dependencies.
 
 The current beta is available as a ZIP file directly in this repository.
 
-**[📥 nanovna-cli-accessible-beta.zip ](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta.zip)**
+**[📥 nanovna-cli-accessible-beta.zip - Windows ](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta.zip)**
+
+**[📥 nanovna-cli-accessible-beta-mac.zip - Mac ](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-mac.zip)**
+
+
 
