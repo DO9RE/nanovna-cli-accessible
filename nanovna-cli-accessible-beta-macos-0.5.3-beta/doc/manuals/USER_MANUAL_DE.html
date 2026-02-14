@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - NanoVNA CLI Accessible - Benutzerhandbuch (Deutsch)">
+    <title>NanoVNA CLI Accessible - Benutzerhandbuch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        
+        li {
+            margin: 0.5em 0;
+        }
+        
+        /* Code blocks */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Courier New", monospace;
+            font-size: 0.95em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+        
+        /* Blockquote */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 1em 0;
+            padding-left: 1em;
+            color: #666;
+        }
+        
+        /* Horizontal rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 2em 0;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: var(--code-bg);
+            font-weight: bold;
+        }
+        
+        /* Footer */
+        footer {
+            border-top: 2px solid var(--border-color);
+            padding-top: 20px;
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        footer nav ul {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        footer a {
+            color: var(--link-color);
+            text-decoration: underline;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+            }
+            
+            nav ul {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+        }
+        
+        /* Printing */
+        @media print {
+            nav {
+                display: none;
+            }
+            
+            footer {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>NanoVNA CLI Accessible - Benutzerhandbuch</h1>
+    </header>
+    
+    <nav aria-label="Main navigation">
+        <ul>
+            <li><a href="index.html" aria-label="Back to Index">📖 Handbuchindex</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>NanoVNA CLI Accessible - Benutzerhandbuch</h1>
+<p><strong>Version:</strong> 0.5.0-beta <strong>Datum:</strong> 2026-02-13 12:25:53 <strong>Sprache:</strong> Deutsch</p>
+<hr>
+<h2>Inhaltsverzeichnis</h2>
+<ol>
+<li><a href="#1-über-nanovna-cli-accessible">Über NanoVNA CLI Accessible</a></li>
+<li><a href="#2-systemanforderungen">Systemanforderungen</a></li>
+<li><a href="#3-installation">Installation</a></li>
+<li><a href="#4-erste-schritte">Erste Schritte</a></li>
+<li><a href="#5-hauptmenü-übersicht">Hauptmenü-Übersicht</a></li>
+<li><a href="#6-grundlegende-bedienung">Grundlegende Bedienung</a></li>
+<li><a href="#7-u-menü-analyse-werkzeuge">U-Menü: Analyse-Werkzeuge</a></li>
+<li><a href="#8-akustischer-analysemodus">Akustischer Analysemodus</a></li>
+<li><a href="#9-export-und-import">Export und Import</a></li>
+<li><a href="#10-web-interface">Web-Interface</a></li>
+<li><a href="#11-kalibrierung">Kalibrierung</a></li>
+<li><a href="#12-fehlerbehebung">Fehlerbehebung</a></li>
+<li><a href="#13-dateistruktur">Dateistruktur</a></li>
+</ol>
+<hr>
+<h2>1. Über NanoVNA CLI Accessible</h2>
+<p>NanoVNA CLI Accessible ist eine spezialisierte Windows-Konsolenanwendung zur Bedienung des NanoVNA-H4 Vektor-Netzwerkanalysators. Sie wurde speziell für blinde und sehbehinderte Funkamateure entwickelt.</p>
+<h3>Hauptmerkmale:</h3>
+<ul>
+<li><strong>Akustische Darstellung</strong> von HF-Parametern (SWR, Impedanz, Reaktanz, Phase)</li>
+<li><strong>Screenreader-kompatibel</strong> mit kontextabhängiger Hilfe</li>
+<li><strong>Umfassende Analyse-Werkzeuge</strong> für Antennen, Kabel und Filter</li>
+<li><strong>Zweisprachige Oberfläche</strong> (Englisch und Deutsch)</li>
+<li><strong>Braille-Export</strong> für taktile Grafiken auf Index-Brailledruckern</li>
+</ul>
+<hr>
+<h2>2. Systemanforderungen</h2>
+<h3>Hardware:</h3>
+<ul>
+<li><strong>NanoVNA-Gerät:</strong> NanoVNA-H4</li>
+<li><strong>Verbindung:</strong> USB-Kabel (erscheint als serieller Port)</li>
+<li><strong>Soundkarte:</strong> Für akustischen Analysemodus</li>
+<li><strong>Optional:</strong> Index-Brailledrucker für taktile Grafiken</li>
+</ul>
+<h3>Betriebssystem:</h3>
+<ul>
+<li><strong>Windows:</strong> Windows 7 oder neuer (64-Bit empfohlen)
+  <ul>
+  <li>Eigenständige ausführbare Datei (alle Abhängigkeiten statisch eingebunden)</li>
+  <li>Keine zusätzliche Software erforderlich</li>
+  </ul>
+</li>
+<li><strong>macOS:</strong> macOS 10.13 (High Sierra) oder neuer
+  <ul>
+  <li>Benötigt PortAudio: <code>brew install portaudio</code></li>
+  <li>Kompilierung erforderlich (siehe Build-Anleitung)</li>
+  </ul>
+</li>
+<li><strong>Linux:</strong> Moderne Distribution (getestet auf Ubuntu 20.04+, Fedora 35+)
+  <ul>
+  <li>Benötigt PortAudio: <code>apt-get install portaudio19-dev</code> oder <code>dnf install portaudio-devel</code></li>
+  <li>Optional für MIDI: ALSA-Entwicklungsbibliotheken (<code>libasound2-dev</code> oder <code>alsa-lib-devel</code>)</li>
+  <li>Kompilierung erforderlich (siehe Build-Anleitung)</li>
+  </ul>
+</li>
+</ul>
+<hr>
+<h2>3. Installation</h2>
+
+<h3>Windows: Vorkompilierte Distribution</h3>
+<p>Die Beta-Version wird als fertiges Build-Verzeichnis ausgeliefert. <strong>Keine Kompilierung erforderlich.</strong></p>
+
+<h4>Installationsschritte:</h4>
+<ol>
+<li><strong>ZIP-Datei entpacken</strong> an einen Ort Ihrer Wahl (z.B. <code>C:\NanoVNA-CLI</code>)</li>
+<li><strong>Verzeichnisstruktur überprüfen:</strong>
+<pre><code>   nanovna-cli.exe         (Hauptprogramm)
+   Languages/              (Sprachdateien)
+   config/                 (Konfigurationsdateien)
+   bandplans/              (Amateurfunk-Banddefinitionen)
+   logs/                   (Protokolldateien werden hier gespeichert)
+   Export/                 (Exportierte Daten werden hier gespeichert)</code></pre>
+</li>
+<li><strong>NanoVNA-H4 anschließen</strong> an einen USB-Port</li>
+<li><strong>Fertig!</strong> Sie können die Anwendung jetzt starten.</li>
+</ol>
+
+<h3>macOS: Aus Quellcode kompilieren</h3>
+<p>macOS wird vollständig unterstützt, erfordert jedoch Kompilierung.</p>
+
+<h4>Voraussetzungen:</h4>
+<pre><code>brew install cmake portaudio</code></pre>
+
+<h4>Build-Schritte:</h4>
+<pre><code># Mit Build-Skript (empfohlen)
+./build-macos.sh
+
+# Oder manuell:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(sysctl -n hw.ncpu)</code></pre>
+
+<p>Die ausführbare Datei befindet sich im <code>build/</code>-Verzeichnis.</p>
+
+<h3>Linux: Aus Quellcode kompilieren</h3>
+<p>Linux wird vollständig unterstützt, erfordert jedoch Kompilierung.</p>
+
+<h4>Voraussetzungen:</h4>
+<pre><code># Debian/Ubuntu
+sudo apt-get install build-essential cmake portaudio19-dev libasound2-dev
+
+# Fedora/RHEL
+sudo dnf install cmake portaudio-devel alsa-lib-devel</code></pre>
+
+<p><strong>Hinweis:</strong> ALSA-Entwicklungsbibliotheken sind für MIDI-Unterstützung erforderlich. Falls nicht verfügbar, wird die Anwendung kompiliert und läuft mit einer Fallback-Meldung für MIDI-Funktionalität.</p>
+
+<h4>Build-Schritte:</h4>
+<pre><code>./build.sh
+
+# Oder manuell:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)</code></pre>
+
+<p>Die ausführbare Datei befindet sich im <code>build/</code>-Verzeichnis.</p>
+<hr>
+<h2>4. Erste Schritte</h2>
+<h3>Anwendung starten:</h3>
+<p><strong>Windows - Option 1: Einfacher Start</strong></p>
+<ul>
+<li>Doppelklick auf <code>nanovna-cli.exe</code></li>
+<li>Oder über Kommandozeile: <code>nanovna-cli.exe</code></li>
+</ul>
+<p><strong>Windows - Option 2: Mit Debug-Protokollierung (empfohlen für Beta-Tests)</strong></p>
+<ul>
+<li>Eingabeaufforderung oder PowerShell öffnen</li>
+<li>Zum Anwendungsverzeichnis navigieren</li>
+<li>Ausführen: <code>nanovna-cli.exe -d</code></li>
+</ul>
+<p><strong>macOS/Linux - Terminal</strong></p>
+<ul>
+<li>Terminal öffnen</li>
+<li>Zum Build-Verzeichnis navigieren: <code>cd build</code></li>
+<li>Ausführen: <code>./nanovna-cli</code></li>
+<li>Mit Debug-Protokollierung: <code>./nanovna-cli -d</code></li>
+</ul>
+<h3>Bildschirm-Leerung:</h3>
+<p>Die Anwendung leert automatisch den Bildschirm beim Betreten neuer Kontexte (Menüs, Funktionsbildschirme, etc.), um die Übersichtlichkeit zu erhöhen.</p>
+<p><strong>Wichtig:</strong> Im Debug-Modus (<code>-d</code> Flag) wird der Bildschirm nicht geleert. Dies ermöglicht es Ihnen, Fehlersituationen vollständig vom Bildschirm zu kopieren, einschließlich aller vorherigen Ausgaben. Dies ist besonders nützlich für:</p>
+<ul>
+<li>Fehlersuche und Problemanalyse</li>
+<li>Beta-Tests und Fehlermeldungen</li>
+<li>Vollständige Dokumentation von Programmabläufen</li>
+</ul>
+<p><strong>Beispiel:</strong></p>
+<ul>
+<li><strong>Normaler Modus:</strong> <code>nanovna-cli.exe</code> → Bildschirm wird bei Kontextwechseln geleert</li>
+<li><strong>Debug-Modus:</strong> <code>nanovna-cli.exe -d</code> → Bildschirm bleibt vollständig erhalten</li>
+</ul>
+<h3>Ersteinrichtung:</h3>
+<ol>
+<li><strong>Seriellen Port auswählen:</strong></li>
+</ol>
+<p>- Taste <strong>P</strong> im Hauptmenü drücken - Die Anwendung scannt verfügbare serielle Ports - Port auswählen, an dem Ihr NanoVNA angeschlossen ist:
+  <ul>
+  <li><strong>Windows:</strong> COM-Ports (z.B. COM4, COM5)</li>
+  <li><strong>macOS:</strong> /dev/cu.* oder /dev/tty.* (z.B. /dev/cu.usbmodem14201)</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB* oder /dev/ttyACM* (z.B. /dev/ttyUSB0)</li>
+  </ul>
+- Bei Unsicherheit: Jeden Port ausprobieren - die Geräteerkennung wird angezeigt</p></p>
+<ol>
+<li><strong>Frequenzbereich einstellen:</strong></li>
+</ol>
+<p>- Taste <strong>R</strong> für Bereichskonfiguration drücken - Oder <strong>M</strong> für manuelle Messung - Startfrequenz eingeben (in Hz, z.B. <code>144000000</code> für 144 MHz) - Endfrequenz eingeben (in Hz) - Schrittweite eingeben (z.B. <code>10000</code> für 10 kHz Schritte)</p>
+<ol>
+<li><strong>Erste Messung durchführen:</strong></li>
+</ol>
+<p>- Taste <strong>M</strong> drücken zum Starten einer Messung - Auf Abschluss des Scans warten - Die Ergebnisse sind jetzt gespeichert und analysierbar</p>
+<h3>Sprachwahl:</h3>
+<ul>
+<li>Die Anwendung erkennt automatisch Ihre Windows-Sprache</li>
+<li>Englisch und Deutsch werden unterstützt</li>
+<li>Sprache kann in der Konfigurationsdatei geändert werden</li>
+</ul>
+<hr>
+<h2>5. Hauptmenü-Übersicht</h2>
+<p>Das Hauptmenü bietet Zugriff auf alle Funktionen:</p>
+<pre><code>Hauptmenü-Befehle:
+  U - Komfortfunktionen   Analyse-Werkzeugkasten (siehe Abschnitt 7)
+  A - Akustische Analyse  Daten in Töne umwandeln
+  R - Bereich             Frequenzscan konfigurieren
+  M - Manuell             Einzelmessung durchführen
+  Z - Zusammenfassung     Min/Max/Mittelwert-Statistiken anzeigen
+  T - Tabelle             Messdaten anzeigen
+  E - Export              Messungen in Datei speichern
+  L - Laden               Zuvor gespeicherte Messungen laden
+  K - Kalibrierung        Kalibrierungsassistent
+  P - Port                Seriellen Port auswählen
+  G - Gerät               Batteriespannung und Geräteinformationen
+  I - Web-Interface       Web-Interface für Fernzugriff starten/stoppen
+  W - Wiederholen         Automatische Messungen umschalten
+  ? - Handbücher/Training Zugriff auf Benutzerhandbuch, Trainingsanleitungen, Beta-Test-Anweisungen
+  O - Optionen            Einstellungen und Konfiguration
+  H - Hilfe               Kontextabhängige Hilfe
+  Q - Beenden             Anwendung verlassen</code></pre>
+<p><strong>Hinweis:</strong> Die deutsche Version verwendet angepasste Tastenkürzel (z.B. <strong>Z</strong> für "Zusammenfassung", <strong>G</strong> für "Gerät"). Dies entspricht der deutschen Terminologie und verbessert die Merkfähigkeit.</p>
+<hr>
+<h2>6. Grundlegende Bedienung</h2>
+<h3>Messungen durchführen:</h3>
+<h4>Schnellmessung:</h4>
+<ol>
+<li>Taste <strong>M</strong> drücken (Manuell)</li>
+<li>Startfrequenz, Endfrequenz und Schrittweite eingeben</li>
+<li>Auf Abschluss warten</li>
+<li>Ergebnisse werden automatisch gespeichert</li>
+</ol>
+<h4>Kontinuierlicher Sweep-Modus:</h4>
+<ol>
+<li>Bereich mit <strong>R</strong> oder <strong>M</strong> konfigurieren</li>
+<li>Taste <strong>W</strong> drücken für kontinuierlichen Sweep</li>
+<li>Taste <strong>A</strong> drücken für akustischen Modus</li>
+<li><strong>LEERTASTE</strong> drücken zum Starten - Messungen werden live aktualisiert</li>
+</ol>
+<h3>Ergebnisse anzeigen:</h3>
+<h4>Tabellenansicht (<strong>T</strong>):</h4>
+<ul>
+<li>Zeigt alle Datenpunkte in paginierter Tabellenform</li>
+<li><strong>Bild auf/ab</strong> zum Navigieren</li>
+<li><strong>C</strong> drücken zum Anpassen der angezeigten Spalten (verfügbar innerhalb der Tabellenansicht)</li>
+<li>Spalten: Frequenz, SWR, Rückflussdämpfung, |Z|, R, X, Phase</li>
+</ul>
+<h4>Zusammenfassung (<strong>Z</strong>):</h4>
+<ul>
+<li>Zeigt Minimum, Maximum und Durchschnittswerte</li>
+<li>Zeigt beste Frequenz für jeden Parameter</li>
+<li>Schneller Überblick über Messqualität</li>
+</ul>
+<h3>Geräteinformationen (<strong>G</strong>):</h3>
+<ul>
+<li>Zeigt NanoVNA-Firmware-Version</li>
+<li>Zeigt Batteriespannung</li>
+<li>Nützlich zur Überprüfung der Geräteverbindung</li>
+</ul>
+<hr>
+<h2>7. U-Menü: Analyse-Werkzeuge</h2>
+<p>Taste <strong>U</strong> im Hauptmenü drücken für umfassende Analyse-Werkzeuge. Dieses Menü bietet spezialisierte Tools für verschiedene Messszenarien.</p>
+<h3>Antennen- und Impedanzanalyse (S11 erforderlich):</h3>
+<p><strong>1. Bandtauglichkeitsprüfung</strong></p>
+<ul>
+<li>Testet Ihre Antenne über 15 Amateurfunkbänder (160m bis 23cm)</li>
+<li>Zeigt SWR und Impedanz für jedes Band</li>
+<li>Zeigt an, welche Bänder geeignet sind (SWR < Schwellwert)</li>
+</ul>
+<p><strong>2. Resonanzsuche</strong></p>
+<ul>
+<li>Findet Frequenzen, bei denen SWR minimal ist</li>
+<li>Nützlich zum Finden von Antennenresonanzpunkten</li>
+<li>Zeigt mehrere Resonanzen an, falls vorhanden</li>
+</ul>
+<p><strong>3. SWR-Bandbreite</strong></p>
+<ul>
+<li>Berechnet Bandbreite, bei der SWR unter 1,5:1, 2:1 oder 3:1 bleibt</li>
+<li>Wichtig zur Bestimmung des nutzbaren Frequenzbereichs</li>
+<li>Gibt Bandbreite in kHz oder MHz an</li>
+</ul>
+<p><strong>4. Fußpunktimpedanz-Analyse</strong></p>
+<ul>
+<li>Detaillierte Impedanzanalyse bei spezifischer Frequenz</li>
+<li>Zeigt: R (Widerstand), X (Reaktanz), |Z| (Betrag), Phase</li>
+<li>Zeigt an, ob Antenne kapazitiv oder induktiv ist</li>
+</ul>
+<p><strong>5. Anpassungshinweise</strong></p>
+<ul>
+<li>Schlägt Impedanzanpassungsnetzwerke vor</li>
+<li>Gibt Bauteilwerte an (L und C)</li>
+<li>Hilft, 50-Ohm-Anpassung zu erreichen</li>
+</ul>
+<p><strong>6. Kabellängenschätzung</strong></p>
+<ul>
+<li>Schätzt Kabellänge aus Phasenantwort</li>
+<li>Benötigt Konfiguration des Verkürzungsfaktors</li>
+<li>Nützlich zur Kabelidentifikation</li>
+</ul>
+<p><strong>7. Kabelfehlererkennung</strong></p>
+<ul>
+<li>Erkennt Kurzschlüsse, offene Leitungen oder Kabelschäden</li>
+<li>Nutzt Time-Domain-Reflectometry (TDR) Prinzip</li>
+<li>Zeigt ungefähre Entfernung zum Fehler</li>
+</ul>
+<h3>Kabel- und Filteranalyse (S21 erforderlich):</h3>
+<p><strong>8. Kabeldämpfungsmessung</strong></p>
+<ul>
+<li>Misst Kabelverlust pro Meter oder pro 100 Fuß</li>
+<li>Benötigt durchkalibrierte S21-Messung</li>
+<li>Vergleich mit Herstellerangaben möglich</li>
+</ul>
+<p><strong>9. Filteranalyse</strong></p>
+<ul>
+<li>Analysiert Durchlassbereich, Sperrbereich und Welligkeit</li>
+<li>Findet -3 dB Grenzfrequenzen</li>
+<li>Misst Einfügedämpfung</li>
+</ul>
+<h3>Hilfsprogramme:</h3>
+<p><strong>10. Vorher/Nachher-Vergleich</strong></p>
+<ul>
+<li>Vergleicht zwei Messungs-Schnappschüsse</li>
+<li>Nützlich für Abstimmanpassungen</li>
+<li>Zeigt Unterschiede in allen Parametern</li>
+</ul>
+<p><strong>11. Automatische Markerplatzierung</strong></p>
+<ul>
+<li>Platziert Marker automatisch an interessanten Punkten</li>
+<li>Minimum SWR, Null Reaktanz, Maximum S21</li>
+<li>Beschleunigt Analyse</li>
+</ul>
+<p><strong>12. Konfiguration</strong></p>
+<ul>
+<li>Verkürzungsfaktor für Kabelmessungen einstellen (Standard: 0,66)</li>
+<li>SWR-Schwellwert für Bandtauglichkeit konfigurieren</li>
+<li>Kabelverlustspezifikationen setzen</li>
+</ul>
+<hr>
+<h2>8. Akustischer Analysemodus</h2>
+<p>Wandeln Sie Ihre HF-Messungen in interaktive Mehrkanal-Audio für intuitive Analyse um.</p>
+<h3>Akustischen Modus aktivieren:</h3>
+<ol>
+<li>Messung durchführen (<strong>M</strong> oder <strong>R</strong>)</li>
+<li>Taste <strong>A</strong> drücken für akustischen Modus</li>
+<li><strong>LEERTASTE</strong> drücken zum Starten der Wiedergabe</li>
+</ol>
+<h3>Audio-Darstellung:</h3>
+<p>Die Anwendung wandelt 5 Parameter in simultane Audio-Kurven um:</p>
+<p><strong>Zwei verfügbare Audio-Engines:</strong></p>
+<h4>Synthesizer (Standard):</h4>
+<ol>
+<li><strong>SWR</strong> - Sinuswelle</li>
+<li><strong>Rückflussdämpfung</strong> - Reine Sinuswelle</li>
+<li><strong>Impedanz |Z|</strong> - Dreieckswelle</li>
+<li><strong>Reaktanz X</strong> - Sägezahn (steigend = induktiv, fallend = kapazitiv)</li>
+<li><strong>Phase</strong> - Sinuswelle</li>
+</ol>
+<h4>MIDI-Engine:</h4>
+<ol>
+<li><strong>SWR</strong> - Streicherensemble</li>
+<li><strong>Rückflussdämpfung</strong> - Kirchenorgel</li>
+<li><strong>Impedanz |Z|</strong> - Zugriegel-Orgel</li>
+<li><strong>Reaktanz X</strong> - Violine</li>
+<li><strong>Phase</strong> - Lead 2 (Synthesizer-Lead)</li>
+</ol>
+<p>Mit Taste <strong>A</strong> im akustischen Modus zwischen Engines wechseln (öffnet Audio-Konfigurationsbildschirm).</p>
+<h3>Wiedergabefunktionen:</h3>
+<p><strong>Stereo-Panning:</strong></p>
+<ul>
+<li>Linker Kanal = Startfrequenz</li>
+<li>Rechter Kanal = Endfrequenz</li>
+<li>Mitte = Mittlere Frequenzen</li>
+</ul>
+<p><strong>Tonhöhenzuordnung:</strong></p>
+<ul>
+<li>Höhere Tonhöhe = Höherer Parameterwert</li>
+<li>Niedrigere Tonhöhe = Niedrigerer Parameterwert</li>
+<li>Tonhöhenbereich wird automatisch skaliert</li>
+</ul>
+<p><strong>Lautstärkeregelung:</strong></p>
+<ul>
+<li>Tasten <strong>1-5</strong>: Einzelne Kurven ein-/ausschalten</li>
+<li><strong>Strg + 1-5</strong>: Kurvenlautstärke verringern</li>
+<li><strong>Umschalt + 1-5</strong>: Kurvenlautstärke erhöhen</li>
+<li>Lautstärkebereich: 0-200%</li>
+</ul>
+<h3>Wiedergabemodi:</h3>
+<p><strong>Glatter Modus (Standard):</strong></p>
+<ul>
+<li>Kontinuierlicher Sweep durch alle Datenpunkte</li>
+<li>Stellt Gesamtkurvenform dar</li>
+<li>Gut für allgemeinen Überblick</li>
+</ul>
+<p><strong>Gepunkteter Modus (Taste T drücken):</strong></p>
+<ul>
+<li>Spielt diskrete Datenpunkte ab</li>
+<li>Nutzt intelligentes Downsampling (LTTB-Algorithmus)</li>
+<li>Bewahrt Spitzen, Täler und signifikante Merkmale</li>
+<li>Warnung, wenn Zeitfenster zu klein für genaue Darstellung</li>
+</ul>
+<h3>Navigation:</h3>
+<p><strong>Pfeiltasten:</strong></p>
+<ul>
+<li><strong>↑/↓</strong> - Sprungweite ändern (1, 10, 100, 500, 1000 Punkte)</li>
+<li><strong>←/→</strong> - Nach Sprungweite navigieren</li>
+<li>Echtzeit-Position und Frequenzanzeige</li>
+</ul>
+<p><strong>Wiedergabesteuerung:</strong></p>
+<ul>
+<li><strong>LEERTASTE</strong> - Wiedergabe/Pause</li>
+<li><strong>S</strong> - Stopp und zurück zum Anfang</li>
+<li><strong>F</strong> - Einfrieren (Pause ohne Positionsänderung)</li>
+</ul>
+<p><strong>Zeitfensteranpassung:</strong></p>
+<ul>
+<li><strong>+</strong> - Wiedergabezeit erhöhen (langsamer, mehr Detail)</li>
+<li><strong>-</strong> - Wiedergabezeit verringern (schneller, weniger Detail)</li>
+<li>Typischer Bereich: 5-60 Sekunden</li>
+</ul>
+<h3>Schleifenmarker:</h3>
+<p><strong>Schleifenmarker setzen:</strong></p>
+<ol>
+<li>Zur gewünschten Startposition navigieren</li>
+<li>Taste <strong>L</strong> drücken zum Setzen des linken Markers</li>
+<li>Zur Endposition navigieren</li>
+<li>Taste <strong>R</strong> drücken zum Setzen des rechten Markers</li>
+</ol>
+<p><strong>Schleifen verwenden:</strong></p>
+<ul>
+<li>Taste <strong>O</strong> drücken zum Ein-/Ausschalten des Schleifenmodus</li>
+<li>Taste <strong>Z</strong> drücken zum Ein-/Ausschalten des Schleifen-Zooms (zentriert Schleife im Stereofeld)</li>
+<li>Taste <strong>I</strong> drücken zum Invertieren der Schleife (spielt außerhalb der Marker statt innerhalb)</li>
+<li>Wiedergabe wiederholt sich zwischen Markern</li>
+<li>Nützlich für detaillierte Analyse spezifischer Frequenzbereiche</li>
+<li>Taste <strong>C</strong> für kontinuierlichen Wiederholungsmodus</li>
+</ul>
+<h3>Erweiterte Funktionen:</h3>
+<p><strong>Y-Achsen-Lineal (Taste Y):</strong></p>
+<ul>
+<li>Spielt aufsteigende Skalenreferenz von Min- bis Max-Wert ab</li>
+<li>Hilft bei der Kalibrierung Ihrer Wahrnehmung der Tonhöhen-Wert-Zuordnung</li>
+<li>Nützlich zum Verständnis der Audio-Darstellung</li>
+</ul>
+<p><strong>X-Achsen-Lineal (Taste X):</strong></p>
+<ul>
+<li>Schaltet Impulse bei jedem Messpunkt ein/aus</li>
+<li>Hilft bei der Identifizierung der Position im Frequenz-Sweep</li>
+<li>Nützlich zum Zählen von Datenpunkten</li>
+</ul>
+<p><strong>Statuszeile (Taste N):</strong></p>
+<ul>
+<li>Schaltet detaillierte Statusinformationen während der Wiedergabe ein/aus</li>
+<li>Zeigt Position, Frequenz und Messwerte an</li>
+<li>Aktualisiert sich in Echtzeit während der Wiedergabe</li>
+</ul>
+<p><strong>Gehe-Zu-Menü (Taste G):</strong></p>
+<ul>
+<li>Sprung zu spezifischer Frequenz oder Position</li>
+<li>Schnelle Navigation zu interessanten Bereichen</li>
+</ul>
+<p><strong>Audio-Konfiguration (Taste A):</strong></p>
+<ul>
+<li>Zwischen Synthesizer- und MIDI-Engines umschalten</li>
+<li>Frequenzbereich für Synthesizer konfigurieren</li>
+<li>MIDI-Instrumente pro Kurve auswählen</li>
+<li>Klänge vor dem Anwenden vorhören</li>
+</ul>
+<h3>Smith-Diagramm-Visualisierung:</h3>
+<p>Erleben Sie Impedanzanpassung durch 3D-Raumaudio-Darstellung des Smith-Diagramms. <strong>SIE</strong> stehen im Zentrum des Smith-Diagramms (perfekte 50Ω-Anpassung). Messpunkte bewegen sich in 3D um Sie herum.</p>
+<p><strong>Was ist Smith-Diagramm-Visualisierung?</strong></p>
+<ul>
+<li>Akustische Darstellung des Smith-Diagramms mittels Raumaudio</li>
+<li>Zeigt Impedanzposition im Stereo- oder Surround-Feld (7.1/5.1/2.0)</li>
+<li>Zentrum (SIE) = perfekte 50Ω-Anpassung, Rand = schlechte Anpassung</li>
+<li>Vorne-Position = induktive Reaktanz (Antenne zu kurz)</li>
+<li>Hinten-Position = kapazitive Reaktanz (Antenne zu lang)</li>
+</ul>
+<p><strong>Audio-Hardware-Unterstützung:</strong> Die Anwendung erkennt automatisch Ihre Audio-Hardware-Fähigkeiten:</p>
+<ul>
+<li><strong>Stereo (2.0):</strong> Psychoakustische 3D-Simulation mit Crossfeed für Vorne/Hinten</li>
+<li><strong>5.1 Surround:</strong> Front-, Rear- und Center-Lautsprecher für echtes räumliches Audio</li>
+<li><strong>7.1 Surround:</strong> Vollständiges 360°-Raumaudio mit Seitenlautsprechern</li>
+<li><strong>Dolby Atmos:</strong> Höhenkanäle (erkannt, aber noch nicht verwendet)</li>
+</ul>
+<p>Für beste Smith-Diagramm-Ortung verwenden Sie ein 7.1- oder 5.1-Surround-Headset! <strong>NEU:</strong> Für Stereo-Kopfhörer: Psychoakustische Verarbeitung simuliert 3D!</p>
+<p><strong>Smith-Visualisierung aktivieren:</strong></p>
+<ol>
+<li>Akustischen Analysemodus betreten (<strong>A</strong>)</li>
+<li>Taste <strong>V</strong> drücken zum Ein-/Ausschalten der Smith-Visualisierung</li>
+<li>Taste <strong>B</strong> drücken zum Auswählen des Visualisierungsmodus (1-6)</li>
+<li>Taste <strong>H</strong> drücken für Smith-spezifische Hilfe</li>
+<li>Taste <strong>A</strong> drücken zum Öffnen der Audio-Konfiguration, dann <strong>S</strong> für Surround-Parameter</li>
+<li><strong>NEU:</strong> Taste <strong>A</strong> drücken zum Öffnen der Audio-Konfiguration, dann <strong>W</strong> für den Räumlichen Audio-Kalibrierungs-Assistenten!</li>
+</ol>
+<p><strong>═══════════════════════════════════════════════════════════</strong> <strong>NEU: Räumlicher Audio-Kalibrierungs-Assistent (Taste W)</strong> <strong>═══════════════════════════════════════════════════════════</strong></p>
+<p>Der interaktive Kalibrierungs-Assistent optimiert räumliches Audio für Ihr Gehör!</p>
+<p><strong>Der Assistent:</strong></p>
+<ul>
+<li>Erkennt Ihre Audio-Hardware (Stereo vs. Surround)</li>
+<li>Passt sich an Ihre verfügbaren Funktionen an</li>
+<li>Testet Ihre Richtungswahrnehmung (L/R, V/H, diagonal)</li>
+<li>Kalibriert Nah/Fern-Wahrnehmung</li>
+<li>Ermittelt Ihre Lautstärkepräferenzen</li>
+<li>Lässt Sie Klangtypen mit Vorschau wählen</li>
+<li>Optimiert psychoakustische Parameter (nur Stereo-Modus)</li>
+</ul>
+<p><strong>Für Stereo-Nutzer:</strong></p>
+<ul>
+<li>Crossfeed-Menge für V/H-Unterscheidung</li>
+<li>Rückseitige Dämpfung für Distanz-Simulation</li>
+<li>Seitenbetonung für bessere L/R-Ortung</li>
+</ul>
+<p><strong>Für Surround-Nutzer:</strong></p>
+<ul>
+<li>Vollständige 8-Richtungs-Tests (V/H/L/R + Diagonalen)</li>
+<li>Lautsprecher-Entfernungs-Kalibrierung</li>
+<li>Kanalbalance-Optimierung</li>
+</ul>
+<p><strong>Dauer:</strong> 10-15 Minuten <strong>Empfohlen:</strong> Führen Sie dies einmal durch für optimale Ergebnisse! <strong>Zugriff:</strong> Akustischer Modus → Audio-Konfiguration (Taste A) → Assistent (Taste W)</p>
+<p>Die Einstellungen werden persistent gespeichert und auf alle räumlichen Audio-Funktionen angewendet.</p>
+<p><strong>═══════════════════════════════════════════════════════════</strong> <strong>Sechs Visualisierungsmodi (Alle vollständig implementiert!):</strong> <strong>═══════════════════════════════════════════════════════════</strong></p>
+<p><strong>1. KARTESISCH (Am einfachsten - Empfohlen für Anfänger)</strong> - Position im rechteckigen 3D-Raum - Re(Γ) → Links/Rechts-Achse - Im(Γ) → Vorne/Hinten-Achse - Sie stehen im Zentrum, Sound bewegt sich im Rechteckmuster - <strong>Am besten für:</strong> Smith-Diagramm-Grundlagen lernen</p>
+<p><strong>2. POLAR (Fortgeschritten - Natürliche Smith-Struktur)</strong> - Sound rotiert um Sie im Kreis - Winkel ∠Γ → Richtung um Sie (0°=vorne, ±180°=hinten) - Betrag |Γ| → Entfernung von Ihnen (näher=bessere Anpassung) - Sound kreist im/gegen Uhrzeigersinn über Frequenz - <strong>Am besten für:</strong> Kabel-Analyse, Rotationsmuster erkennen</p>
+<p><strong>3. IMPEDANZ DIREKT (Einfach - Kein Smith-Wissen erforderlich)</strong> - Direkte Abbildung von R und X - R (Widerstand) → L/R (0Ω links, 50Ω Mitte, 200Ω rechts) - X (Reaktanz) → V/H (+200Ω vorne, 0Ω Mitte, -200Ω hinten) - Keine Gamma-Konversion, direkte Impedanz-Wahrnehmung - <strong>Am besten für:</strong> Anfänger ohne Smith-Erfahrung</p>
+<p><strong>4. SWR-KREISE (Zielorientiert - Beste Anpassung finden)</strong> - Fokus auf SWR-Qualität, radiale Positionierung - Sound-Entfernung von Ihnen = SWR-Level - Nah bei Ihnen = Gute Anpassung (niedriges SWR) - Weit von Ihnen = Schlechte Anpassung (hohes SWR) - Lautstärke steigt mit schlechterem SWR - <strong>Am besten für:</strong> Antennen-Abstimmung, Resonanz finden</p>
+<p><strong>5. ZEITDOMÄNE MIT CUES (Hybrid - Frequenz + Smith-Kontext)</strong> - Standard-Frequenz-Sweep mit subtilen Smith-Cues - Primär: Frequenz-Fortschritt (links nach rechts) - Sekundär: Subtile Smith-Positions-Cues (V/H, Lautstärke) - <strong>Am besten für:</strong> Nutzer, die Akustik-Modus mögen, aber Smith-Kontext wollen</p>
+<p><strong>6. HYBRID MULTI (Experte - Maximale Information)</strong> - Mehrere simultane Audio-Ebenen - Ebene 1: Polare Positionierung (Haupt-Räumliches-Cue) - Ebene 2: SWR-Information (Lautstärke-Modulation) - Ebene 3: Ereignis-Marker (Achsenkreuzungen, Resonanz) - Kombiniert das Beste aller Modi - <strong>Am besten für:</strong> Erfahrene Nutzer, komplexe Analyse</p>
+<p><strong>Surround-Sound-Konfiguration:</strong> Im Audio-Konfigurationsmenü <strong>S</strong> drücken (verfügbar für alle Hardware-Typen):</p>
+<ul>
+<li><strong>Stereo-Modus:</strong> Crossfeed, Rückseitige Dämpfung, Seitenbetonung</li>
+<li><strong>Surround-Modus:</strong> Front-/Rück-/Seitenentfernung, Center-Stärke, etc.</li>
+<li><strong>Front-/Rück-/Seitenentfernung:</strong> Wahrgenommene Lautsprecherentfernung (50-200%)</li>
+<li><strong>Center-Kanal-Stärke:</strong> Center-Lautsprecher-Prominenz (0-100%)</li>
+<li><strong>V/H-Trennung:</strong> Vorne/Hinten-Unterscheidung verbessern (50-200%)</li>
+<li><strong>Seiten-Betonung:</strong> 90°-Ortung verbessern (50-200%)</li>
+<li><strong>Fading-Kurven:</strong> Räumliche Bewegungswahrnehmung wählen:</li>
+</ul>
+<p>- Linear: Gleichmäßige wahrgenommene Bewegung (Standard) - Logarithmisch: Mehr Betonung auf Zentrum - Exponentiell: Mehr Betonung auf Randpositionen - Sinus: Glatte, natürliche Übergänge</p>
+<p><strong>Smith-Audio-Eigenschaften:</strong></p>
+<ul>
+<li>Subtiles rosa Umgebungsrauschen im Stereofeld positioniert</li>
+<li>Lautstärke: 30% der Hauptkurven (konfigurierbar)</li>
+<li>Funktioniert am besten mit Kopfhörern</li>
+<li>Räumliche Position zeigt Impedanzlage</li>
+<li>Sound bewegt sich zum Zentrum bei Annäherung an Resonanz</li>
+<li><strong>NEU:</strong> Psychoakustische Verbesserungen für Stereo-Kopfhörer</li>
+</ul>
+<p><strong>Tipps für Smith-Visualisierung:</strong></p>
+<ul>
+<li>Beginnen Sie mit Modus 1 (Kartesisch) oder 3 (Impedanz Direkt)</li>
+<li>Nutzen Sie Kopfhörer für beste Raumaudio-Erfahrung</li>
+<li>Smith-Hinweise funktionieren am besten im glatten Wiedergabemodus</li>
+<li><strong>NEU:</strong> Führen Sie den Kalibrierungs-Assistenten aus (W-Taste) für optimale Ergebnisse!</li>
+<li>Smith-Visualisierung nach Start der Wiedergabe aktivieren</li>
+<li>Drücken Sie <strong>H</strong> während Smith aktiv für detaillierte Hilfe</li>
+<li>Hören Sie auf Bewegung zum Zentrum (sich verbessernde Anpassung)</li>
+<li>Vorne/Hinten-Position zeigt reaktive Komponente an</li>
+</ul>
+<p><strong>Beispiel-Interpretationen:</strong></p>
+<ul>
+<li><strong>Zentrums-Sound</strong> = Perfekte 50Ω-Anpassung (SIE sind hier!)</li>
+<li><strong>Sound bewegt sich zum Zentrum</strong> = Nähert sich Resonanz</li>
+<li><strong>Sound vorne</strong> = Induktive Reaktanz (Antenne zu kurz)</li>
+<li><strong>Sound hinten</strong> = Kapazitive Reaktanz (Antenne zu lang)</li>
+<li><strong>Sound am Rand</strong> = Hohes SWR, schlechte Impedanzanpassung</li>
+<li><strong>Sound kreist um Sie</strong> = Frequenz-Sweep über reaktives Bauteil</li>
+</ul>
+<p><strong>📖 Detaillierte Informationen zu den Smith-Diagramm-Modi:</strong></p>
+<p>Für eine ausführliche Beschreibung aller sechs Visualisierungsmodi, der räumlichen Relationen und der Listener-Event-Beziehungen, siehe die separate Datei:</p>
+<ul>
+<li><strong>smith_modi_beschreibung.md</strong> (im doc-Verzeichnis)</li>
+<li>Enthält detaillierte technische Erklärungen jedes Modus</li>
+<li>Beschreibt Achsenkreuzungen und Bewegungsmuster</li>
+<li>Gibt Tipps für blinde Benutzer zur räumlichen Orientierung</li>
+<li>Diese Datei bleibt als Schnellreferenz verfügbar</li>
+</ul>
+<h3>Kontinuierlicher Sweep-Modus:</h3>
+<ol>
+<li>Kontinuierlichen Sweep aktivieren (<strong>W</strong> im Hauptmenü)</li>
+<li>Akustischen Modus aktivieren (<strong>A</strong>)</li>
+<li><strong>LEERTASTE</strong> drücken zum Starten</li>
+<li>Messungen werden live während der Wiedergabe aktualisiert</li>
+<li>Nützlich für Echtzeit-Abstimmung</li>
+</ol>
+<h3>Weitere Funktionen:</h3>
+<ul>
+<li><strong>M</strong> - Aktuelle Messungsinformationen anzeigen</li>
+<li><strong>E</strong> - Aktuelle Daten exportieren</li>
+<li><strong>H</strong> - Hilfe anzeigen (zeigt alle verfügbaren Tasten)</li>
+<li><strong>ESC</strong> - Zurück zum Hauptmenü</li>
+</ul>
+<h3>Schnelle Tastenreferenz:</h3>
+<p><strong>Wiedergabe:</strong> LEERTASTE (play/pause), F (einfrieren), S (stopp), T (glatt/gepunktet umschalten) <strong>Navigation:</strong> Pfeiltasten (←→ bewegen, ↑↓ Sprungweite ändern) <strong>Zeit:</strong> +/- (Wiedergabegeschwindigkeit anpassen) <strong>Kurven:</strong> 1-5 (umschalten), Strg+1-5 (Lautstärke runter), Umschalt+1-5 (Lautstärke hoch) <strong>Schleife:</strong> L (linker Marker), R (rechter Marker), O (umschalten), Z (zoom), I (invertieren), C (kontinuierlich) <strong>Smith:</strong> V (Visualisierung umschalten), B (Modus wechseln 1-6) <strong>Werkzeuge:</strong> Y (Y-Lineal), X (X-Lineal), N (Statuszeile), G (gehe zu), A (Audio-Konfig), M (messen), E (exportieren), H (Hilfe)</p>
+<hr>
+<h2>9. Export und Import</h2>
+<h3>Messungen exportieren:</h3>
+<p>Taste <strong>E</strong> im Hauptmenü oder akustischen Modus drücken zum Öffnen des Export-Menüs.</p>
+<p><strong>Export-Optionen:</strong></p>
+<p><strong>1. CSV-Export</strong></p>
+<ul>
+<li>Standard-CSV-Format mit Semikolon-Trennzeichen</li>
+<li>Enthält: Frequenz, SWR, Rückflussdämpfung, |Z|, R, X, Phase</li>
+<li>Dateiname: <code>nanovna_JJJJMMTT_HHMMSS_startfreq_endfreq_schritt.csv</code></li>
+<li>Ort: <code>Export/</code>-Verzeichnis</li>
+<li>Kann in Excel, LibreOffice oder jeder Tabellenkalkulation geöffnet werden</li>
+</ul>
+<p><strong>2. Text-Export</strong></p>
+<ul>
+<li>Menschenlesbares formatiertes Text</li>
+<li>Enthält alle Messdaten mit Einheiten</li>
+<li>Enthält Messungs-Metadaten (Datum, Zeit, Bereich)</li>
+<li>Dateiname: <code>nanovna_JJJJMMTT_HHMMSS_startfreq_endfreq_schritt.txt</code></li>
+<li>Ort: <code>Export/</code>-Verzeichnis</li>
+</ul>
+<p><strong>3. Braille-Grafik-Export (Datei)</strong></p>
+<ul>
+<li>Exportiert akustische Kurven als taktile Grafiken</li>
+<li>Format: <code>.brl</code>-Dateien für Index-Brailledrucker</li>
+<li>80x25 Braillezellen-Raster (8-Punkt-Braille)</li>
+<li>Kompatibel mit Index Basic, Everest, V3, V4, V5 Druckern</li>
+<li>Einzelne Kurven oder alle Kurven auswählen</li>
+<li>Nutzt ESC G/ESC E Format mit Nibble-Kodierung</li>
+<li>Dateiname: <code>nanovna_JJJJMMTT_HHMMSS_startfreq_endfreq_schritt.brl</code></li>
+<li>Ort: <code>Export/</code>-Verzeichnis</li>
+</ul>
+<p><strong>4. Braille-Direktdruck</strong></p>
+<ul>
+<li>Direkt auf angeschlossenen Index-Brailledrucker drucken</li>
+<li>Keine Zwischendatei erstellt</li>
+<li>Nutzt ESC Z Grafikmodus (vertikale Spaltenkodierung)</li>
+<li>Zu druckende Kurven auswählen</li>
+<li>Anwendung listet alle Windows-Drucker auf</li>
+<li>Index-Brailledrucker aus Liste auswählen</li>
+<li>Erzeugt taktile Grafiken der ausgewählten Kurven</li>
+<li>Optimiert für Index V5-Serie Drucker</li>
+</ul>
+<p><strong>Export mit Schleifenmarkern:</strong></p>
+<ul>
+<li>Wenn Schleifenmarker gesetzt sind (L und R im akustischen Modus)</li>
+<li>Nur Daten innerhalb des Schleifenbereichs werden exportiert</li>
+<li>Nützlich zum Exportieren spezifischer Frequenzbereiche</li>
+</ul>
+<h3>Messungen importieren:</h3>
+<p>Taste <strong>L</strong> im Hauptmenü drücken zum Laden zuvor gespeicherter Messungen.</p>
+<p><strong>Import-Prozess:</strong></p>
+<ol>
+<li>Taste <strong>L</strong> für Laden drücken</li>
+<li>Datei aus Liste auswählen (zeigt alle Exporte)</li>
+<li>Daten werden in Speicher geladen</li>
+<li>Alle Analysefunktionen können nun mit importierten Daten verwendet werden</li>
+</ol>
+<p><strong>Unterstützte Import-Formate:</strong></p>
+<ul>
+<li>CSV-Dateien (.csv)</li>
+<li>Textdateien (.txt)</li>
+<li>Müssen von dieser Anwendung erstellt sein (korrektes Format)</li>
+</ul>
+<hr>
+<h2>10. Web-Interface</h2>
+<p>Das Web-Interface ermöglicht die Fernsteuerung der NanoVNA CLI-Anwendung über einen Webbrowser im lokalen Netzwerk.</p>
+<h3>Zweck und Anwendungsfälle:</h3>
+<ul>
+<li><strong>Fernsteuerung:</strong> Bedienung des Geräts von Smartphone oder Tablet</li>
+<li><strong>Feldarbeit:</strong> NanoVNA am Antennenmast platzieren, während Sie es aus sicherer Entfernung steuern</li>
+<li><strong>Barrierefreiheit:</strong> Web-Interface mit jedem Screenreader verwenden, der mit Ihrem Browser funktioniert</li>
+<li><strong>Multi-Device:</strong> Zugriff von jedem Gerät im lokalen Netzwerk</li>
+</ul>
+<h3>Web-Interface starten:</h3>
+<ol>
+<li>Drücken Sie <strong>I</strong> im Hauptmenü</li>
+<li>Überprüfen Sie die angezeigten Informationen</li>
+<li>Drücken Sie <strong>S</strong>, um den Webserver zu starten</li>
+<li>Notieren Sie sich die angezeigten URLs:</li>
+</ol>
+<p>- <strong>Lokaler Zugriff:</strong> <code>http://localhost:8080</code> (vom selben Computer) - <strong>Netzwerkzugriff:</strong> <code>http://[Ihre-IP]:8080</code> (von anderen Geräten in Ihrem Netzwerk)</p>
+<ol>
+<li>Öffnen Sie die URL in einem beliebigen Webbrowser</li>
+</ol>
+<h3>Web-Interface verwenden:</h3>
+<ul>
+<li>Das Web-Interface spiegelt das Terminal-Interface wider</li>
+<li>Alle Tastaturbefehle funktionieren gleich – Sie können direkt über die Tastatur tippen</li>
+<li>Screenreader lesen den Inhalt normal vor</li>
+<li>Audioausgabe vom akustischen Modus wird auf dem Server-Computer abgespielt (noch nicht im Browser)</li>
+</ul>
+<h3>Interaktive Aktions-Buttons:</h3>
+<p>Das Web-Interface zeigt neben der Terminalausgabe ein Bedienfeld mit kontextabhängigen Aktions-Buttons an. Diese Buttons ermöglichen die vollständige Bedienung per Mausklick oder Touch – zusätzlich zur Tastatureingabe.</p>
+<ul>
+<li><strong>Kontextabhängig:</strong> Die angezeigten Buttons passen sich automatisch dem aktuellen Bildschirmkontext an. Im Hauptmenü sehen Sie die Hauptmenü-Optionen, in einem Untermenü die dort verfügbaren Aktionen.</li>
+<li><strong>Vollständige Abdeckung:</strong> Alle Menüs, Untermenüs, Ja/Nein-Abfragen und Auswahloptionen (z.B. in den Komfortfunktionen) sind als Buttons verfügbar.</li>
+<li><strong>Barrierefreiheit:</strong> Die Buttons sind als echte HTML-Buttons mit ARIA-Labels implementiert und können von Screenreadern korrekt erfasst werden.</li>
+<li><strong>Taste und Aktion:</strong> Jeder Button zeigt die zugehörige Taste in eckigen Klammern und die Beschreibung an, z.B. <code>[S] Zusammenfassung</code>. Ein Klick sendet exakt die gleiche Eingabe wie die entsprechende Taste.</li>
+<li><strong>ESC-Button:</strong> In jedem Unterkontext wird automatisch ein ESC-Button angezeigt, um zum vorherigen Menü zurückzukehren.</li>
+<li><strong>Mehrziffrige Eingaben:</strong> Bei Menüs mit mehr als 9 Optionen (z.B. Bandauswahl) senden die Buttons automatisch die Nummer gefolgt von Enter.</li>
+</ul>
+<h3>Web-Interface stoppen:</h3>
+<ol>
+<li>Kehren Sie zum Hauptmenü zurück</li>
+<li>Drücken Sie erneut <strong>I</strong></li>
+<li>Drücken Sie <strong>S</strong>, um den Webserver zu stoppen</li>
+</ol>
+<h3>Sicherheitshinweise:</h3>
+<ul>
+<li><strong>Nur HTTP:</strong> Keine Verschlüsselung (nur für lokales Netzwerk vorgesehen)</li>
+<li><strong>Keine Authentifizierung:</strong> Jeder in Ihrem Netzwerk kann sich verbinden</li>
+<li><strong>Nur lokales Netzwerk:</strong> Nicht für Internetzugriff konzipiert</li>
+<li><strong>Firewall:</strong> Windows fragt möglicherweise beim ersten Mal nach Erlaubnis</li>
+</ul>
+<h3>Fehlerbehebung:</h3>
+<p><strong>Verbindung von anderem Gerät nicht möglich:</strong></p>
+<ul>
+<li>Überprüfen Sie, ob beide Geräte im selben Netzwerk sind</li>
+<li>Prüfen Sie die Firewall-Einstellungen am Server-Computer</li>
+<li>Verwenden Sie die korrekte IP-Adresse, die im Terminal angezeigt wird</li>
+</ul>
+<p><strong>Port bereits in Verwendung:</strong></p>
+<ul>
+<li>Eine andere Anwendung könnte Port 8080 verwenden</li>
+<li>Schließen Sie die andere Anwendung oder starten Sie Ihren Computer neu</li>
+</ul>
+<hr>
+<h2>11. Kalibrierung</h2>
+<p>Eine ordnungsgemäße Kalibrierung ist für genaue Messungen unerlässlich.</p>
+<h3>Kalibrierungstypen:</h3>
+<p><strong>S11-Kalibrierung (Eintor):</strong></p>
+<ul>
+<li>Erforderlich für: Antennenmessungen, SWR, Impedanz</li>
+<li>Standards: Open (Offen), Short (Kurzschluss), Load (Last, 50 Ohm)</li>
+</ul>
+<p><strong>S21-Kalibrierung (Zweitor):</strong></p>
+<ul>
+<li>Erforderlich für: Kabelverlust, Filtermessungen</li>
+<li>Standards: Through (Durchgang), Isolation</li>
+</ul>
+<h3>Kalibrierungsassistent (Taste K):</h3>
+<p><strong>Für S11-Messungen:</strong></p>
+<ol>
+<li>Taste <strong>K</strong> im Hauptmenü drücken</li>
+<li>Frequenzbereich auswählen (muss mit Messbereich übereinstimmen)</li>
+<li><strong>Schritt 1:</strong> OPEN-Standard anschließen → messen</li>
+<li><strong>Schritt 2:</strong> SHORT-Standard anschließen → messen</li>
+<li><strong>Schritt 3:</strong> LOAD (50Ω)-Standard anschließen → messen</li>
+<li>Kalibrierung ist nun aktiv</li>
+</ol>
+<p><strong>Für S21-Messungen:</strong></p>
+<ol>
+<li>Für Zweitor-Messung konfigurieren</li>
+<li><strong>Through:</strong> Ports direkt verbinden → messen</li>
+<li><strong>Isolation:</strong> Ports unverbunden lassen → messen</li>
+</ol>
+<h3>Kalibrierung speichern und abrufen:</h3>
+<p><strong>Kalibrierung speichern:</strong></p>
+<ul>
+<li>Nach Kalibrierungsassistent werden Daten automatisch verwendet</li>
+<li>Kalibrierung kann im internen NanoVNA-Speicher gespeichert werden</li>
+<li>Gerätebefehle im Protokollmodus verwenden</li>
+</ul>
+<p><strong>Kalibrierung abrufen:</strong></p>
+<ul>
+<li>Kalibrierung geht beim Neustart der Anwendung verloren</li>
+<li>Kalibrierungsassistent für jede Sitzung erneut ausführen</li>
+<li>Oder aus internem NanoVNA-Speicher abrufen</li>
+</ul>
+<h3>Kalibrierungstipps:</h3>
+<ul>
+<li>Hochwertige Kalibrierstandards verwenden</li>
+<li>Kabellängen konsistent halten</li>
+<li>Alle Verbindungen fest anziehen</li>
+<li>Handkontakt mit Verbindern während der Messung vermeiden</li>
+<li>Bei Änderung des Frequenzbereichs neu kalibrieren</li>
+<li>Kalibrierungsqualität mit bekanntem guten Gerät überprüfen</li>
+</ul>
+<hr>
+<h2>12. Fehlerbehebung</h2>
+<h3>Serielle Port-Probleme:</h3>
+<p><strong>Problem:</strong> NanoVNA auf seriellem Port nicht gefunden</p>
+<ul>
+<li><strong>Lösung 1:</strong> USB-Verbindung überprüfen</li>
+<li><strong>Lösung 2:</strong> Verschiedene Ports ausprobieren (<strong>P</strong>-Menü zeigt alle verfügbaren Ports):
+  <ul>
+  <li><strong>Windows:</strong> COM4, COM5, usw.</li>
+  <li><strong>macOS:</strong> /dev/cu.usbmodem*, /dev/tty.usbmodem*</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB*, /dev/ttyACM*</li>
+  </ul>
+</li>
+<li><strong>Lösung 3:</strong> Gerätemanager auf Port-Zuweisung überprüfen:
+  <ul>
+  <li><strong>Windows:</strong> Geräte-Manager → Anschlüsse (COM & LPT)</li>
+  <li><strong>macOS:</strong> <code>ls /dev/cu.*</code> oder <code>ls /dev/tty.*</code></li>
+  <li><strong>Linux:</strong> <code>ls /dev/ttyUSB*</code> oder <code>ls /dev/ttyACM*</code></li>
+  </ul>
+</li>
+<li><strong>Lösung 4:</strong> Überprüfen, ob NanoVNA eingeschaltet ist (Display leuchtet)</li>
+<li><strong>Lösung 5:</strong> Anderes USB-Kabel versuchen</li>
+<li><strong>Nur Linux:</strong> Benutzerberechtigungen überprüfen: <code>sudo usermod -a -G dialout $USER</code> (dann ab- und wieder anmelden)</li>
+</ul>
+<p><strong>Problem:</strong> "Fehler beim Öffnen des seriellen Ports"</p>
+<ul>
+<li><strong>Lösung:</strong> Andere Anwendungen schließen, die den COM-Port verwenden</li>
+<li><strong>Lösung:</strong> NanoVNA trennen und wieder anschließen</li>
+<li><strong>Lösung:</strong> Anwendung neu starten</li>
+</ul>
+<h3>Messprobleme:</h3>
+<p><strong>Problem:</strong> Seltsame oder unrealistische Werte</p>
+<ul>
+<li><strong>Lösung 1:</strong> Kalibrierung überprüfen (<strong>K</strong>-Menü ausführen)</li>
+<li><strong>Lösung 2:</strong> Überprüfen, ob Frequenzbereich angemessen ist</li>
+<li><strong>Lösung 3:</strong> Verbindungen überprüfen (lockere Kabel)</li>
+<li><strong>Lösung 4:</strong> Sicherstellen, dass Antenne/Prüfling richtig angeschlossen ist</li>
+</ul>
+<p><strong>Problem:</strong> "Keine Daten verfügbar"</p>
+<ul>
+<li><strong>Lösung 1:</strong> Zuerst eine Messung durchführen (<strong>M</strong> oder <strong>R</strong>)</li>
+<li><strong>Lösung 2:</strong> Überprüfen, dass Messung erfolgreich abgeschlossen wurde</li>
+<li><strong>Lösung 3:</strong> Überprüfen, dass COM-Port ausgewählt ist und Gerät antwortet</li>
+</ul>
+<h3>Audio-Probleme:</h3>
+<p><strong>Problem:</strong> Kein Ton im akustischen Modus</p>
+<ul>
+<li><strong>Lösung 1:</strong> System-Lautstärkeeinstellungen überprüfen</li>
+<li><strong>Lösung 2:</strong> Überprüfen, ob Soundkarte funktioniert:
+  <ul>
+  <li><strong>Windows:</strong> Testton in Windows-Soundeinstellungen abspielen</li>
+  <li><strong>macOS:</strong> Systemeinstellungen → Ton überprüfen</li>
+  <li><strong>Linux:</strong> Mit <code>speaker-test</code> oder Audioeinstellungen prüfen</li>
+  </ul>
+</li>
+<li><strong>Lösung 3:</strong> Kurven ein-/ausschalten (Tasten 1-5)</li>
+<li><strong>Lösung 4:</strong> Kurvenlautstärken erhöhen (Umschalt+1 bis Umschalt+5)</li>
+<li><strong>Lösung 5:</strong> Andere Audio-Engine versuchen (Taste <strong>Y</strong>)</li>
+<li><strong>macOS/Linux:</strong> Überprüfen, ob PortAudio korrekt installiert ist</li>
+</ul>
+<p><strong>Problem:</strong> Audio verzerrt oder knistert</p>
+<ul>
+<li><strong>Lösung 1:</strong> Kurvenlautstärken verringern (Strg+1 bis Strg+5)</li>
+<li><strong>Lösung 2:</strong> Andere Audio-Anwendungen schließen</li>
+<li><strong>Lösung 3:</strong> Wiedergabezeit anpassen (+ / - Tasten für längere/kürzere Dauer)</li>
+</ul>
+<h3>Braille-Druck-Probleme:</h3>
+<p><strong>Hinweis:</strong> Direkter Braille-Druck wird derzeit nur unter Windows unterstützt.</p>
+<p><strong>Problem:</strong> "Keine Drucker gefunden"</p>
+<ul>
+<li><strong>Lösung:</strong> Mindestens einen Drucker in Windows installieren</li>
+<li><strong>Lösung:</strong> Windows Geräte und Drucker überprüfen</li>
+<li><strong>macOS/Linux:</strong> Dateiexport (Option 3) verwenden und .brl-Datei für Druck zu Windows übertragen</li>
+</ul>
+<p><strong>Problem:</strong> "Fehler beim Öffnen des Druckers"</p>
+<ul>
+<li><strong>Lösung 1:</strong> Überprüfen, ob Drucker online und bereit ist</li>
+<li><strong>Lösung 2:</strong> Überprüfen, ob Druckername genau übereinstimmt</li>
+<li><strong>Lösung 3:</strong> Windows-Testseite zuerst drucken versuchen</li>
+<li><strong>Lösung 4:</strong> Druckerberechtigungen in Windows überprüfen</li>
+</ul>
+<p><strong>Problem:</strong> Druckauftrag erfolgreich, aber nichts druckt</p>
+<ul>
+<li><strong>Lösung 1:</strong> Druckerwarteschlange überprüfen (Geräte und Drucker)</li>
+<li><strong>Lösung 2:</strong> Überprüfen, ob Papier eingelegt ist</li>
+<li><strong>Lösung 3:</strong> Druckerspezifische Fehleranzeigen überprüfen</li>
+</ul>
+<p><strong>Problem:</strong> Verstümmelte Ausgabe auf Brailledrucker</p>
+<ul>
+<li><strong>Lösung 1:</strong> Dateiexport (Option 3) statt Direktdruck versuchen</li>
+<li><strong>Lösung 2:</strong> Druckermodellkompatibilität überprüfen (Index-Drucker)</li>
+<li><strong>Lösung 3:</strong> Debug-Protokoll auf Fehler überprüfen</li>
+</ul>
+<h3>Anwendungsprobleme:</h3>
+<p><strong>Problem:</strong> Anwendung stürzt ab oder friert ein</p>
+<ul>
+<li><strong>Lösung 1:</strong> Mit Debug-Protokollierung ausführen: <code>nanovna-cli.exe -d</code></li>
+<li><strong>Lösung 2:</strong> <code>logs/</code>-Verzeichnis auf Fehlermeldungen überprüfen</li>
+<li><strong>Lösung 3:</strong> Problem mit Debug-Protokoll melden</li>
+</ul>
+<p><strong>Problem:</strong> Screenreader-Kompatibilitätsprobleme</p>
+<ul>
+<li><strong>Lösung:</strong> Anwendung verwendet Standard-Konsolenausgabe</li>
+<li><strong>Lösung:</strong> Die meisten Screenreader funktionieren gut mit Konsolenanwendungen</li>
+<li><strong>Lösung:</strong> Kontextabhängige Hilfe verwenden (Taste <strong>H</strong>)</li>
+</ul>
+<h3>Hilfe erhalten:</h3>
+<p>Wenn Probleme bestehen bleiben:</p>
+<ol>
+<li>Debug-Protokollierung aktivieren:
+  <ul>
+  <li><strong>Windows:</strong> <code>nanovna-cli.exe -d</code></li>
+  <li><strong>macOS/Linux:</strong> <code>./nanovna-cli -d</code></li>
+  </ul>
+</li>
+<li>Problem reproduzieren</li>
+<li>Protokolldateien im <code>logs/</code>-Verzeichnis überprüfen:</li>
+</ol>
+<p>- <code>debug_JJJJMMTT_HHMMSS.txt</code> (allgemeines Protokoll) - <code>debug_comm_JJJJMMTT_HHMMSS.txt</code> (serielle Kommunikation)</p>
+<ol>
+<li>Problem mit Protokolldateien melden (siehe Beta-Test-Anleitung)</li>
+</ol>
+<hr>
+<h2>13. Dateistruktur</h2>
+<p>Das Verständnis der Dateistruktur hilft bei Fehlerbehebung und Organisation.</p>
+<h3>Verzeichnisstruktur:</h3>
+<pre><code>nanovna-cli.exe                Hauptprogramm
+│
+├── Languages/                 Sprachdateien
+│   ├── eng.lng               Englische Übersetzung
+│   └── deu.lng               Deutsche Übersetzung
+│
+├── config/                    Konfigurationsdateien
+│   ├── app_settings.cfg      Anwendungseinstellungen (automatisch gespeichert)
+│   ├── command_templates.cfg NanoVNA-Befehlsvorlagen
+│   └── cables.cfg            Kabelspezifikationen
+│
+├── bandplans/                 Amateurfunk-Banddefinitionen
+│   ├── usa.ini               US-Amateurfunkbänder
+│   └── deu.ini               Deutsche Amateurfunkbänder
+│
+├── logs/                      Protokolldateien (automatisch generiert)
+│   ├── debug_*.txt           Allgemeine Debug-Protokolle
+│   └── debug_comm_*.txt      Serielle Kommunikationsprotokolle
+│
+└── Export/                    Exportierte Messungen
+    ├── *.csv                 CSV-Exporte
+    ├── *.txt                 Text-Exporte
+    └── *.brl                 Braille-Grafik-Exporte</code></pre>
+<h3>Konfigurationsdateien:</h3>
+<p><strong>app_settings.cfg</strong></p>
+<ul>
+<li>Automatisch beim Beenden gespeichert</li>
+<li>Enthält zuletzt verwendete Einstellungen:</li>
+</ul>
+<p>- Sprachpräferenz - Letzter COM-Port - Letzter Frequenzbereich - Verkürzungsfaktor - SWR-Schwellwerte - Audio-Einstellungen</p>
+<ul>
+<li>Kann manuell bearbeitet werden (Textformat)</li>
+<li>Löschen, um auf Standardeinstellungen zurückzusetzen</li>
+</ul>
+<p><strong>command_templates.cfg</strong></p>
+<ul>
+<li>NanoVNA-Seriellbefehle</li>
+<li>Sollte keine Änderung benötigen</li>
+<li>Format: <code>BEFEHL=befehlszeichenfolge</code></li>
+</ul>
+<p><strong>cables.cfg</strong></p>
+<ul>
+<li>Kabelspezifikationen für Verlustberechnungen</li>
+<li>Format: <code>KABELNAME=verlust_pro_meter,verkürzungsfaktor</code></li>
+<li>Benutzerdefinierte Kabel können hinzugefügt werden</li>
+</ul>
+<h3>Protokolldateien:</h3>
+<p><strong>debug_JJJJMMTT_HHMMSS.txt</strong></p>
+<ul>
+<li>Allgemeines Anwendungsprotokoll</li>
+<li>Enthält alle Operationen und Fehler</li>
+<li>Nützlich für Fehlerbehebung</li>
+<li>Wird erstellt, wenn <code>-d</code> Flag verwendet wird</li>
+</ul>
+<p><strong>debug_comm_JJJJMMTT_HHMMSS.txt</strong></p>
+<ul>
+<li>Serielle Kommunikationsprotokolle</li>
+<li>Zeigt alle an NanoVNA gesendeten Befehle</li>
+<li>Zeigt alle empfangenen Antworten</li>
+<li>Nützlich bei Gerätekommunikationsproblemen</li>
+</ul>
+<h3>Export-Dateien:</h3>
+<p>Alle Exporte verwenden Dateinamenformat: <code>nanovna_JJJJMMTT_HHMMSS_startfreq_endfreq_schritt.ext</code></p>
+<p>Beispiel: <code>nanovna_20260125_143522_144000000_146000000_10000.csv</code></p>
+<ul>
+<li>Datum: 25.01.2026</li>
+<li>Zeit: 14:35:22</li>
+<li>Start: 144,000 MHz</li>
+<li>Ende: 146,000 MHz</li>
+<li>Schritt: 10 kHz</li>
+</ul>
+<hr>
+<h2>Kurzreferenzkarte</h2>
+<h3>Wesentliche Befehle:</h3>
+<pre><code>P - COM-Port auswählen
+M - Messen
+A - Akustischer Modus
+U - Analyse-Werkzeuge
+E - Export
+H - Hilfe
+Q - Beenden</code></pre>
+<h3>Akustischer Modus:</h3>
+<pre><code>LEERTASTE - Wiedergabe/Pause
+←/→       - Navigieren
+1-5       - Kurven umschalten
++/-       - Geschwindigkeit anpassen
+L/R       - Schleifenmarker setzen
+B         - Zurück zum Menü</code></pre>
+<h3>U-Menü Analyse:</h3>
+<pre><code>1 - Bandtauglichkeit
+2 - Resonanzsuche
+3 - SWR-Bandbreite
+4 - Fußpunktimpedanz
+5 - Anpassungshinweise</code></pre>
+<hr>
+<h2>Über Screenreader-Zugänglichkeit</h2>
+<p>NanoVNA CLI Accessible wurde von Grund auf für Zugänglichkeit entwickelt:</p>
+<ul>
+<li><strong>Standard-Konsolenausgabe:</strong> Kompatibel mit allen Screenreadern</li>
+<li><strong>Klare, beschreibende Meldungen:</strong> Keine kryptischen Codes oder Symbole</li>
+<li><strong>Kontextabhängige Hilfe:</strong> Taste <strong>H</strong> in jedem Menü</li>
+<li><strong>Logische Navigation:</strong> Konsistente Tastenkombinationen</li>
+<li><strong>Audio-Darstellung:</strong> HF-Kurven durch Töne "sehen"</li>
+<li><strong>Braille-Ausgabe:</strong> Taktile Grafiken für detaillierte Analyse</li>
+</ul>
+<hr>
+<h2>Support erhalten</h2>
+<p>Für Fragen, Fehlerberichte oder Rückmeldungen während des Beta-Tests, siehe die Beta-Test-Anleitung, die mit dieser Distribution enthalten ist.</p>
+<p><strong>73 DE DO9RE</strong></p>
+<hr>
+<p><em>NanoVNA CLI Accessible - HF-Messungen für alle zugänglich machen.</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="index.html" aria-label="Back to Manuals Index">📖 Handbuchindex</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

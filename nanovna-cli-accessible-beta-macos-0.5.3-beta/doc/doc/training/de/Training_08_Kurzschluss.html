@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Szenario 8: Kurzschluss bei 10m (TDR-Analyse)">
+    <title>Training Szenario 8: Kurzschluss bei 10m (TDR-Analyse)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>Training Szenario 8: Kurzschluss bei 10m (TDR-Analyse)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_07_Kabel_Daempfung.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_09_Offene_Leitung.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Szenario 8: Kurzschluss bei 10m (TDR-Analyse)</h1>
+<p><strong>Trainingsdatei:</strong> <code>Training/08_kurzschluss_10m.csv</code> <strong>Frequenzbereich:</strong> 144.000 - 147.000 MHz (2m Amateurfunkband + erweitert) <strong>Schwierigkeitsgrad:</strong> ⭐⭐⭐ Fortgeschritten (Extreme Fehlanpassung) <strong>Lernziel:</strong> Kurzschluss-Fehler erkennen, TDR-Konzept verstehen, Fehlerlokalisierung</p>
+<hr>
+<h2>📋 Szenario-Beschreibung</h2>
+<h3>Fiktive Komponente</h3>
+<p>Sie messen ein <strong>10 Meter langes Koaxialkabel mit Kurzschluss am Ende</strong>. Dies simuliert einen typischen Kabel-Fehler: Innenleiter und Außenleiter berühren sich (z.B. durch mechanische Beschädigung, Wasser-Eintritt, oder defekten Stecker). Solche Fehler sind in der Praxis häufig und müssen lokalisiert werden!</p>
+<h3>Technische Eigenschaften</h3>
+<ul>
+    <li><strong>Kabellänge bis Fehler:</strong> 10 Meter</li>
+    <li><strong>Fehlerart:</strong> <strong>Kurzschluss</strong> (Short Circuit, R ≈ 0Ω)</li>
+    <li><strong>SWR:</strong> 11.70 bis 99.00 (extrem hoch!)</li>
+    <li><strong>Return Loss:</strong> 0.17 bis 3.32 dB (sehr schlecht - fast alles reflektiert!)</li>
+    <li><strong>Impedanz:</strong> 0.5Ω bis 3.5Ω (niederohmig!) + <strong>stark induktiv</strong> (X: -51Ω bis -75Ω)</li>
+    <li><strong>Reflexionskoeffizient:</strong> |Γ| ≈ 0.98 (fast vollständige Reflexion!)</li>
+    <li><strong>Besonderheit:</strong> <strong>Dramatische Fehlanpassung</strong> - größter Kontrast zu Szenario 1!</li>
+</ul>
+<h3>Physikalische Bedeutung</h3>
+<p><strong>Kurzschluss</strong> in HF-Technik:</p>
+<ul>
+    <li><strong>Innenleiter und Schirm verbunden</strong> → Widerstand ≈ 0Ω</li>
+    <li><strong>Fast vollständige Reflexion</strong> der HF-Energie</li>
+    <li><strong>Stehende Wellen</strong> im Kabel (maximale SWR!)</li>
+    <li><strong>Leitungs-Transformation:</strong> Z_Short = j×Z₀×tan(βl)</li>
+    <li>Bei λ/4-Abständen: Impedanz transformiert zwischen 0Ω und ∞</li>
+    <li><strong>Induktiv:</strong> X negativ (typisch für Kurzschluss)</li>
+</ul>
+<p><strong>Typische Ursachen:</strong></p>
+<ul>
+    <li><strong>Mechanische Beschädigung:</strong> Kabel gequetscht, Mantel beschädigt</li>
+    <li><strong>Wasser-Eintritt:</strong> Feuchtigkeit im Stecker oder Kabel</li>
+    <li><strong>Defekter Stecker:</strong> Innenleiter berührt Gehäuse</li>
+    <li><strong>Koax-Relay-Fehler:</strong> Kontakte bleiben hängen</li>
+    <li><strong>Blitzschaden:</strong> Durchschlag durch Überspannung</li>
+</ul>
+<p><strong>Praktische Bedeutung:</strong></p>
+<ul>
+    <li><strong>Totalausfall:</strong> Kein HF-Signal erreicht Antenne</li>
+    <li><strong>Sender-Belastung:</strong> Hohe Reflexion kann PA beschädigen!</li>
+    <li><strong>Diagnose:</strong> VNA + TDR lokalisiert Fehlerstelle präzise</li>
+    <li><strong>Reparatur:</strong> Kabel-Abschnitt ersetzen oder Stecker neu montieren</li>
+</ul>
+<hr>
+<h2>🎧 Akustische Analyse</h2>
+<h3>Datei importieren und laden</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>L</strong> (Laden) drücken</li>
+    <li>Liste der Dateien erscheint - navigieren Sie mit <strong>Pfeiltasten</strong></li>
+    <li>Wählen Sie <strong>08_kurzschluss_10m.csv</strong></li>
+    <li><strong>Enter</strong> drücken zum Laden</li>
+    <li>Bestätigung: "51 Messpunkte erfolgreich geladen"</li>
+    <li><strong>Achtung:</strong> Extreme Werte! SWR bis 99:1!</li>
+</ol>
+<h3>Akustischen Modus starten</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>A</strong> (Akustische Analyse) drücken</li>
+    <li>Sie befinden sich nun im akustischen Analysemodus</li>
+    <li><strong>LEERTASTE</strong> drücken zum Starten der Wiedergabe</li>
+    <li><strong>WARNUNG:</strong> Sehr hohe Töne (SWR), Lautstärke ggf. reduzieren!</li>
+</ol>
+<hr>
+<h2>🎵 Erwartete Audio-Ereignisse</h2>
+<h3>1. SWR-Kurve (Taste 1 - Sinuswelle) ⚠️ EXTREM!</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>SEHR HOHER TON</strong> bei 144 MHz (SWR 99:1!)</li>
+    <li>Ton sinkt <strong>kontinuierlich</strong> über Frequenz</li>
+    <li>Bei 147 MHz: Immer noch <strong>sehr hoch</strong> (SWR 7.8:1)</li>
+    <li><strong>Dramatischer Kontrast</strong> zu allen vorherigen Szenarien!</li>
+    <li>Möglicherweise <strong>schmerzhaft hoch</strong> - Lautstärke anpassen!</li>
+</ul>
+<p><strong>Stereo-Position:</strong></p>
+<ul>
+    <li>Sound beginnt <strong>extrem weit links oben</strong> (katastrophale Anpassung)</li>
+    <li>Bewegt sich <strong>nach unten</strong> (wird besser, aber bleibt schlecht)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Höchster Ton = Schlechteste Anpassung in allen Trainings!</li>
+    <li>SWR 99:1 = <strong>99% der Leistung wird reflektiert</strong>!</li>
+    <li>Nur 1% erreicht "Antenne" (hier: Kurzschluss)</li>
+    <li><strong>Totalausfall</strong> für praktische Nutzung</li>
+</ul>
+<p><strong>Vergleich:</strong></p>
+<ul>
+    <li>Szenario 1 (perfekt): SWR 1.0 → <strong>Tiefster Ton</strong></li>
+    <li>Szenario 8 (Kurzschluss): SWR 99.0 → <strong>Höchster Ton</strong></li>
+    <li><strong>Maximaler akustischer Kontrast!</strong></li>
+</ul>
+<h3>2. Return Loss Kurve (Taste 2 - Reine Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>SEHR TIEFER TON</strong> (0.17 dB bei 144 MHz)</li>
+    <li>Steigt <strong>leicht an</strong> über Frequenz</li>
+    <li>Bei 147 MHz: Etwas höher (3.32 dB), aber immer noch tief</li>
+    <li><strong>Spiegel-Bild</strong> der SWR-Kurve</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Tiefer Return Loss = Hohe Reflexion</li>
+    <li>0.17 dB = <strong>Fast 100% Reflexion</strong>!</li>
+    <li>Praktisch gesamte Energie kommt zurück zum Sender</li>
+    <li><strong>Gefährlich für PA</strong> ohne Schutzschaltung!</li>
+</ul>
+<h3>3. Impedanz |Z| (Taste 3 - Dreieckswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>SEHR TIEFER TON</strong> (0.5Ω bis 3.5Ω)</li>
+    <li>Steigt <strong>minimal</strong> über Frequenz</li>
+    <li>Bleibt im <strong>extrem niederohmigen Bereich</strong></li>
+    <li>Weit unter 50Ω-Systemimpedanz</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Niedrige Impedanz = Kurzschluss-Charakteristik</li>
+    <li>Sollte ideal 0Ω sein (Leitungstransformation verhindert exakt 0Ω)</li>
+    <li>Weit entfernt von 50Ω → Massive Fehlanpassung</li>
+    <li><strong>10m Kabel</strong> transformiert 0Ω in niedrige, aber nicht null Impedanz</li>
+</ul>
+<h3>4. Reaktanz X (Taste 4 - Sägezahn) ⭐ WICHTIG!</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>STARK NEGATIVER TON</strong> (stark kapazitiv)</li>
+    <li>X-Werte: -75Ω bis -51Ω (sehr negativ!)</li>
+    <li>Ton steigt <strong>langsam</strong> über Frequenz (wird weniger negativ)</li>
+    <li>Bleibt <strong>durchgehend negativ</strong> (kapazitiv)</li>
+</ul>
+<p><strong>ACHTUNG - Scheinbarer Widerspruch:</strong></p>
+<ul>
+    <li>Kurzschluss ist normalerweise <strong>induktiv</strong> (X < 0)</li>
+    <li><strong>ABER:</strong> Hier zeigt X negative Werte = <strong>KAPAZITIV</strong>?</li>
+</ul>
+<p><strong>Auflösung:</strong></p>
+<ul>
+    <li><strong>Mathematisch:</strong> X negativ = Reaktanz negativ</li>
+    <li><strong>Im Smith-Diagramm:</strong> Kurzschluss liegt bei <strong>Im(Γ) < 0</strong> (untere Hälfte)</li>
+    <li>Die <strong>Reaktanz-Darstellung</strong> hängt von der Definition ab</li>
+    <li>Wichtig: <strong>Extrem negative Reaktanz</strong> = Kurzschluss-Signatur!</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Sehr hohe negative Reaktanz = Nicht-resistives Verhalten</li>
+    <li>Kombination mit niedrigem R = <strong>Kurzschluss-Identifikation</strong>!</li>
+    <li>Frequenzabhängigkeit zeigt <strong>Leitungstransformation</strong></li>
+</ul>
+<h3>5. Phase (Taste 5 - Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Stark negative Phase</strong> (ca. -170° bis -180°)</li>
+    <li>Fast bei <strong>-180°</strong> (Phasen-Umkehr!)</li>
+    <li>Variiert leicht über Frequenz</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Phase ≈ -180° = Vollständige Reflexion mit Phasenumkehr</li>
+    <li>Typisch für <strong>Kurzschluss</strong> (Gegensatz zu Leerlauf: +180°)</li>
+    <li><strong>TDR-Signatur:</strong> Negative Reflexion</li>
+</ul>
+<hr>
+<h2>🎯 Smith-Diagramm Audio-Visualisierung</h2>
+<h3>Smith-Visualisierung aktivieren</h3>
+<ol>
+    <li>Im akustischen Modus: Taste <strong>V</strong> drücken</li>
+    <li>Taste <strong>B</strong> drücken zum Auswählen des Modus:</li>
+</ol>
+<ul>
+    <li><strong>Empfohlen: Modus 4 (SWR-Kreise)</strong> - zeigt Distanz vom Zentrum!</li>
+    <li>Alternative: <strong>Modus 1 (Kartesisch)</strong></li>
+</ul>
+<h3>Erwartete Smith-Audio-Cues</h3>
+<h4>Modus 4: SWR-Kreise (EMPFOHLEN!) ⭐</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound SEHR WEIT WEG von Ihnen</strong> (extremes SWR!)</li>
+    <li>Fast am <strong>Rand des Smith-Diagramms</strong> (|Γ| ≈ 1.0)</li>
+    <li>Position bleibt <strong>konstant weit weg</strong></li>
+    <li>Leichte Bewegung im Azimut (Rotation durch Leitungslänge)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Weit weg = Hohes SWR = Schlechte Anpassung</li>
+    <li><strong>Maximale Distanz</strong> in allen Trainingsszenarien!</li>
+    <li>Sound ist fast <strong>"außer Hörweite"</strong></li>
+    <li>Kurzschluss liegt nahe am <strong>Smith-Diagramm-Rand</strong></li>
+</ul>
+<h4>Modus 1: Kartesisch</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound WEIT LINKS</strong> (Re(Γ) ≈ -1.0)</li>
+    <li><strong>Sound LEICHT UNTEN</strong> (Im(Γ) < 0)</li>
+    <li>Position nahe <strong>linkem Rand</strong> des Smith-Diagramms</li>
+    <li>Leichte Rotation um den Rand</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Re(Γ) ≈ -1 = Fast vollständige Reflexion, negativer Realteil</li>
+    <li>Im(Γ) < 0 = Phase < 0 (Kurzschluss liegt in unterer Hälfte)</li>
+    <li><strong>Links außen</strong> = Kurzschluss-Position im Smith-Diagramm</li>
+</ul>
+<h4>Modus 3: Impedanz Direkt</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound EXTREM WEIT LINKS</strong> (R ≈ 0Ω, sehr niederohmig)</li>
+    <li><strong>Sound WEIT UNTEN</strong> (X sehr negativ)</li>
+    <li>Position: <strong>Linke untere Ecke</strong> des Impedanz-Raums</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Linke Seite = Niederohmig (R nahe 0Ω)</li>
+    <li>Unten = Kapazitiv (X negativ)</li>
+    <li><strong>Linke untere Ecke</strong> = Kurzschluss-Signatur!</li>
+</ul>
+<h3>Center Pulse (Referenzsignal)</h3>
+<p><strong>Aktivieren:</strong></p>
+<ol>
+    <li>Taste <strong>A</strong> im akustischen Modus → Audio-Konfiguration</li>
+    <li>Menü: <strong>C</strong> → <strong>Smith Audio</strong> → Center Pulse aktivieren</li>
+</ol>
+<p><strong>Was Sie hören:</strong></p>
+<ul>
+    <li><strong>Periodischer Puls aus der MITTE</strong> (50Ω + j0)</li>
+    <li>Ihre Messung ist <strong>SEHR WEIT WEG</strong> vom Puls!</li>
+    <li><strong>Maximale Distanz</strong> zum Ideal-Punkt</li>
+    <li>Zeigt: <strong>Massive Fehlanpassung</strong>!</li>
+</ul>
+<hr>
+<h2>🔧 Übungen und Lernaufgaben</h2>
+<h3>Übung 1: Extreme Fehlanpassung erleben</h3>
+<p><strong>Ziel:</strong> Akustischen Kontrast zu perfekter Anpassung verinnerlichen</p>
+<ol>
+    <li><strong>Szenario 1</strong> laden (perfekte Resonanz)</li>
+</ol>
+<ul>
+    <li>SWR: <strong>Sehr tiefer Ton</strong> (SWR 1.0)</li>
+    <li>Smith: <strong>Zentral</strong></li>
+</ul>
+<ol>
+    <li><strong>Szenario 8</strong> laden (Kurzschluss)</li>
+</ol>
+<ul>
+    <li>SWR: <strong>Sehr hoher Ton</strong> (SWR 99.0)</li>
+    <li>Smith: <strong>Weit weg</strong></li>
+</ul>
+<ol>
+    <li><strong>Mehrfach wechseln</strong> und Kontrast verinnerlichen!</li>
+    <li><strong>Dies sind die Extrempunkte:</strong> Best Case vs. Worst Case</li>
+</ol>
+<h3>Übung 2: Kurzschluss-Lokalisierung (TDR-Konzept)</h3>
+<p><strong>Ziel:</strong> Aus Messung die Fehler-Entfernung schätzen  <strong>TDR-Formel:</strong></p>
+<pre><code class="language-">Entfernung = (Phasenverschiebung / 360°) × (λ / 2) × v
+<p>Wobei:</p>
+<ul>
+    <li>λ = Wellenlänge bei Messfrequenz</li>
+    <li>v = Verkürzungsfaktor des Kabels (typisch 0.66)</li>
+</ul>
+</code></pre>
+<p><strong>Praktische Übung:</strong></p>
+<ol>
+    <li><strong>U-Menü</strong> öffnen (Taste <strong>U</strong>)</li>
+    <li><strong>Taste 7</strong> (TDR-Analyse) - falls implementiert</li>
+    <li>Oder manuell: Phase bei 145 MHz ablesen</li>
+    <li><strong>Rechnung:</strong></li>
+</ol>
+<ul>
+    <li>Phase ≈ -175° (z.B.)</li>
+    <li>λ = 300 / 145 = 2.07 m</li>
+    <li>Einweg-Distanz = (360° - 175°) / 360° × λ/2 × 0.66</li>
+    <li><strong>Ergebnis:</strong> ~10 Meter!</li>
+</ul>
+<h3>Übung 3: Impedanz-Signatur analysieren</h3>
+<p><strong>Ziel:</strong> Kurzschluss von anderen Fehlern unterscheiden  <strong>Charakteristik Kurzschluss:</strong></p>
+<ul>
+    <li>[ ] R <strong>sehr niedrig</strong> (<5Ω)</li>
+    <li>[ ] X <strong>stark negativ</strong> (<-50Ω)</li>
+    <li>[ ] SWR <strong>sehr hoch</strong> (>10:1)</li>
+    <li>[ ] Phase <strong>≈ -180°</strong></li>
+</ul>
+<p><strong>Vergleich:</strong></p>
+<ul>
+    <li><strong>Leerlauf</strong> (Szenario 9): R sehr hoch, X positiv, Phase ≈ +180°</li>
+    <li><strong>Fehlanpassung</strong> (Szenario 2-3): R um 50Ω, X moderat, SWR 1.5-2.5</li>
+</ul>
+<h3>Übung 4: Smith-Position interpretieren</h3>
+<p><strong>Ziel:</strong> Smith-Diagramm-Regionen verstehen</p>
+<ol>
+    <li><strong>Smith Modus 1</strong> (Kartesisch) aktivieren</li>
+    <li><strong>Beobachten Sie:</strong> Sound ist <strong>weit links</strong></li>
+    <li><strong>Interpretation:</strong></li>
+</ol>
+<ul>
+    <li><strong>Links (Re(Γ) < 0):</strong> Impedanz < 50Ω (niederohmig)</li>
+    <li><strong>Mitte (Re(Γ) ≈ 0):</strong> Impedanz ≈ 50Ω (angepasst)</li>
+    <li><strong>Rechts (Re(Γ) > 0):</strong> Impedanz > 50Ω (hochohmig)</li>
+</ul>
+<ol>
+    <li><strong>Kurzschluss</strong> ist immer <strong>links außen</strong>!</li>
+</ol>
+<h3>Übung 5: Praktische Fehlersuche simulieren</h3>
+<p><strong>Ziel:</strong> Workflow für echte Kabel-Diagnose üben  <strong>Szenario:</strong></p>
+<ul>
+    <li>Sie messen Ihre Antennen-Anlage</li>
+    <li>SWR-Meter zeigt <strong>SWR > 10:1</strong> (Totalausfall!)</li>
+    <li>Was tun?</li>
+</ul>
+<p><strong>Diagnose-Schritte:</strong></p>
+<ol>
+    <li><strong>VNA-Messung:</strong> S11-Sweep über Band</li>
+    <li><strong>SWR-Analyse:</strong> Überall hoch? → Fehler nah am Sender</li>
+    <li><strong>Impedanz prüfen:</strong> R sehr niedrig + X negativ → <strong>Kurzschluss</strong>!</li>
+    <li><strong>TDR-Analyse:</strong> Phasen-Berechnung → Fehler bei ~10m</li>
+    <li><strong>Physische Inspektion:</strong> Kabel bei 10m prüfen (Stecker, Beschädigung)</li>
+    <li><strong>Reparatur:</strong> Stecker neu montieren oder Kabel-Abschnitt ersetzen</li>
+    <li><strong>Re-Test:</strong> VNA-Messung wiederholen → SWR sollte sinken!</li>
+</ol>
+<hr>
+<h2>📊 U-Menü Analyse-Funktionen</h2>
+<h3>Empfohlene Analysen für dieses Szenario</h3>
+<h4>1. Bandtauglichkeitsprüfung (U-Menü → Taste 1)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>2m Band (144-147 MHz):</strong> ❌ <strong>NICHT GEEIGNET</strong> (SWR >> 10:1)</li>
+    <li>Keine Frequenz zeigt SWR < 2.0</li>
+    <li><strong>WARNUNG:</strong> Sender-Betrieb nicht empfohlen!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Anlage ist <strong>nicht betriebsbereit</strong></li>
+    <li><strong>Fehlersuche erforderlich</strong> vor Sender-Betrieb</li>
+    <li>Risiko für PA (Power Amplifier) - Schutzschaltung sollte aktivieren</li>
+</ul>
+<h4>2. Resonanzsuche (U-Menü → Taste 2)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Keine Resonanz gefunden</strong> (X nie nahe Null)</li>
+    <li>SWR-Minimum bei 147 MHz (7.8:1) - aber immer noch katastrophal</li>
+    <li><strong>Kein Antennen-Verhalten</strong> - eindeutig Fehler!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Normale Antenne würde Resonanz zeigen</li>
+    <li>Fehlen von Resonanz + extreme Fehlanpassung = <strong>Leitungsfehler</strong>!</li>
+    <li>Kurzschluss-Verdacht bestätigt</li>
+</ul>
+<h4>3. Fußpunktimpedanz-Analyse (U-Menü → Taste 4)</h4>
+<p><strong>Frequenz eingeben:</strong> 145.0 MHz (Bandmitte)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> 1.5Ω ⚠️ (sollte 50Ω sein!)</li>
+    <li><strong>X (Reaktanz):</strong> -67Ω ⚠️ (stark kapazitiv/induktiv)</li>
+    <li><strong>|Z|:</strong> ~67Ω (aber falsche Zusammensetzung!)</li>
+    <li><strong>Phase:</strong> ~-178° ⚠️ (Phasenumkehr!)</li>
+    <li><strong>SWR:</strong> 22.5:1 ⚠️ (katastrophal!)</li>
+    <li><strong>Klassifikation:</strong> <strong>KURZSCHLUSS VERMUTET</strong></li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li><strong>Eindeutige Kurzschluss-Signatur:</strong></li>
+</ul>
+<ol>
+    <li>R << 50Ω</li>
+    <li>|X| >> R</li>
+    <li>Phase ≈ -180°</li>
+    <li>SWR >> 10:1</li>
+</ol>
+<ul>
+    <li><strong>Diagnose:</strong> Kurzschluss in Leitung, ca. 10m entfernt</li>
+</ul>
+<h4>4. Anpassungshinweise (U-Menü → Taste 5)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>"FEHLER: Kurzschluss vermutet!"</strong></li>
+    <li><strong>"Impedanz viel zu niedrig (R ≈ 0Ω)"</strong></li>
+    <li><strong>"Kabel-Inspektion erforderlich"</strong></li>
+    <li><strong>Vorschlag:</strong></li>
+    <li>Stecker überprüfen</li>
+    <li>Kabel auf Beschädigungen prüfen</li>
+    <li>TDR-Messung zur Lokalisierung</li>
+    <li><strong>NICHT mit Tuner anpassen versuchen!</strong></li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Programm erkennt <strong>Fehler-Modus</strong> (nicht nur schlechte Anpassung)</li>
+    <li><strong>Keine Anpassung möglich</strong> - Reparatur erforderlich!</li>
+    <li>Tuner würde Problem <strong>nicht lösen</strong> (kann 0Ω nicht transformieren)</li>
+</ul>
+<hr>
+<h2>🎓 Lernziele und Interpretation</h2>
+<h3>Was Sie aus diesem Szenario lernen</h3>
+<h4>1. Kurzschluss-Erkennung</h4>
+<p><strong>Akustische Signaturen:</strong></p>
+<ul>
+    <li><strong>SWR:</strong> Extrem hoher Ton (>> 10:1)</li>
+    <li><strong>Impedanz |Z|:</strong> Sehr tiefer Ton (<< 50Ω)</li>
+    <li><strong>Reaktanz X:</strong> Stark negative Werte</li>
+    <li><strong>Smith SWR-Kreise:</strong> Sound sehr weit weg</li>
+    <li><strong>Smith Kartesisch:</strong> Sound weit links</li>
+</ul>
+<h4>2. TDR-Konzept (Time Domain Reflectometry)</h4>
+<ul>
+    <li><strong>Leitungslänge</strong> → <strong>Phasenverschiebung</strong></li>
+    <li><strong>Phasen-Messung</strong> → <strong>Fehler-Lokalisierung</strong></li>
+    <li><strong>Genauigkeit:</strong> ±5-10% (abhängig von v-Faktor)</li>
+    <li><strong>Praktisch:</strong> Schneller als Kabel ausgraben!</li>
+</ul>
+<h4>3. Unterschied: Fehler vs. Fehlanpassung</h4>
+<ul>
+    <li><strong>Fehlanpassung</strong> (Szenario 2-3): SWR 1.5-2.5, noch nutzbar</li>
+    <li><strong>Fehler</strong> (Szenario 8): SWR >> 10, nicht nutzbar</li>
+    <li><strong>Fehlanpassung:</strong> Mit Tuner korrigierbar</li>
+    <li><strong>Fehler:</strong> Reparatur erforderlich!</li>
+</ul>
+<h4>4. Smith-Diagramm-Regionen</h4>
+<ul>
+    <li><strong>Zentrum:</strong> 50Ω + j0 (perfekt)</li>
+    <li><strong>Links außen:</strong> Kurzschluss (R→0)</li>
+    <li><strong>Rechts außen:</strong> Leerlauf (R→∞)</li>
+    <li><strong>Oben/Unten:</strong> Induktiv/Kapazitiv</li>
+</ul>
+<h4>5. Praxisbezug</h4>
+<ul>
+    <li><strong>Häufiger Fehler:</strong> Defekte Stecker, Wasser, Marderbiss</li>
+    <li><strong>Schnell-Diagnose:</strong> VNA zeigt sofort Kurzschluss</li>
+    <li><strong>Lokalisierung:</strong> TDR-Rechnung gibt Fehlerentfernung</li>
+    <li><strong>Kritisch:</strong> PA-Schutz bei Fehler essentiell!</li>
+</ul>
+<hr>
+<h2>⚠️ Wichtige Hinweise</h2>
+<h3>Gefahren bei Kurzschluss</h3>
+<p><strong>Für Sender (PA):</strong></p>
+<ul>
+    <li><strong>Hohe Reflexion</strong> kann Transistoren zerstören!</li>
+    <li>Moderne TRX haben <strong>SWR-Schutz</strong> (reduziert Leistung automatisch)</li>
+    <li>Ältere Röhren-PAs: Können überlastet werden</li>
+    <li><strong>Nie mit hoher Leistung</strong> in Kurzschluss senden!</li>
+</ul>
+<p><strong>Für Kabel:</strong></p>
+<ul>
+    <li>Bei <strong>hoher Leistung:</strong> Kabel kann überhitzen (stehende Wellen!)</li>
+    <li>Isolation kann <strong>schmelzen</strong> → Verschlimmerung</li>
+    <li>Bei Kurzschluss: <strong>Sofort Leistung reduzieren</strong>!</li>
+</ul>
+<h3>Kurzschluss-Ursachen finden</h3>
+<p><strong>Systematische Suche:</strong></p>
+<ol>
+    <li><strong>Antenne abklemmen:</strong> Kurzschluss bleibt? → Im Kabel</li>
+    <li><strong>Kabel-Abschnitte trennen:</strong> Von Antenne zurück zum Sender</li>
+    <li><strong>Visuell:</strong> Knickstellen, Marderbisse, Scheuerstellen</li>
+    <li><strong>Stecker:</strong> Oft Fehlerquelle #1!</li>
+</ol>
+<ul>
+    <li>Mittelkontakt verbogen?</li>
+    <li>Geflecht berührt Innenleiter?</li>
+    <li>Isolierung beschädigt?</li>
+</ul>
+<p><strong>Wasser-Eintritt (häufig!):</strong></p>
+<ul>
+    <li>Symptom: SWR steigt bei <strong>Regen</strong> oder <strong>Frost</strong></li>
+    <li>Wasser im Koax ist <strong>leitfähig</strong> → Teil-Kurzschluss</li>
+    <li>Lösung: Stecker neu abdichten (Selbstverschweißendes Band)</li>
+</ul>
+<hr>
+<h2>📝 Checkliste: Haben Sie alles gehört?</h2>
+<h3>Audio-Ereignisse:</h3>
+<ul>
+    <li>[ ] SWR: <strong>Sehr hoher Ton</strong> (99:1 bis 7.8:1) - schmerzhaft hoch!</li>
+    <li>[ ] Return Loss: Sehr tiefer Ton (0.17-3.32 dB)</li>
+    <li>[ ] Impedanz |Z|: Sehr tiefer Ton (0.5-3.5Ω)</li>
+    <li>[ ] Reaktanz X: <strong>Stark negativer Ton</strong> (-75Ω bis -51Ω)</li>
+    <li>[ ] Phase: Fast bei -180° (Phasenumkehr)</li>
+</ul>
+<h3>Smith-Visualisierung:</h3>
+<ul>
+    <li>[ ] Smith SWR-Kreise: Sound <strong>sehr weit weg</strong> (Rand des Diagramms)</li>
+    <li>[ ] Smith Kartesisch: Sound <strong>weit links</strong> (Re(Γ) ≈ -1)</li>
+    <li>[ ] Smith Impedanz: Sound <strong>linke untere Ecke</strong> (niederohmig + negativ X)</li>
+    <li>[ ] Center Pulse: <strong>Maximale Distanz</strong> zum Puls</li>
+</ul>
+<h3>U-Menü:</h3>
+<ul>
+    <li>[ ] Bandtauglichkeit: ❌ NICHT GEEIGNET (SWR >> 10)</li>
+    <li>[ ] Resonanzsuche: Keine gefunden</li>
+    <li>[ ] Impedanz: R ≈ 1.5Ω, X ≈ -67Ω (Kurzschluss-Signatur!)</li>
+    <li>[ ] Anpassungshinweis: <strong>"KURZSCHLUSS VERMUTET"</strong></li>
+</ul>
+<h3>Verständnis:</h3>
+<ul>
+    <li>[ ] Kurzschluss-Signatur akustisch erkannt</li>
+    <li>[ ] Smith-Position (links außen) verstanden</li>
+    <li>[ ] TDR-Konzept zur Lokalisierung begriffen</li>
+    <li>[ ] Unterschied Fehler vs. Fehlanpassung klar</li>
+</ul>
+<hr>
+<h2>🎯 Nächste Schritte</h2>
+<p>Nach diesem Training sollten Sie:</p>
+<ol>
+    <li><strong>Szenario 9 durcharbeiten (Leerlauf/Open)</strong></li>
+</ol>
+<ul>
+    <li>Gegenteil von Kurzschluss</li>
+    <li>R → ∞ statt R → 0</li>
+    <li>Smith-Position <strong>rechts außen</strong> statt links</li>
+    <li>Phase +180° statt -180°</li>
+</ul>
+<ol>
+    <li><strong>Vergleich: Kurzschluss vs. Leerlauf</strong></li>
+</ol>
+<ul>
+    <li>Beide: Extreme Fehlanpassung (SWR >> 10)</li>
+    <li>Kurzschluss: Links im Smith, Phase -180°</li>
+    <li>Leerlauf: Rechts im Smith, Phase +180°</li>
+    <li><strong>Hören Sie den Unterschied!</strong></li>
+</ul>
+<ol>
+    <li><strong>Eigene Kabel testen</strong></li>
+</ol>
+<ul>
+    <li>Messen Sie Kabel <strong>MIT 50Ω-Last</strong> (normal)</li>
+    <li>Messen Sie Kabel <strong>OFFEN</strong> (simuliert Leerlauf)</li>
+    <li>Messen Sie Kabel <strong>KURZGESCHLOSSEN</strong> (Büroklammer zwischen Innen+Schirm)</li>
+    <li><strong>ACHTUNG:</strong> Nur mit sehr niedriger VNA-Leistung!</li>
+</ul>
+<ol>
+    <li><strong>TDR-Messungen üben</strong></li>
+</ol>
+<ul>
+    <li>Kabel bekannter Länge messen</li>
+    <li>Fehlerentfernung berechnen</li>
+    <li>Mit physischer Messung vergleichen</li>
+    <li>Genauigkeit bewerten</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Viel Erfolg beim Training! Kurzschluss-Erkennung ist essentiell für Fehlersuche - lernen Sie die Signatur akustisch und Sie finden jeden Fehler!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_07_Kabel_Daempfung.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_09_Offene_Leitung.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

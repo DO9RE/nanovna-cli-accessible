@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Scenario 2: Antenna Too Short (Inductive)">
+    <title>Training Scenario 2: Antenna Too Short (Inductive)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header role="banner">
+        <h1>Training Scenario 2: Antenna Too Short (Inductive)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_01_Perfekte_Resonanz.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_03_Antenne_Zu_Lang.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Scenario 2: Antenna Too Short (Inductive)</h1>
+<p><strong>Training file:</strong> <code>Training/02_antenne_zu_kurz_induktiv.csv</code> <strong>Frequency range:</strong> 144.000 - 146.000 MHz (2m amateur radio band) <strong>Difficulty level:</strong> ⭐⭐ Medium (Advanced beginners) <strong>Learning objective:</strong> Understand how inductive mismatch sounds and is recognized</p>
+<hr>
+<h2>📋 Scenario Description</h2>
+<h3>Fictitious Component</h3>
+<p>You are measuring a <strong>2m Yagi antenna that is too short</strong>. The radiator is approximately 3-5 cm shorter than optimal. This leads to <strong>inductive behavior</strong> - the antenna acts like a coil with a resistor in series.</p>
+<h3>Technical Properties (at 144 MHz)</h3>
+<ul>
+    <li><strong>Impedance:</strong> 35.2Ω + j28.5Ω (inductive!)</li>
+    <li><strong>SWR:</strong> 1.95 (acceptable, but not optimal)</li>
+    <li><strong>Return Loss:</strong> 8.54 dB (moderate)</li>
+    <li><strong>Reactance (X):</strong> +28.5Ω at 144 MHz → <strong>decreasing</strong> → +0.5Ω at 146 MHz</li>
+    <li><strong>Resistance (R):</strong> 35Ω at 144 MHz → increasing → 53Ω at 146 MHz</li>
+    <li><strong>Physical behavior:</strong> Antenna becomes "electrically longer" with increasing frequency</li>
+</ul>
+<h3>Physical Meaning</h3>
+<p><strong>Positive Reactance (X > 0) = Inductive:</strong></p>
+<ul>
+    <li>Antenna too short = Not enough "electrical length"</li>
+    <li>Current lags voltage (like a coil)</li>
+    <li>With increasing frequency, antenna becomes electrically longer → Reactance decreases</li>
+    <li>At approx. 146 MHz, resonance would be reached (X ≈ 0)</li>
+</ul>
+<p><strong>Typical Causes:</strong></p>
+<ul>
+    <li>Radiator mechanically cut too short</li>
+    <li>Incorrect frequency calculation</li>
+    <li>Mechanical deformation</li>
+    <li>Installation at too great a height (capacitive grounding missing)</li>
+</ul>
+<hr>
+<h2>🎧 Acoustic Analysis</h2>
+<h3>Import file</h3>
+<ol>
+    <li><strong>Main menu:</strong> Press <strong>L</strong> (Load)</li>
+    <li>Select <strong>02_antenne_zu_kurz_induktiv.csv</strong></li>
+    <li>Press <strong>Enter</strong></li>
+    <li>Confirmation: "41 measurement points successfully loaded"</li>
+    <li><strong>Main menu:</strong> Press <strong>A</strong> (Acoustic Analysis)</li>
+    <li><strong>SPACEBAR</strong> to start</li>
+</ol>
+<hr>
+<h2>🎵 Expected Audio Events</h2>
+<h3>1. SWR Curve (Key 1 - Sine Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>High tone at 144 MHz</strong> (SWR 1.95)</li>
+    <li>Tone becomes <strong>continuously lower</strong> over frequency</li>
+    <li><strong>Clear downward trend</strong> from left to right</li>
+    <li>At 146 MHz: Significantly lower tone (SWR 1.01)</li>
+</ul>
+<p><strong>Stereo Position:</strong></p>
+<ul>
+    <li><strong>Left (144 MHz):</strong> Clearly audible, higher pitch</li>
+    <li><strong>Right (146 MHz):</strong> Much quieter, low pitch</li>
+    <li><strong>Movement:</strong> Clear downward (improving)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>SWR decreases with increasing frequency</li>
+    <li>Resonance frequency lies <strong>above</strong> 146 MHz</li>
+    <li>Antenna becomes better matched at higher frequencies</li>
+    <li><strong>Diagnosis:</strong> Antenna too short → must be lengthened</li>
+</ul>
+<h3>2. Return Loss Curve (Key 2)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Low tone at 144 MHz</strong> (8.54 dB = poor match)</li>
+    <li>Tone <strong>continuously rises</strong> over frequency</li>
+    <li><strong>Strong upward trend</strong> from left to right</li>
+    <li>At 146 MHz: Very high tone (120 dB = excellent)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Return Loss increases = Less reflection at higher frequencies</li>
+    <li>Correlates with SWR improvement</li>
+    <li>Shows same information from different perspective</li>
+</ul>
+<h3>3. Impedance |Z| (Key 3 - Triangle Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Low tone at 144 MHz</strong> (35Ω)</li>
+    <li>Tone <strong>slightly rises</strong> over frequency</li>
+    <li>At 146 MHz: Medium tone (53Ω)</li>
+    <li><strong>Upward movement</strong>, but not dramatic</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Impedance magnitude increases from 35Ω → 53Ω</li>
+    <li>Crosses 50Ω mark somewhere in the band</li>
+    <li>Shows "pass-through behavior" through system impedance</li>
+</ul>
+<h3>4. Reactance X (Key 4 - Sawtooth) ⚡ MOST IMPORTANT CURVE!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Clearly audible, falling sawtooth tone</strong></li>
+    <li><strong>Strong downward trend</strong> from left to right</li>
+    <li><strong>Left (144 MHz):</strong> High tone (+28.5Ω = strongly inductive)</li>
+    <li><strong>Right (146 MHz):</strong> Low tone, near zero (+0.5Ω = almost purely resistive)</li>
+    <li><strong>Clear, continuous downward movement</strong></li>
+</ul>
+<p><strong>Stereo Perception:</strong></p>
+<ul>
+    <li><strong>Left:</strong> Sawtooth rises (inductive)</li>
+    <li><strong>Middle:</strong> Sawtooth approaches zero</li>
+    <li><strong>Right:</strong> Sawtooth near zero line</li>
+</ul>
+<p><strong>Meaning:</strong> ⭐ KEY INFORMATION!</p>
+<ul>
+    <li><strong>Positive reactance = Inductive = Antenna too short</strong></li>
+    <li>Falling reactance = Antenna becomes "longer" at higher frequency</li>
+    <li>Zero crossing outside the band = Resonance at > 146 MHz</li>
+    <li><strong>Diagnosis clear:</strong> Lengthen radiator!</li>
+</ul>
+<h3>5. Phase (Key 5)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Positive phase at 144 MHz</strong> (approx. +38°)</li>
+    <li>Phase decreases over frequency</li>
+    <li>Approaches 0° at 146 MHz</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Positive phase = Current lags (inductive)</li>
+    <li>Decreasing phase = Approach to resistive behavior</li>
+</ul>
+<hr>
+<h2>🎯 Smith Chart Audio Visualization</h2>
+<h3>Mode 1: Cartesian (Recommended for Diagnosis)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound starts FAR FORWARD and LEFT of you</strong></li>
+    <li><strong>Continuous movement toward BACK-RIGHT</strong></li>
+    <li>Sound travels through space as frequency increases</li>
+    <li>At the end: Almost central, but still slightly forward</li>
+</ul>
+<p><strong>Position Meaning:</strong></p>
+<ul>
+    <li><strong>Forward</strong> = Im(Γ) > 0 = Positive reactance = Inductive</li>
+    <li><strong>Left</strong> = Re(Γ) < 0 = Resistance below 50Ω</li>
+    <li><strong>Movement backward</strong> = Reactance decreases</li>
+    <li><strong>Movement to the right</strong> = Resistance increases</li>
+</ul>
+<p><strong>Acoustic Landmarks:</strong></p>
+<ol>
+    <li><strong>Start (144 MHz):</strong> Clearly forward-left → "Too short, too low impedance"</li>
+    <li><strong>Middle (145 MHz):</strong> Moving toward central → "Improving"</li>
+    <li><strong>End (146 MHz):</strong> Almost central, slightly forward → "Soon optimal"</li>
+</ol>
+<p><strong>Hearing Axis Crossings:</strong></p>
+<ul>
+    <li>When sound crosses the <strong>horizontal axis</strong> (left-right):</li>
+    <li><strong>Audible:</strong> Pitched sweep up or down</li>
+    <li><strong>Meaning:</strong> R = 50Ω reached (resistance matches!)</li>
+    <li>When sound crosses the <strong>vertical axis</strong> (forward-back):</li>
+    <li><strong>Audible:</strong> Pitched sweep</li>
+    <li><strong>Meaning:</strong> X = 0Ω, purely resistive (resonance!)</li>
+</ul>
+<p><strong>Expectation in this scenario:</strong></p>
+<ul>
+    <li><strong>Horizontal axis is crossed</strong> (R passes through 50Ω)</li>
+    <li><strong>Vertical axis is NOT crossed</strong> (X remains positive, but becomes smaller)</li>
+</ul>
+<h3>Mode 2: Polar (For Advanced)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound starts in front of you, but offset to the left</strong></li>
+    <li><strong>Sound "wanders" counterclockwise</strong> slightly to the left</li>
+    <li><strong>Simultaneously:</strong> Sound becomes <strong>quieter</strong> (closer to you)</li>
+    <li><strong>Distance decreases</strong> = SWR improves</li>
+</ul>
+<p><strong>Rotation Meaning:</strong></p>
+<ul>
+    <li><strong>Angle ∠Γ:</strong> Starts at approx. +147° (forward-left)</li>
+    <li>Angle becomes larger (toward ±180°, i.e., back-left)</li>
+    <li>Shows phase change of reflection coefficient</li>
+</ul>
+<p><strong>Radius Meaning:</strong></p>
+<ul>
+    <li><strong>|Γ|:</strong> Starts at approx. 0.32 (moderately far from center)</li>
+    <li>Radius decreases to approx. 0.01 (very close to center)</li>
+    <li><strong>Audible:</strong> Sound becomes quieter, approaches you</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Small circular movement counterclockwise = Typical for inductive detuning</li>
+    <li>Approach to center = Improvement with frequency</li>
+    <li>Would reach center at resonance frequency (> 146 MHz)</li>
+</ul>
+<h3>Mode 3: Impedance Direct (Simplest Interpretation)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound starts LEFT and FAR FORWARD</strong></li>
+    <li><strong>Movement to the RIGHT</strong> (R increases from 35Ω → 53Ω)</li>
+    <li><strong>Movement toward BACK-CENTRAL</strong> (X decreases from +28.5Ω → +0.5Ω)</li>
+    <li>Target center (50Ω, 0Ω) is almost reached</li>
+</ul>
+<p><strong>Position Mapping:</strong></p>
+<ul>
+    <li><strong>Left:</strong> R < 50Ω (low impedance)</li>
+    <li><strong>Center:</strong> R = 50Ω (matching)</li>
+    <li><strong>Right:</strong> R > 50Ω (high impedance)</li>
+    <li><strong>Forward:</strong> X > 0 (inductive)</li>
+    <li><strong>Center:</strong> X = 0 (resistive)</li>
+    <li><strong>Back:</strong> X < 0 (capacitive)</li>
+</ul>
+<p><strong>Diagnosis:</strong></p>
+<ul>
+    <li>Start left-forward = Low impedance and inductive</li>
+    <li>Movement toward right-central = R and X improve</li>
+    <li>Almost center reached at 146 MHz</li>
+</ul>
+<h3>Mode 4: SWR Circles (Goal-Oriented)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound starts FAR AWAY from you</strong></li>
+    <li><strong>Continuous approach</strong> to you</li>
+    <li><strong>Volume decreases</strong> with better match</li>
+    <li>At the end: Sound very CLOSE to you (low SWR)</li>
+</ul>
+<p><strong>Meaning:</strong></p>
+<ul>
+    <li>Distance = SWR level</li>
+    <li>Far away = SWR 1.95 (at 144 MHz)</li>
+    <li>Close to you = SWR 1.01 (at 146 MHz)</li>
+    <li>Shows match quality in an intuitive way</li>
+</ul>
+<hr>
+<h2>🔧 Exercises and Learning Tasks</h2>
+<h3>Exercise 1: Hear reactance curve in isolation</h3>
+<p><strong>Goal:</strong> Recognize inductive behavior acoustically</p>
+<ol>
+    <li><strong>Turn off all curves</strong> except reactance (Key 4)</li>
+    <li>Press <strong>SPACEBAR</strong></li>
+    <li><strong>Listen:</strong> Clearly falling sawtooth tone</li>
+    <li><strong>Remember:</strong> This is the <strong>audio pattern for "too short"</strong></li>
+    <li>Compare with Scenario 1 (perfect): There reactance was inaudible</li>
+</ol>
+<h3>Exercise 2: Smith Cartesian - Follow movement</h3>
+<p><strong>Goal:</strong> Perceive spatial movement</p>
+<ol>
+    <li>Activate Smith <strong>Mode 1</strong> (Cartesian) (Key <strong>V</strong>, then <strong>B</strong> → <strong>1</strong>)</li>
+    <li>Press <strong>SPACEBAR</strong></li>
+    <li><strong>Concentrate</strong> on starting position: Forward-left</li>
+    <li><strong>Track:</strong> Movement toward back-right</li>
+    <li><strong>Understand:</strong> Forward = Inductive, movement backward = Reactance decreases</li>
+</ol>
+<h3>Exercise 3: Hear axis crossing events</h3>
+<p><strong>Goal:</strong> Make the 50Ω traversal audible</p>
+<ol>
+    <li>Smith visualization active</li>
+    <li><strong>Listen carefully</strong> for pitched sweeps</li>
+    <li><strong>Question:</strong> When do you hear axis crossing?</li>
+    <li><strong>Answer:</strong> At approx. 145.2 MHz (R = 50Ω reached)</li>
+    <li><strong>Meaning:</strong> Resistance matches, but reactance still too high</li>
+</ol>
+<h3>Exercise 4: Comparison with Scenario 1 (Perfect)</h3>
+<p><strong>Goal:</strong> Recognize differences between perfect and inductive  <strong>Scenario 1 (Perfect):</strong></p>
+<ul>
+    <li>SWR: Constantly low</li>
+    <li>Reactance: Inaudible</li>
+    <li>Smith: Central, no movement</li>
+</ul>
+<p><strong>Scenario 2 (Inductive):</strong></p>
+<ul>
+    <li>SWR: High, falling</li>
+    <li>Reactance: Clearly audible, falling</li>
+    <li>Smith: Forward, moves toward central</li>
+</ul>
+<h3>Exercise 5: Y-axis ruler for reactance</h3>
+<p><strong>Goal:</strong> Understand pitch mapping</p>
+<ol>
+    <li>Press <strong>Y</strong> (Y-axis ruler)</li>
+    <li>Have <strong>curve 4</strong> (Reactance) active</li>
+    <li>Hear ascending scale from min to max reactance</li>
+    <li>Your measurement: Starts HIGH in scale (inductive)</li>
+    <li>Your measurement: Ends LOW in scale (almost resistive)</li>
+</ol>
+<hr>
+<h2>📊 U-Menu Analysis Functions</h2>
+<h3>1. Resonance Search (U → 2)</h3>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>Resonance frequency:</strong> Not found within 144-146 MHz!</li>
+    <li><strong>SWR minimum:</strong> At 146.0 MHz with SWR = 1.01</li>
+    <li><strong>Note:</strong> "Resonance lies outside measurement range"</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Minimum at upper band edge = Resonance above it</li>
+    <li>Extrapolation: Resonance presumably at 146.5 - 147 MHz</li>
+    <li><strong>Diagnosis:</strong> Antenna must be lengthened to bring resonance into band</li>
+</ul>
+<h3>2. SWR Bandwidth (U → 3)</h3>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 bandwidth:</strong> Only upper band (approx. 145.5 - 146.0 MHz = 500 kHz)</li>
+    <li><strong>SWR < 2.0:1 bandwidth:</strong> Entire band (144.0 - 146.0 MHz = 2 MHz)</li>
+    <li><strong>SWR < 3.0:1 bandwidth:</strong> Over entire band</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Only upper half of band usable well (SWR < 1.5)</li>
+    <li>Lower half of band: SWR up to 1.95 (acceptable, but not optimal)</li>
+    <li><strong>Action recommendation:</strong> Lengthen antenna to optimize band center</li>
+</ul>
+<h3>3. Feed Point Impedance Analysis (U → 4)</h3>
+<p><strong>Frequency:</strong> 145.0 MHz (band center)  <strong>What you see:</strong></p>
+<ul>
+    <li><strong>R (Resistance):</strong> 47.2Ω (slightly below 50Ω)</li>
+    <li><strong>X (Reactance):</strong> +14.5Ω (clearly inductive!)</li>
+    <li><strong>|Z| (Impedance):</strong> 49.4Ω</li>
+    <li><strong>Phase:</strong> +17.0° (inductive)</li>
+    <li><strong>Classification:</strong> Inductive</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Positive reactance = Inductive = Antenna too short</li>
+    <li>Resistance almost OK (47.2Ω close to 50Ω)</li>
+    <li>Main problem: Inductive reactance</li>
+    <li><strong>Solution:</strong> Lengthen radiator</li>
+</ul>
+<h3>4. Matching Recommendations (U → 5)</h3>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>Suggestion:</strong> Series capacitor for compensation</li>
+    <li><strong>C-value:</strong> Approx. 18-20 pF at 145 MHz</li>
+    <li><strong>Alternative:</strong> Mechanical lengthening by approx. 3-5 cm</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Program suggests capacitor to neutralize inductance</li>
+    <li><strong>Better solution:</strong> Mechanical correction (lengthen antenna)</li>
+    <li>C-value shows magnitude of detuning</li>
+</ul>
+<h3>5. Cable Length Estimation (U → 6)</h3>
+<p><strong>Note:</strong> Not applicable for antenna measurements</p>
+<ul>
+    <li>Function for cable analysis</li>
+    <li>For antenna: Phase change not due to cable length</li>
+</ul>
+<h3>6. Band Suitability (U → 1)</h3>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ⚠️ Partially suitable</li>
+    <li>Lower half: SWR 1.5 - 2.0 (moderate)</li>
+    <li>Upper half: SWR < 1.5 (good)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Antenna works, but not optimally</li>
+    <li>For FM (145.0 - 145.8 MHz): Borderline</li>
+    <li>For Upper SSB band (145.8 - 146.0 MHz): Good</li>
+    <li><strong>Recommendation:</strong> Optimization recommended</li>
+</ul>
+<hr>
+<h2>🎓 Learning Objectives and Interpretation</h2>
+<h3>Acoustic Signatures of "Too Short / Inductive"</h3>
+<h4>1. Reactance Audio Pattern</h4>
+<ul>
+    <li><strong>Falling sawtooth</strong> = Reactance decreases = Gets better at higher frequency</li>
+    <li><strong>Starts high</strong> = Clearly positive (inductive)</li>
+    <li><strong>Ends low</strong> = Near zero (almost resistive)</li>
+    <li><strong>Diagnosis rule:</strong> Falling reactance + Positive values = Too short!</li>
+</ul>
+<h4>2. SWR Audio Pattern</h4>
+<ul>
+    <li><strong>High tone, falling</strong> = SWR high, gets better</li>
+    <li>Minimum at upper band edge = Resonance above it</li>
+    <li><strong>Diagnosis rule:</strong> SWR falls to the right = Lengthen!</li>
+</ul>
+<h4>3. Smith Audio Pattern (Cartesian)</h4>
+<ul>
+    <li><strong>Starts forward</strong> = Positive reactance (inductive)</li>
+    <li><strong>Moves backward</strong> = Reactance decreases</li>
+    <li><strong>Diagonal movement</strong> toward back-right = Typical for antenna too short</li>
+    <li><strong>Diagnosis rule:</strong> Forward position + Movement backward = Inductive!</li>
+</ul>
+<h4>4. Smith Audio Pattern (Polar)</h4>
+<ul>
+    <li><strong>Slight rotation counterclockwise</strong> = Phase change</li>
+    <li><strong>Approach to center</strong> = SWR improves</li>
+    <li><strong>Diagnosis rule:</strong> Counterclockwise + Closer = Inductive, gets better</li>
+</ul>
+<h3>Physical Understanding</h3>
+<p><strong>Why is an antenna that's too short inductive?</strong></p>
+<ol>
+    <li><strong>Electrical length < λ/4:</strong> Antenna is electrically too short</li>
+    <li><strong>Current maximum shifted:</strong> Not located at feed point</li>
+    <li><strong>Reactance dominates:</strong> Reactive impedance predominates</li>
+    <li><strong>Analogy to coil:</strong> Incomplete resonance structure acts inductively</li>
+</ol>
+<p><strong>Why does it get better at higher frequency?</strong></p>
+<ol>
+    <li><strong>λ becomes smaller:</strong> At higher frequency, wavelength is shorter</li>
+    <li><strong>Antenna becomes "electrically longer":</strong> Fixed length / smaller λ = larger fraction of λ</li>
+    <li><strong>Approaches λ/4:</strong> At even higher frequency, λ/4 would be reached</li>
+    <li><strong>Resonance above it:</strong> Extrapolation shows resonance at approx. 146.5 - 147 MHz</li>
+</ol>
+<h3>Corrective Measures</h3>
+<p><strong>1. Mechanical lengthening (Best solution):</strong></p>
+<ul>
+    <li>Lengthen radiator by 3-5 cm</li>
+    <li>Resonance frequency drops into band</li>
+    <li>Broadband matching is achieved</li>
+</ul>
+<p><strong>2. Series capacitor (Electrical solution):</strong></p>
+<ul>
+    <li>18-20 pF in series to feed point</li>
+    <li>Compensates inductive reactance</li>
+    <li>Disadvantage: Narrowband, additional component</li>
+</ul>
+<p><strong>3. Matching network:</strong></p>
+<ul>
+    <li>L-C network for transformation</li>
+    <li>Complex, not recommended for antennas</li>
+    <li>Better: Mechanical correction</li>
+</ul>
+<hr>
+<h2>⚠️ Important Notes</h2>
+<h3>Typical Measurement Practice</h3>
+<p><strong>Such measurements show:</strong></p>
+<ul>
+    <li>Antenna was <strong>designed for higher frequency</strong></li>
+    <li>Or: Mechanical error during construction</li>
+    <li>Or: Antenna for another band (e.g., 70cm) measured on 2m</li>
+</ul>
+<p><strong>Common in practice with:</strong></p>
+<ul>
+    <li>Self-built antennas (length calculation incorrect)</li>
+    <li>Commercial antennas after storm (mechanical deformation)</li>
+    <li>Antennas in new environment (capacitive detuning)</li>
+</ul>
+<h3>Return Loss and SWR Relation</h3>
+<p><strong>At 144 MHz:</strong></p>
+<ul>
+    <li>SWR = 1.95 corresponds to Return Loss = 8.54 dB</li>
+    <li>This means: <strong>~15%</strong> of power is reflected</li>
+    <li><strong>85%</strong> reaches the antenna - acceptable, but losses measurable</li>
+</ul>
+<p><strong>Comparison with Scenario 1:</strong></p>
+<ul>
+    <li>Scenario 1: < 0.5% reflection (SWR 1.0, RL > 46 dB)</li>
+    <li>Scenario 2: ~15% reflection (SWR 1.95, RL 8.54 dB)</li>
+    <li><strong>30× more reflection!</strong></li>
+</ul>
+<h3>Practical Tolerance</h3>
+<p><strong>Is SWR 1.95 usable?</strong></p>
+<ul>
+    <li><strong>Yes!</strong> Acceptable for most applications</li>
+    <li>Modern transceivers: Work up to SWR 3:1 without problems</li>
+    <li>Antenna tuner would match without problems</li>
+    <li><strong>But:</strong> Optimization is worthwhile for maximum efficiency</li>
+</ul>
+<hr>
+<h2>🔊 Audio Tips for Inductive Recognition</h2>
+<h3>Key Audio Cues</h3>
+<ol>
+    <li><strong>Reactance sawtooth falls</strong> = Inductive</li>
+    <li><strong>Smith forward, moves backward</strong> = Inductive</li>
+    <li><strong>SWR decreases to the right</strong> = Resonance above band</li>
+    <li><strong>Phase positive, decreasing</strong> = Inductive phase</li>
+</ol>
+<h3>Avoid Confusion</h3>
+<p><strong>Inductive (Too short) vs. Capacitive (Too long):</strong>  <strong>Inductive (This scenario):</strong></p>
+<ul>
+    <li>Reactance: <strong>Positive</strong>, falling</li>
+    <li>Smith: <strong>Forward</strong>, moves backward</li>
+    <li>Sawtooth: <strong>Falls</strong> from high to low</li>
+</ul>
+<p><strong>Capacitive (Scenario 3):</strong></p>
+<ul>
+    <li>Reactance: <strong>Negative</strong>, rising</li>
+    <li>Smith: <strong>Back</strong>, moves forward</li>
+    <li>Sawtooth: <strong>Rises</strong> from low to high</li>
+</ul>
+<p><strong>Mnemonic:</strong></p>
+<ul>
+    <li><strong>Forward = Ahead = Inductive = Coil = Too short</strong></li>
+    <li><strong>Back = Behind = Capacitive = Capacitor = Too long</strong></li>
+</ul>
+<hr>
+<h2>📝 Checklist: Have you heard/understood everything?</h2>
+<ul>
+    <li>[ ] SWR curve: Falling tone from left to right</li>
+    <li>[ ] Reactance curve: Clearly audible, falling sawtooth</li>
+    <li>[ ] Smith Cartesian: Sound starts forward-left, moves toward central</li>
+    <li>[ ] Smith Polar: Slight counterclockwise rotation, approach to center</li>
+    <li>[ ] Axis crossing: Pitched sweep at approx. 145 MHz (R = 50Ω)</li>
+    <li>[ ] U-Menu resonance search: Minimum at 146 MHz, resonance outside band</li>
+    <li>[ ] U-Menu feed point: X = +14.5Ω at 145 MHz (clearly inductive)</li>
+    <li>[ ] U-Menu matching: Suggestion series-C or mechanical lengthening</li>
+    <li>[ ] Comparison with Scenario 1: Clear differences audible</li>
+</ul>
+<hr>
+<h2>🎯 Next Steps</h2>
+<p>After this training you should:</p>
+<ol>
+    <li><strong>Work through Scenario 3</strong> (Antenna too long - capacitive)</li>
+</ol>
+<ul>
+    <li>Compare: Opposite audio pattern</li>
+    <li>Reactance rises instead of falls</li>
+    <li>Smith position back instead of forward</li>
+</ul>
+<ol>
+    <li><strong>Listen to Scenarios 1 and 2 alternately</strong></li>
+</ol>
+<ul>
+    <li>Sharpen your hearing for the difference</li>
+    <li>Make perfect vs. inductive clearly distinguishable</li>
+</ul>
+<ol>
+    <li><strong>Classify your own measurements</strong></li>
+</ol>
+<ul>
+    <li>If reactance falls → Too short</li>
+    <li>If reactance rises → Too long</li>
+    <li>If reactance flat → Perfect!</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Remember: Falling reactance + Forward in Smith = Antenna too short / inductive. This is a clear acoustic diagnostic pattern!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_01_Perfekte_Resonanz.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_03_Antenne_Zu_Lang.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

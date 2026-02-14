@@ -4,7 +4,9 @@
 #include <thread>
 #include <atomic>
 #include <mutex>
+#include <condition_variable>
 #include <vector>
+#include <map>
 #include <functional>
 
 #if defined(_WIN32)
@@ -126,9 +128,14 @@ private:
     // Input queue from browser
     std::vector<std::string> inputQueue;
     
-    // Output buffer for SSE clients
-    std::string outputBuffer;
+    // Per-client output queues for SSE clients
+    // Each SSE client gets its own buffer so all clients receive all output
+    std::map<int, std::string> clientOutputBuffers;
+    std::condition_variable outputCV;  // Signals when new output is available
     std::vector<int> sseClients;  // Client sockets for Server-Sent Events
+    
+    // Shared output buffer for initial connection (before SSE client is registered)
+    std::string outputBuffer;
     
     // Current UI context (available actions) for web interface
     std::string currentContextJSON;

@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Szenario 4: Lambda/4-Kabel als Impedanztransformator">
+    <title>Training Szenario 4: Lambda/4-Kabel als Impedanztransformator</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>Training Szenario 4: Lambda/4-Kabel als Impedanztransformator</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_03_Antenne_Zu_Lang.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_05_Tiefpass_Filter.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Szenario 4: Lambda/4-Kabel als Impedanztransformator</h1>
+<p><strong>Trainingsdatei:</strong> <code>Training/04_lambda_viertel_kabel.csv</code> <strong>Frequenzbereich:</strong> 144.000 - 146.000 MHz (2m Amateurfunkband) <strong>Schwierigkeitsgrad:</strong> ⭐⭐⭐ Fortgeschritten <strong>Lernziel:</strong> Verstehen der Impedanztransformation durch Viertelwellen-Leitungen und Rotation im Smith-Diagramm</p>
+<hr>
+<h2>📋 Szenario-Beschreibung</h2>
+<h3>Fiktive Komponente</h3>
+<p>Sie messen eine <strong>25Ω-Antenne über ein Lambda/4-Koaxialkabel</strong> bei 144 MHz. Das Kabel ist exakt λ/4 (ca. 52 cm bei v=0.66) lang und transformiert die 25Ω-Impedanz in eine höhere Impedanz. Bei der Resonanzfrequenz findet eine <strong>180°-Rotation im Smith-Diagramm</strong> statt.</p>
+<h3>Technische Eigenschaften</h3>
+<ul>
+    <li><strong>Impedanz am Kabeleingang:</strong></li>
+    <li>144.0 MHz: 25.0Ω + j0.0Ω (niederohmig, resistiv)</li>
+    <li>144.5 MHz: ~50Ω (durch λ/4-Transformation)</li>
+    <li>146.0 MHz: ~100Ω (hochohmig, resistiv)</li>
+    <li><strong>SWR:</strong> 2.00 bis 2.90 (variiert durch Transformationseffekt)</li>
+    <li><strong>Return Loss:</strong> 4.00 bis 6.02 dB (mäßig)</li>
+    <li><strong>Reaktanz (X):</strong> Oszilliert durch Leitungsresonanz</li>
+    <li><strong>Besonderheit:</strong> Spektakuläre <strong>Smith-Diagramm-Rotation</strong> um 180°</li>
+</ul>
+<h3>Physikalische Bedeutung</h3>
+<p>Ein <strong>Lambda/4-Kabel</strong> (Viertelwellen-Transformator) ist ein fundamentales HF-Konzept:</p>
+<ul>
+    <li><strong>Impedanztransformation:</strong> Z_in = Z₀² / Z_L</li>
+    <li>Bei Z₀=50Ω und Z_L=25Ω: Z_in = 50²/25 = 100Ω</li>
+    <li><strong>Praktische Anwendung:</strong> Anpassung niederohmiger Antennen</li>
+    <li><strong>Smith-Effekt:</strong> Komplette Drehung um Diagramm-Mitte bei λ/4</li>
+</ul>
+<p><strong>Typische Anwendungen:</strong></p>
+<ul>
+    <li>Anpassung von Groundplane-Antennen (35Ω → 50Ω)</li>
+    <li>Stacking-Harness für Mehrantennen-Arrays</li>
+    <li>Impedanzanpassung in Filtern und Verstärkern</li>
+    <li>J-Pole-Antennen-Matching-Sektion</li>
+</ul>
+<hr>
+<h2>🎧 Akustische Analyse</h2>
+<h3>Datei importieren und laden</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>L</strong> (Laden) drücken</li>
+    <li>Liste der Dateien erscheint - navigieren Sie mit <strong>Pfeiltasten</strong></li>
+    <li>Wählen Sie <strong>04_lambda_viertel_kabel.csv</strong></li>
+    <li><strong>Enter</strong> drücken zum Laden</li>
+    <li>Bestätigung: "41 Messpunkte erfolgreich geladen"</li>
+</ol>
+<h3>Akustischen Modus starten</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>A</strong> (Akustische Analyse) drücken</li>
+    <li>Sie befinden sich nun im akustischen Analysemodus</li>
+    <li><strong>LEERTASTE</strong> drücken zum Starten der Wiedergabe</li>
+</ol>
+<hr>
+<h2>🎵 Erwartete Audio-Ereignisse</h2>
+<h3>1. SWR-Kurve (Taste 1 - Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Mittlerer Ton bei 144 MHz</strong> (SWR 2.00)</li>
+    <li>Ton steigt <strong>leicht an</strong> bis ca. 144.5 MHz (SWR 2.50)</li>
+    <li>Dann steigt weiter bis 146 MHz (SWR 2.90)</li>
+    <li><strong>Wellenförmige Bewegung</strong> im Stereofeld</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>SWR variiert durch <strong>Impedanztransformation</strong> des λ/4-Kabels</li>
+    <li>Keine perfekte Anpassung bei einer einzelnen Frequenz</li>
+    <li>Transformationseffekt über gesamtes Band sichtbar</li>
+    <li>Typisches "Durchlauf"-Verhalten durch Transformationsbereich</li>
+</ul>
+<p><strong>Position im Stereofeld:</strong></p>
+<ul>
+    <li>Sound bewegt sich <strong>dynamisch</strong> durch Stereofeld</li>
+    <li>Zeigt Impedanz-"Wanderung" durch λ/4-Transformation</li>
+</ul>
+<h3>2. Return Loss Kurve (Taste 2 - Reine Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Niedriger bis mittlerer Ton</strong> (4-6 dB Bereich)</li>
+    <li>Leichte Variation über Frequenz</li>
+    <li>Korreliert mit SWR-Verhalten</li>
+    <li>Keine dramatischen Peaks</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Moderate Rückflussdämpfung = Moderate Reflexionen</li>
+    <li>λ/4-Transformation ist frequenzabhängig</li>
+    <li>Zeigt "Bandbreiten-Limitierung" des Transformators</li>
+</ul>
+<h3>3. Impedanz |Z| (Taste 3 - Dreieckswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr niedriger Ton bei 144 MHz</strong> (25Ω)</li>
+    <li>Ton steigt <strong>dramatisch an</strong> über Frequenz</li>
+    <li><strong>Mittlerer Ton bei 144.5 MHz</strong> (~50Ω)</li>
+    <li><strong>Hoher Ton bei 146 MHz</strong> (~100Ω)</li>
+    <li><strong>Starker, kontinuierlicher Aufwärtstrend</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Zeigt klassische <strong>λ/4-Impedanztransformation</strong>!</li>
+    <li>Von niederohmig (25Ω) zu hochohmig (100Ω)</li>
+    <li>Durchläuft 50Ω-Systemimpedanz in Bandmitte</li>
+    <li>Dies ist der <strong>Kern-Effekt</strong> dieses Szenarios!</li>
+</ul>
+<p><strong>Akustische Landmarke:</strong></p>
+<ul>
+    <li>Einer der <strong>dramatischsten Impedanz-Sweeps</strong> in allen Trainingsszenarien</li>
+    <li>Klingt wie "aufsteigende Sirene" im Dreieckswellen-Klang</li>
+</ul>
+<h3>4. Reaktanz X (Taste 4 - Sägezahn)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Oszillierender Ton</strong> um Nulllinie</li>
+    <li>Wechselt zwischen <strong>leicht induktiv</strong> und <strong>leicht kapazitiv</strong></li>
+    <li>Übergang von <strong>positiv → null → negativ → null → positiv</strong> möglich</li>
+    <li><strong>Wellenbewegung</strong> charakteristisch für Leitungsresonanz</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Reaktanz oszilliert durch <strong>Leitungsresonanzen</strong></li>
+    <li>Bei exakt λ/4: X sollte theoretisch null sein</li>
+    <li>Frequenzverstimmung führt zu Reaktanz-Schwankungen</li>
+    <li>Zeigt "Resonanz-Durchlauf" des Transformators</li>
+</ul>
+<p><strong>Akustischer Charakter:</strong></p>
+<ul>
+    <li>Klingt wie <strong>"wellenförmiges Auf und Ab"</strong> im Sägezahn</li>
+    <li>Unterscheidet sich klar von monotonen Trends (Szenarien 2+3)</li>
+</ul>
+<h3>5. Phase (Taste 5 - Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Dramatische Phasenänderung</strong> über Frequenz</li>
+    <li>Kann <strong>große Sprünge</strong> zeigen (±45° oder mehr)</li>
+    <li>Übergang von <strong>positiv → null → negativ</strong></li>
+    <li><strong>Starke Dynamik</strong> im Phasenverlauf</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Phase ändert sich stark durch <strong>Leitungstransformation</strong></li>
+    <li>Bei λ/4: 180° Phasendrehung erwartet</li>
+    <li>Zeigt elektrische Länge des Kabels</li>
+    <li>Wichtig für Verständnis von Leitungstheorie</li>
+</ul>
+<hr>
+<h2>🎯 Smith-Diagramm Audio-Visualisierung</h2>
+<h3>Smith-Visualisierung aktivieren</h3>
+<ol>
+    <li>Im akustischen Modus: Taste <strong>V</strong> drücken (Smith-Visualisierung ein/aus)</li>
+    <li>Taste <strong>B</strong> drücken zum Auswählen des Modus:</li>
+</ol>
+<ul>
+    <li><strong>Empfohlen: Modus 2 (Polar/Radius)</strong> - zeigt Rotation am besten!</li>
+    <li>Alternative: <strong>Modus 1 (Kartesisch)</strong> - zeigt Kreisbewegung</li>
+</ul>
+<h3>Erwartete Smith-Audio-Cues</h3>
+<h4>Modus 2: Polar/Radius (EMPFOHLEN für dieses Szenario!) ⭐</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>SPEKTAKULÄRE ROTATION</strong> um das Smith-Diagramm-Zentrum!</li>
+    <li>Sound <strong>dreht sich kontinuierlich</strong> im 3D-Raum</li>
+    <li><strong>Kreisförmige Bewegung</strong> von links über vorne nach rechts</li>
+    <li><strong>180° Rotation</strong> über den Frequenzbereich</li>
+    <li>Radius bleibt <strong>relativ konstant</strong> (Distanz vom Zentrum)</li>
+    <li><strong>Drehgeschwindigkeit</strong> ist gleichmäßig</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Rotation = <strong>λ/4-Leitungseffekt</strong> im Smith-Diagramm!</li>
+    <li>Vollständige Umrundung = Leitungslänge = λ/2</li>
+    <li>Halbe Umrundung = Leitungslänge = λ/4</li>
+    <li>Dies ist <strong>DAS</strong> charakteristische akustische Signal für Leitungstransformation!</li>
+</ul>
+<p><strong>Audio-Erleben:</strong></p>
+<ul>
+    <li>Wie ein <strong>rotierender Sound</strong> um Ihren Kopf</li>
+    <li>Beginnt <strong>links</strong> (144 MHz)</li>
+    <li>Bewegt sich <strong>nach vorne</strong> (Bandmitte)</li>
+    <li>Endet <strong>rechts</strong> (146 MHz)</li>
+    <li><strong>Unforgettable Acoustic Signature!</strong></li>
+</ul>
+<h4>Modus 1: Kartesisch</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li>Sound macht <strong>Kreisbewegung</strong> durch den Raum</li>
+    <li>Beginnt bei <strong>Re(Γ) negativ</strong> (links)</li>
+    <li>Bewegt sich durch <strong>Im(Γ) positiv/negativ</strong> (vorne/hinten)</li>
+    <li>Endet bei <strong>Re(Γ) positiv</strong> (rechts)</li>
+    <li><strong>Ellipsenförmige Trajektorie</strong> möglich</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Reflexionskoeffizient wandert um Smith-Zentrum</li>
+    <li>Zeigt gleiche Rotation wie Modus 2, aber in kartesischen Koordinaten</li>
+    <li>Komplexere Audio-Interpretation</li>
+</ul>
+<h4>Modus 3: Impedanz Direkt</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Horizontale Bewegung von links nach rechts</strong> (R: 25Ω → 100Ω)</li>
+    <li><strong>Leichte vertikale Oszillation</strong> (X: induktiv ↔ kapazitiv)</li>
+    <li>Sound <strong>gleitet von links (niederohmig) nach rechts (hochohmig)</strong></li>
+    <li>Vertikale Position <strong>wackelt</strong> um Mitte</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Widerstand R steigt kontinuierlich (Haupteffekt)</li>
+    <li>Reaktanz X oszilliert (Sekundäreffekt)</li>
+    <li>Zeigt Transformation direkt im R+jX-Raum</li>
+</ul>
+<h3>Center Pulse (Referenzsignal)</h3>
+<p><strong>Aktivieren:</strong></p>
+<ol>
+    <li>Taste <strong>A</strong> im akustischen Modus → Audio-Konfiguration</li>
+    <li>Menü: <strong>C</strong> → <strong>Smith Audio</strong> → Center Pulse aktivieren</li>
+</ol>
+<p><strong>Was Sie hören:</strong></p>
+<ul>
+    <li><strong>Periodischer Puls aus der MITTE</strong> (Referenz = 50Ω + j0)</li>
+    <li>Ihre Messung <strong>rotiert UM diesen Puls herum</strong>!</li>
+    <li>Wenn Messung den Puls kreuzt: <strong>Impedanz = 50Ω</strong> erreicht</li>
+    <li>Zeigt <strong>Distanz zur perfekten Anpassung</strong></li>
+</ul>
+<hr>
+<h2>🔧 Übungen und Lernaufgaben</h2>
+<h3>Übung 1: Impedanztransformation hören</h3>
+<p><strong>Ziel:</strong> λ/4-Transformation akustisch verinnerlichen</p>
+<ol>
+    <li><strong>Nur Impedanz |Z| einschalten</strong> (Taste 3)</li>
+    <li><strong>LEERTASTE</strong> drücken und Sweep hören</li>
+    <li><strong>Frage:</strong> Hören Sie den Aufwärtstrend von niedrig (25Ω) zu hoch (100Ω)?</li>
+    <li><strong>Wiederholen</strong> Sie mehrmals - prägen Sie sich dieses "Transformations-Audio" ein!</li>
+    <li>Vergleichen Sie mit <strong>Szenario 1</strong> (konstante 50Ω) - <strong>riesiger Unterschied</strong>!</li>
+</ol>
+<h3>Übung 2: Smith-Rotation erleben</h3>
+<p><strong>Ziel:</strong> Leitungsrotation im Smith-Diagramm verstehen</p>
+<ol>
+    <li><strong>Smith-Modus 2 (Polar)</strong> aktivieren (Taste <strong>B</strong>)</li>
+    <li><strong>Smith-Visualisierung ein</strong> (Taste <strong>V</strong>)</li>
+    <li><strong>LEERTASTE</strong> drücken</li>
+    <li><strong>Konzentrieren Sie sich</strong> auf die Raum-Position des Sounds</li>
+    <li><strong>Frage:</strong> Hören Sie die <strong>Drehbewegung</strong> um Ihren Kopf?</li>
+    <li><strong>Tipp:</strong> Schließen Sie die Augen und "sehen" Sie die Rotation vor sich!</li>
+</ol>
+<h3>Übung 3: Frequenzbereich einschränken</h3>
+<p><strong>Ziel:</strong> Transformation in kleinerem Frequenzfenster analysieren</p>
+<ol>
+    <li><strong>Pfeiltasten</strong> nutzen zum Navigieren</li>
+    <li>Bei <strong>144.0 MHz</strong> (Bandanfang): <strong>Taste L</strong> (Linker Marker)</li>
+    <li>Bei <strong>145.0 MHz</strong> (Bandmitte): <strong>Taste R</strong> (Rechter Marker)</li>
+    <li><strong>Taste O</strong> (Loop aktivieren)</li>
+    <li><strong>Frage:</strong> Wie weit rotiert die Impedanz über nur 1 MHz? (ca. 90°)</li>
+</ol>
+<h3>Übung 4: Vergleich mit perfekter Anpassung</h3>
+<p><strong>Ziel:</strong> Unterschied zwischen statisch und transformierend</p>
+<ol>
+    <li>Dieses Szenario <strong>komplett durchhören</strong></li>
+    <li>Dann <strong>Szenario 1</strong> (perfekte 50Ω Resonanz) laden</li>
+    <li><strong>Vergleichen Sie:</strong></li>
+</ol>
+<ul>
+    <li>Szenario 1: Alles <strong>statisch</strong>, kein Movement</li>
+    <li>Szenario 4: Alles <strong>dynamisch</strong>, starke Bewegung</li>
+    <li><strong>Akustischer Kontrast</strong> ist enorm!</li>
+</ul>
+<h3>Übung 5: Modi-Vergleich</h3>
+<p><strong>Ziel:</strong> Rotation in verschiedenen Smith-Modi verstehen</p>
+<ol>
+    <li>Smith <strong>Modus 1</strong> (Kartesisch): Kreisbewegung in Re/Im-Ebene</li>
+    <li>Smith <strong>Modus 2</strong> (Polar): <strong>Rotation</strong> (am intuitivsten!)</li>
+    <li>Smith <strong>Modus 3</strong> (Impedanz): Links-Rechts-Sweep mit Vertikaloszillation</li>
+    <li><strong>Frage:</strong> Welcher Modus vermittelt Ihnen den <strong>besten Eindruck</strong> der λ/4-Transformation?</li>
+</ol>
+<h3>Übung 6: Y-Achsen-Lineal für Impedanz</h3>
+<p><strong>Ziel:</strong> Absolute Impedanzwerte hören lernen</p>
+<ol>
+    <li><strong>Taste Y</strong> drücken (Y-Achsen-Lineal)</li>
+    <li><strong>Taste 3</strong> drücken (Impedanz |Z| auswählen)</li>
+    <li>Sie hören <strong>aufsteigende Tonleiter</strong> von 25Ω bis ~100Ω</li>
+    <li><strong>LEERTASTE</strong> für Messung</li>
+    <li>Vergleichen Sie: Start = tiefer Ton (25Ω), Ende = hoher Ton (100Ω)</li>
+</ol>
+<hr>
+<h2>📊 U-Menü Analyse-Funktionen</h2>
+<h3>Empfohlene Analysen für dieses Szenario</h3>
+<h4>1. Bandtauglichkeitsprüfung (U-Menü → Taste 1)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ⚠️ Bedingt geeignet (SWR 2.0-2.9)</li>
+    <li>Keine Frequenz zeigt SWR < 1.5</li>
+    <li>Nutzbar mit <strong>Antennentuner</strong> empfohlen</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>λ/4-Transformation bringt keine perfekte 50Ω-Anpassung</li>
+    <li>Für QRP/portable OK, für QRO Tuner empfehlenswert</li>
+    <li>Zeigt Bandbreiten-Limitierung von λ/4-Transformatoren</li>
+</ul>
+<h4>2. Resonanzsuche (U-Menü → Taste 2)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Möglicherweise KEINE klassische Resonanz</strong> (X=0) im Band</li>
+    <li>Wenn gefunden: Multiple Crossing-Points durch Oszillation</li>
+    <li>SWR-Minimum könnte bei ~144.5 MHz liegen (50Ω-Durchgang)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>λ/4-Kabel erzeugt <strong>Transformation</strong>, nicht klassische Resonanz</li>
+    <li>"Resonanz" hier = Frequenz, wo Z_in ≈ 50Ω (nicht X=0!)</li>
+    <li>Unterschied zu echten Antennenresonanzen (Szenarien 1-3)</li>
+</ul>
+<h4>3. SWR-Bandbreite (U-Menü → Taste 3)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>SWR < 2.0:1 Bandbreite:</strong> Möglicherweise nur ~0.2 MHz (schmal!)</li>
+    <li><strong>SWR < 3.0:1 Bandbreite:</strong> Gesamtes 2m-Band</li>
+    <li>Start: 144.0 MHz, Ende: 146.0 MHz</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>λ/4-Transformatoren sind <strong>schmalbandig</strong>!</li>
+    <li>Nur bei exakter Design-Frequenz optimale Transformation</li>
+    <li>Frequenzversatz verschlechtert Anpassung schnell</li>
+</ul>
+<h4>4. Fußpunktimpedanz-Analyse (U-Menü → Taste 4)</h4>
+<p><strong>Frequenz eingeben:</strong> 144.5 MHz (geschätzte Mitte der Transformation)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> ~50Ω (Ziel erreicht!)</li>
+    <li><strong>X (Reaktanz):</strong> ±5Ω (fast resistiv)</li>
+    <li><strong>|Z| (Impedanz-Betrag):</strong> ~50Ω</li>
+    <li><strong>Phase:</strong> ±10° (gering)</li>
+    <li><strong>Klassifikation:</strong> Nahezu resistiv</li>
+</ul>
+<p><strong>Frequenz eingeben:</strong> 144.0 MHz (Bandanfang)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> 25.0Ω (niederohmig)</li>
+    <li><strong>X (Reaktanz):</strong> ~0Ω</li>
+    <li><strong>|Z|:</strong> 25.0Ω</li>
+    <li><strong>Klassifikation:</strong> Niederohmig, resistiv</li>
+</ul>
+<p><strong>Frequenz eingeben:</strong> 146.0 MHz (Bandende)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> ~100Ω (hochohmig)</li>
+    <li><strong>X (Reaktanz):</strong> ~0Ω</li>
+    <li><strong>|Z|:</strong> ~100Ω</li>
+    <li><strong>Klassifikation:</strong> Hochohmig, resistiv</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li><strong>Klarer Beweis</strong> der Impedanztransformation!</li>
+    <li>Von 25Ω über 50Ω zu 100Ω über 2 MHz</li>
+    <li>Mathematisch: Z_in = Z₀² / Z_L angenähert</li>
+</ul>
+<h4>5. Anpassungshinweise (U-Menü → Taste 5)</h4>
+<p><strong>Bei 144.0 MHz:</strong></p>
+<ul>
+    <li><strong>"Impedanz zu niedrig (25Ω)"</strong></li>
+    <li><strong>Vorschlag:</strong> Serie-Induktivität oder längeres Kabel</li>
+    <li>Oder: <strong>Antennentuner</strong> für Breitbandnutzung</li>
+</ul>
+<p><strong>Bei 144.5 MHz:</strong></p>
+<ul>
+    <li><strong>"Akzeptable Anpassung (SWR ~2.0)"</strong></li>
+    <li>Vorschlag: Optimierung möglich, aber nutzbar</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Programm erkennt frequenzabhängige Transformation</li>
+    <li>Empfiehlt je nach Frequenz unterschiedliche Maßnahmen</li>
+    <li><strong>Hinweis auf λ/4-Effekt</strong> implizit enthalten</li>
+</ul>
+<hr>
+<h2>🎓 Lernziele und Interpretation</h2>
+<h3>Was Sie aus diesem Szenario lernen</h3>
+<h4>1. Verständnis von λ/4-Impedanztransformation</h4>
+<ul>
+    <li><strong>Impedanzformel:</strong> Z_in = Z₀² / Z_L</li>
+    <li><strong>Frequenzabhängigkeit:</strong> Nur bei exakter λ/4 optimal</li>
+    <li><strong>Bandbreiten-Limitierung:</strong> Schmalbandig im Vergleich zu resistiven Antennen</li>
+    <li><strong>Praktische Bedeutung:</strong> Matching niederohmiger Lasten</li>
+</ul>
+<h4>2. Smith-Diagramm-Rotation akustisch erleben</h4>
+<ul>
+    <li><strong>180° Rotation</strong> bei λ/4-Leitung = charakteristisches Verhalten</li>
+    <li><strong>Kontinuierliche Drehung</strong> = Leitungseffekt</li>
+    <li><strong>Kreis um Zentrum</strong> = Konstanter Reflexionskoeffizient-Betrag</li>
+    <li>Dies ist <strong>DER</strong> Unterschied zwischen Antennen und Leitungen!</li>
+</ul>
+<h4>3. Akustische Signaturen für Transformation</h4>
+<ul>
+    <li><strong>Impedanz |Z|:</strong> Dramatischer Aufwärtstrend = Transformation aktiv</li>
+    <li><strong>Smith Polar-Modus:</strong> Drehender Sound = Leitungstransformation</li>
+    <li><strong>Reaktanz X:</strong> Oszillation = Leitungsresonanzen</li>
+    <li><strong>Phase:</strong> Starke Änderung = Elektrische Länge</li>
+</ul>
+<h4>4. Unterschied: Antenne vs. Leitung</h4>
+<ul>
+    <li><strong>Antenne</strong> (Szenarien 1-3): Statische Impedanz oder monotoner Trend</li>
+    <li><strong>Leitung</strong> (Szenario 4): Zyklische Transformation, Rotation</li>
+    <li><strong>Kombination</strong> (Praxis): Antenne + Leitung = Komplexe Interaktion</li>
+</ul>
+<h4>5. Praxisbezug</h4>
+<ul>
+    <li><strong>J-Pole-Antennen:</strong> Nutzen λ/4-Sektion für 50Ω-Matching</li>
+    <li><strong>Stacking-Harness:</strong> 75Ω-Kabel als λ/4-Transformer</li>
+    <li><strong>Hybrid-Combiner:</strong> λ/4-Leitungen als Isolationselemente</li>
+    <li><strong>Impedanz-Messung:</strong> Berücksichtigung der Kabellänge wichtig!</li>
+</ul>
+<hr>
+<h2>⚠️ Wichtige Hinweise</h2>
+<h3>Realitätscheck: λ/4-Transformatoren in der Praxis</h3>
+<p><strong>Typische Anwendungen:</strong></p>
+<ol>
+    <li><strong>Groundplane-Anpassung:</strong> 35Ω-Antenne mit 42Ω λ/4-Kabel → 50Ω</li>
+    <li><strong>Array-Matching:</strong> Vier 50Ω-Antennen parallel = 12.5Ω → 25Ω λ/4-Kabel → 50Ω</li>
+    <li><strong>Balun-Ersatz:</strong> 1:4-Transformation für Dipol-Matching</li>
+</ol>
+<p><strong>Bandbreiten-Probleme:</strong></p>
+<ul>
+    <li>λ/4-Transformatoren sind <strong>schmalbandig</strong> (typisch 5-10% Bandbreite bei SWR<2:1)</li>
+    <li>Für Breitband-Anwendungen: <strong>Mehrstufige Transformatoren</strong> (Tschebyscheff, Binomial)</li>
+    <li>Oder: <strong>Koaxiale Stubs</strong> mit mehreren Anzapfungen</li>
+</ul>
+<p><strong>Messtechnik-Aspekt:</strong></p>
+<ul>
+    <li>Bei VNA-Messungen: <strong>Kabellänge</strong> muss bekannt sein!</li>
+    <li><strong>De-Embedding:</strong> Rausrechnen der Kabeleffekte für echte Antennenimpedanz</li>
+    <li>NanoVNA-Kalibrierung: Am <strong>Antennen-Fußpunkt</strong>, nicht am VNA-Ausgang!</li>
+</ul>
+<h3>Technische Details</h3>
+<p><strong>Impedanztransformation:</strong></p>
+<pre><code class="language-">Z_in = Z₀² / Z_L
+<p>Beispiel: Z₀ = 50Ω (Kabelimpedanz) Z_L = 25Ω (Last/Antenne) Z_in = 50² / 25 = 2500 / 25 = 100Ω</p>
+</code></pre>
+<p><strong>Elektrische Länge:</strong></p>
+<pre><code class="language-">λ/4 bei 144 MHz:
+<p>λ = c / f = 300 / 144 = 2.083 m λ/4 = 0.521 m = 52.1 cm  Mit Verkürzungsfaktor v=0.66 (RG58): Physikalische Länge = 52.1 cm × 0.66 = 34.4 cm</p>
+</code></pre>
+<p><strong>Smith-Rotation:</strong></p>
+<ul>
+    <li><strong>λ/4-Leitung:</strong> 180° Rotation im Smith-Diagramm</li>
+    <li><strong>λ/2-Leitung:</strong> 360° Rotation (Vollkreis) = Impedanz-Wiederholung</li>
+    <li><strong>λ/8-Leitung:</strong> 90° Rotation</li>
+</ul>
+<hr>
+<h2>🔊 Audio-Engine-Vergleich</h2>
+<h3>Synthesizer-Engine (Standard)</h3>
+<p><strong>Empfohlen für:</strong> Präzise Wahrnehmung der Transformation  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>Impedanz |Z|: Dreieckswelle - <strong>aufsteigender Sweep</strong> klar hörbar</li>
+    <li>Reaktanz X: Sägezahn - <strong>Oszillation</strong> gut wahrnehmbar</li>
+    <li>Smith-Rotation: <strong>Präzise Raum-Position</strong> vermittelt Drehung</li>
+</ul>
+<h3>MIDI-Engine</h3>
+<p><strong>Empfohlen für:</strong> Musikalische Wahrnehmung der Drehung  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>Impedanz |Z|: Piano - <strong>aufsteigende Melodie</strong> (25Ω→100Ω)</li>
+    <li>Smith-Rotation: <strong>Stereo-Schwenk</strong> wie Orchester-Panorama</li>
+    <li>Reaktanz X: Violine - <strong>Vibrato-Effekt</strong> durch Oszillation</li>
+</ul>
+<p><strong>Wechseln:</strong></p>
+<ul>
+    <li>Im akustischen Modus: <strong>Taste A</strong> → Audio-Konfiguration</li>
+    <li><strong>MIDI-Engine</strong> auswählen</li>
+</ul>
+<p><strong>Empfehlung für Szenario 4:</strong></p>
+<ul>
+    <li><strong>Synthesizer</strong> für präzise technische Analyse</li>
+    <li><strong>MIDI</strong> für "Gefühl" der Rotation und Transformation</li>
+    <li>Probieren Sie <strong>beide</strong> - sehr unterschiedliche Erlebnisse!</li>
+</ul>
+<hr>
+<h2>📝 Checkliste: Haben Sie alles gehört?</h2>
+<ul>
+    <li>[ ] Impedanz |Z|: Dramatischer Aufwärtstrend von 25Ω zu ~100Ω</li>
+    <li>[ ] SWR-Kurve: Mittlerer Ton, leicht steigend über Band</li>
+    <li>[ ] Return Loss: Niedriger bis mittlerer Ton (4-6 dB)</li>
+    <li>[ ] Reaktanz X: Oszillation um Nulllinie (wellenförmig)</li>
+    <li>[ ] Phase: Starke Änderungen über Frequenz</li>
+    <li>[ ] Smith Polar-Modus: <strong>SPEKTAKULÄRE 180° ROTATION</strong> um Zentrum</li>
+    <li>[ ] Smith Kartesisch: Kreisbewegung durch Re/Im-Raum</li>
+    <li>[ ] Smith Impedanz-Modus: Horizontaler Sweep links→rechts mit Vertikaloszillation</li>
+    <li>[ ] Center Pulse: Messung rotiert UM den Puls herum</li>
+    <li>[ ] U-Menü: Impedanz bei 144 MHz = 25Ω, bei 146 MHz = ~100Ω</li>
+    <li>[ ] U-Menü: Schmale SWR-Bandbreite (< 0.5 MHz für SWR<2:1)</li>
+    <li>[ ] Vergleich mit Szenario 1: Riesiger Unterschied (statisch vs. dynamisch)!</li>
+</ul>
+<hr>
+<h2>🎯 Nächste Schritte</h2>
+<p>Nach diesem Training sollten Sie:</p>
+<ol>
+    <li><strong>Das akustische Konzept "Rotation im Smith-Diagramm" verinnerlicht haben</strong></li>
+</ol>
+<ul>
+    <li>Rotation = Leitungseffekt</li>
+    <li>Statische Position = Antenne/Last ohne Leitungseinfluss</li>
+    <li>Dies ist <strong>fundamental</strong> für alle VNA-Messungen!</li>
+</ul>
+<ol>
+    <li><strong>Szenario 5 durcharbeiten (Tiefpass-Filter mit S21)</strong></li>
+</ol>
+<ul>
+    <li>Lernen Sie <strong>Transmission</strong> (S21) kennen</li>
+    <li>Vergleichen Sie Reflexion (S11) und Transmission (S21)</li>
+    <li>Filter-Charakteristiken akustisch verstehen</li>
+</ul>
+<ol>
+    <li><strong>Szenario 6 durcharbeiten (Multiband-Antenne)</strong></li>
+</ol>
+<ul>
+    <li>Multiple Resonanzen über großen Frequenzbereich</li>
+    <li>Vergleichen Sie mit Single-Band-Antennen</li>
+    <li>Smith-Bewegung über mehrere Bänder</li>
+</ul>
+<ol>
+    <li><strong>Eigene λ/4-Transformatoren bauen und messen</strong></li>
+</ol>
+<ul>
+    <li>Berechnen Sie Länge für Ihre Frequenz</li>
+    <li>Messen Sie mit NanoVNA</li>
+    <li>Hören Sie die Rotation!</li>
+    <li><strong>Vergleichen</strong> Sie mit diesem Training</li>
+</ul>
+<ol>
+    <li><strong>De-Embedding üben</strong></li>
+</ol>
+<ul>
+    <li>Messen Sie Antenne mit λ/4-Kabel</li>
+    <li>"Hören" Sie die Kabeleffekte heraus</li>
+    <li>Schätzen Sie echte Antennenimpedanz</li>
+</ul>
+<hr>
+<h2>🔬 Vertiefung: Leitungstheorie akustisch</h2>
+<h3>Warum rotiert es im Smith-Diagramm?</h3>
+<p><strong>Mathematischer Hintergrund:</strong></p>
+<pre><code class="language-">Reflexionskoeffizient am VNA:
+<p>Γ_in = Γ_L × e^(-j2βl)  β = 2π/λ (Phasenkonstante) l = Leitungslänge  Bei λ/4: 2βl = 2π/λ × λ/4 × 2 = π e^(-jπ) = -1 (180° Phasendrehung!)</p>
+</code></pre>
+<p><strong>Akustische Konsequenz:</strong></p>
+<ul>
+    <li>Jeder Frequenzschritt = kleiner Phasenwinkel-Schritt</li>
+    <li>Über Band: Kontinuierliche Phasendrehung</li>
+    <li>Smith-Diagramm: Rotation manifestiert sich als <strong>Sound-Bewegung im Raum</strong></li>
+    <li><strong>Sie HÖREN die Mathematik!</strong></li>
+</ul>
+<h3>Praktischer Tipp: Kabellänge bestimmen</h3>
+<p><strong>Wenn Sie ein unbekanntes Kabel haben:</strong></p>
+<ol>
+    <li>Messen Sie mit NanoVNA über breiten Frequenzbereich</li>
+    <li>Aktivieren Sie <strong>Smith Polar-Modus</strong></li>
+    <li>Hören Sie die <strong>Rotationsgeschwindigkeit</strong></li>
+    <li><strong>Schnelle Rotation</strong> = kurzes Kabel</li>
+    <li><strong>Langsame Rotation</strong> = langes Kabel</li>
+    <li>Eine <strong>Vollrotation (360°)</strong> = elektrische Länge λ/2</li>
+</ol>
+<p><strong>Formel:</strong></p>
+<pre><code class="language-">l = (Anzahl_Rotationen × λ) / 2
+</code></pre>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Viel Erfolg beim Training! λ/4-Transformatoren sind fundamentale HF-Werkzeuge - verstehen Sie sie akustisch, und Sie verstehen HF-Technik intuitiv!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_03_Antenne_Zu_Lang.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_05_Tiefpass_Filter.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

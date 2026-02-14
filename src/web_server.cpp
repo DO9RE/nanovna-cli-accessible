@@ -7,6 +7,8 @@
 
 #if defined(_WIN32)
 #pragma comment(lib, "ws2_32.lib")
+#else
+#include <csignal>
 #endif
 
 WebServer::WebServer(Logger* logger_) 
@@ -46,6 +48,12 @@ bool WebServer::start(int port, const std::string& bindAddress) {
         if (logger) logger->log("WEBSERVER", "Server already running");
         return false;
     }
+
+#if !defined(_WIN32)
+    // Ignore SIGPIPE to prevent crash when writing to a disconnected socket
+    // (e.g., when Safari closes while SSE connection is active)
+    std::signal(SIGPIPE, SIG_IGN);
+#endif
 
     if (!initWinsock()) {
         return false;
@@ -132,6 +140,9 @@ void WebServer::stop() {
     }
 
     shouldStop = true;
+    
+    // Wake up all SSE threads waiting on the condition variable
+    outputCV.notify_all();
 
     // Give SSE threads time to notice shouldStop and exit cleanly
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -149,6 +160,12 @@ void WebServer::stop() {
 #endif
         }
         sseClients.clear();
+    }
+    
+    // Clear all per-client output buffers
+    {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        clientOutputBuffers.clear();
     }
     
     // Give SSE threads time to exit
@@ -247,6 +264,7 @@ void WebServer::serverLoop() {
 }
 
 void WebServer::handleClient(int clientSocket) {
+    // Read initial request data
     char buffer[4096];
     int bytesReceived = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
     
@@ -255,9 +273,9 @@ void WebServer::handleClient(int clientSocket) {
     }
 
     buffer[bytesReceived] = '\0';
-    std::string request(buffer);
+    std::string request(buffer, bytesReceived);
 
-    if (logger) logger->log("WEBSERVER", "Received request: " + request.substr(0, 100));
+    if (logger) logger->log("WEBSERVER", "Received request (" + std::to_string(bytesReceived) + " bytes): " + request.substr(0, 100));
 
     // Parse request
     std::string method, path, body;
@@ -265,6 +283,74 @@ void WebServer::handleClient(int clientSocket) {
         std::string response = generateHTTPResponse(400, "text/plain", "Bad Request");
         send(clientSocket, response.c_str(), response.length(), 0);
         return;
+    }
+
+    // For POST requests, ensure we have the complete body based on Content-Length.
+    // Safari on macOS may send headers and body in separate TCP segments,
+    // so the first recv() might not contain the body.
+    if (method == "POST") {
+        // Extract Content-Length from request headers (case-insensitive search)
+        int contentLength = 0;
+        const int maxBodySize = 4096;  // Reasonable limit for keyboard input
+        // Search for Content-Length header case-insensitively in the header portion only
+        size_t headerEnd = request.find("\r\n\r\n");
+        std::string headerSection = (headerEnd != std::string::npos) ? request.substr(0, headerEnd) : request;
+        // Case-insensitive search by checking common capitalizations
+        size_t clPos = std::string::npos;
+        for (const char* pattern : {"Content-Length:", "content-length:", "Content-length:"}) {
+            clPos = headerSection.find(pattern);
+            if (clPos != std::string::npos) break;
+        }
+        if (clPos != std::string::npos) {
+            size_t valStart = headerSection.find(':', clPos) + 1;
+            while (valStart < headerSection.size() && headerSection[valStart] == ' ') valStart++;
+            size_t valEnd = headerSection.find("\r\n", valStart);
+            if (valEnd == std::string::npos) valEnd = headerSection.find("\n", valStart);
+            if (valEnd == std::string::npos) valEnd = headerSection.size(); // Last header, no trailing CRLF
+            try {
+                contentLength = std::stoi(headerSection.substr(valStart, valEnd - valStart));
+            } catch (...) {
+                contentLength = 0;
+            }
+        }
+        
+        // Validate Content-Length is within reasonable bounds
+        if (contentLength < 0 || contentLength > maxBodySize) {
+            if (logger) logger->log("WEBSERVER", "POST Content-Length out of range: " + std::to_string(contentLength));
+            contentLength = 0;
+        }
+        
+        if (contentLength > 0 && static_cast<int>(body.length()) < contentLength) {
+            // Body is incomplete - read remaining bytes
+            int remaining = contentLength - static_cast<int>(body.length());
+            if (logger) logger->log("WEBSERVER", "POST body incomplete: got " + 
+                std::to_string(body.length()) + "/" + std::to_string(contentLength) + 
+                " bytes, reading " + std::to_string(remaining) + " more");
+            
+            // Set a short timeout so we don't block forever
+            timeval tv;
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+            if (setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, 
+                       reinterpret_cast<const char*>(&tv), sizeof(tv)) < 0) {
+                if (logger) logger->log("WEBSERVER", "Warning: Failed to set recv timeout");
+            }
+            
+            while (static_cast<int>(body.length()) < contentLength) {
+                char bodyBuf[1024];
+                int toRead = std::min(static_cast<int>(sizeof(bodyBuf)), 
+                                      contentLength - static_cast<int>(body.length()));
+                int bodyBytes = recv(clientSocket, bodyBuf, toRead, 0);
+                if (bodyBytes <= 0) {
+                    if (logger) logger->log("WEBSERVER", "POST body recv failed or timed out");
+                    break;
+                }
+                body.append(bodyBuf, bodyBytes);
+            }
+            
+            if (logger) logger->log("WEBSERVER", "POST body complete: " + 
+                std::to_string(body.length()) + "/" + std::to_string(contentLength) + " bytes");
+        }
     }
 
     // Route request
@@ -278,6 +364,20 @@ void WebServer::handleClient(int clientSocket) {
         std::string response = generateHTTPResponse(200, "application/javascript", js);
         send(clientSocket, response.c_str(), response.length(), 0);
     }
+    else if (method == "OPTIONS") {
+        // Handle CORS preflight requests (some browsers send these for POST)
+        std::ostringstream resp;
+        resp << "HTTP/1.1 204 No Content\r\n";
+        resp << "Access-Control-Allow-Origin: *\r\n";
+        resp << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+        resp << "Access-Control-Allow-Headers: Content-Type\r\n";
+        resp << "Access-Control-Max-Age: 86400\r\n";
+        resp << "Content-Length: 0\r\n";
+        resp << "Connection: close\r\n";
+        resp << "\r\n";
+        std::string respStr = resp.str();
+        send(clientSocket, respStr.c_str(), respStr.length(), 0);
+    }
     else if (method == "POST" && path == "/input") {
         // Handle keyboard input from browser
         if (logger) {
@@ -285,11 +385,15 @@ void WebServer::handleClient(int clientSocket) {
             logger->log("WEBSERVER", "POST /input - Body content: [" + body + "]");
         }
         
-        std::lock_guard<std::mutex> lock(inputMutex);
-        inputQueue.push_back(body);
-        
-        if (logger) {
-            logger->log("WEBSERVER", "Input added to queue. Queue size: " + std::to_string(inputQueue.size()));
+        if (!body.empty()) {
+            std::lock_guard<std::mutex> lock(inputMutex);
+            inputQueue.push_back(body);
+            
+            if (logger) {
+                logger->log("WEBSERVER", "Input added to queue. Queue size: " + std::to_string(inputQueue.size()));
+            }
+        } else {
+            if (logger) logger->log("WEBSERVER", "POST /input - Empty body, ignoring");
         }
         
         std::string response = generateHTTPResponse(200, "text/plain", "OK");
@@ -334,21 +438,17 @@ bool WebServer::parseHTTPRequest(const std::string& request, std::string& method
         return false;
     }
     
-    // Find body (after empty line)
-    bool foundEmptyLine = false;
-    while (std::getline(stream, line)) {
-        if (line == "\r" || line.empty()) {
-            foundEmptyLine = true;
-            break;
+    // Find body separator (\r\n\r\n) in the raw request
+    // This avoids issues with std::getline stripping characters from the body
+    size_t headerEnd = request.find("\r\n\r\n");
+    if (headerEnd != std::string::npos) {
+        body = request.substr(headerEnd + 4);
+    } else {
+        // Try \n\n as fallback
+        headerEnd = request.find("\n\n");
+        if (headerEnd != std::string::npos) {
+            body = request.substr(headerEnd + 2);
         }
-    }
-    
-    if (foundEmptyLine) {
-        std::ostringstream bodyStream;
-        while (std::getline(stream, line)) {
-            bodyStream << line;
-        }
-        body = bodyStream.str();
     }
     
     return true;
@@ -378,6 +478,8 @@ std::string WebServer::generateHTTPResponse(int statusCode, const std::string& c
     }
     
     response << "Access-Control-Allow-Origin: *\r\n";
+    response << "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n";
+    response << "Access-Control-Allow-Headers: Content-Type\r\n";
     response << "\r\n";
     response << body;
     
@@ -1175,13 +1277,23 @@ void WebServer::handleSSE(int clientSocket) {
     std::string headers = generateHTTPResponse(200, "text/event-stream", "", true);
     send(clientSocket, headers.c_str(), headers.length(), 0);
     
+    // Register this client with its own output buffer
+    {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        clientOutputBuffers[clientSocket] = "";
+        // Copy any pre-existing shared buffer content for late-joining clients
+        if (!outputBuffer.empty()) {
+            clientOutputBuffers[clientSocket] = outputBuffer;
+        }
+    }
+    
     // Add this client to SSE clients list
     {
         std::lock_guard<std::mutex> lock(clientMutex);
         sseClients.push_back(clientSocket);
     }
     
-    if (logger) logger->log("WEBSERVER", "SSE client connected");
+    if (logger) logger->log("WEBSERVER", "SSE client connected, socket: " + std::to_string(clientSocket));
     
     // Send initial welcome message
     {
@@ -1191,26 +1303,43 @@ void WebServer::handleSSE(int clientSocket) {
         if (logger) logger->log("WEBSERVER", "Sent welcome message to SSE client");
     }
     
-    // Send any buffered output to new client, then clear buffer
+    // Send any buffered output that was captured before this client connected
     {
         std::lock_guard<std::mutex> lock(outputMutex);
-        if (!outputBuffer.empty()) {
+        std::string& clientBuf = clientOutputBuffers[clientSocket];
+        if (!clientBuf.empty()) {
             std::ostringstream event;
-            event << "data: " << outputBuffer << "\n\n";
+            event << "data: " << clientBuf << "\n\n";
             send(clientSocket, event.str().c_str(), event.str().length(), 0);
-            if (logger) logger->log("WEBSERVER", "Sent buffered output to new client: " + std::to_string(outputBuffer.length()) + " bytes");
-            outputBuffer.clear();  // Clear buffer after sending to prevent stale data
+            if (logger) logger->log("WEBSERVER", "Sent buffered output to new client: " + std::to_string(clientBuf.length()) + " bytes");
+            clientBuf.clear();
         }
     }
     
     // Keep connection alive and send events
-    while (!shouldStop) {
+    // Cache pointer to this client's buffer (valid as long as this thread runs,
+    // since the map entry is only erased after this loop exits)
+    std::string* clientBufPtr = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        auto it = clientOutputBuffers.find(clientSocket);
+        if (it != clientOutputBuffers.end()) {
+            clientBufPtr = &it->second;
+        }
+    }
+    
+    while (!shouldStop && clientBufPtr) {
         std::string data;
         {
-            std::lock_guard<std::mutex> lock(outputMutex);
-            if (!outputBuffer.empty()) {
-                data = outputBuffer;
-                outputBuffer.clear();  // Clear immediately after reading
+            std::unique_lock<std::mutex> lock(outputMutex);
+            // Wait for data or stop signal, with timeout to check for disconnection
+            outputCV.wait_for(lock, std::chrono::milliseconds(50), [&]() {
+                return shouldStop.load() || !clientBufPtr->empty();
+            });
+            
+            if (!clientBufPtr->empty()) {
+                data = *clientBufPtr;
+                clientBufPtr->clear();
             }
         }
         
@@ -1246,42 +1375,65 @@ void WebServer::handleSSE(int clientSocket) {
             event << "\n";
             
             if (logger) {
-                logger->log("WEBSERVER", "Sending SSE data: length=" + std::to_string(data.length()) + 
+                logger->log("WEBSERVER", "Sending SSE data to client " + std::to_string(clientSocket) + 
+                            ": length=" + std::to_string(data.length()) + 
                             ", lines=" + std::to_string(std::count(data.begin(), data.end(), '\n')) + 
                             ", content=[" + data.substr(0, std::min(size_t(100), data.length())) + "]");
             }
             
             int result = send(clientSocket, event.str().c_str(), event.str().length(), 0);
             if (result == SOCKET_ERROR) {
-                if (logger) logger->log("WEBSERVER", "SSE send failed - client disconnected");
+                if (logger) logger->log("WEBSERVER", "SSE send failed - client disconnected, socket: " + std::to_string(clientSocket));
                 break;  // Client disconnected
             } else {
                 if (logger) logger->log("WEBSERVER", "SSE data sent successfully, bytes: " + std::to_string(result));
             }
         }
-        
-        // Sleep to avoid excessive CPU usage
-        // Note: This could be optimized with condition variables for better responsiveness
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
     
-    // Remove client from SSE clients list
+    // Remove client from SSE clients list and clean up its output buffer
     {
         std::lock_guard<std::mutex> lock(clientMutex);
         sseClients.erase(std::remove(sseClients.begin(), sseClients.end(), clientSocket), sseClients.end());
     }
+    {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        clientOutputBuffers.erase(clientSocket);
+    }
     
-    if (logger) logger->log("WEBSERVER", "SSE client disconnected");
+    if (logger) logger->log("WEBSERVER", "SSE client disconnected, socket: " + std::to_string(clientSocket));
 }
 
 void WebServer::sendOutput(const std::string& text) {
     std::lock_guard<std::mutex> lock(outputMutex);
+    
+    // Append to every connected SSE client's individual buffer
+    for (auto& pair : clientOutputBuffers) {
+        pair.second += text;
+    }
+    
+    // Also append to shared buffer for clients that connect later
     outputBuffer += text;
+    // Limit shared buffer size to prevent unbounded growth
+    const size_t maxSharedBufferSize = 8192;
+    if (outputBuffer.length() > maxSharedBufferSize) {
+        // Find nearest newline boundary to avoid splitting UTF-8 characters or lines
+        size_t cutPos = outputBuffer.length() - maxSharedBufferSize;
+        size_t newlinePos = outputBuffer.find('\n', cutPos);
+        if (newlinePos != std::string::npos && newlinePos < outputBuffer.length() - 1) {
+            outputBuffer = outputBuffer.substr(newlinePos + 1);
+        } else {
+            outputBuffer = outputBuffer.substr(cutPos);
+        }
+    }
     
     if (logger) {
-        logger->log("WEBSERVER", "Output added to buffer. Length: " + std::to_string(text.length()) + 
-                    ", Buffer size: " + std::to_string(outputBuffer.length()));
+        logger->log("WEBSERVER", "Output added to " + std::to_string(clientOutputBuffers.size()) + 
+                    " client buffers. Length: " + std::to_string(text.length()));
     }
+    
+    // Notify all waiting SSE threads that new data is available
+    outputCV.notify_all();
 }
 
 void WebServer::sendContext(const std::string& contextJSON) {

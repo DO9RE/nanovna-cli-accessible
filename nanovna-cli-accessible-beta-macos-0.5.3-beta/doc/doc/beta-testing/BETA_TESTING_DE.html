@@ -1106,108 +1106,82 @@ cd "$(dirname "$0")"
     <li>Ist Fehlerbehandlung elegant?</li>
 </ul>
 <p><strong>Melden:</strong> Abstürze, Einfrieren oder unerwartetes Verhalten.</p>
-<h3>Szenario 11: Web-Interface – Cross-Plattform und Multi-Browser (45 Minuten)</h3>
-<p><strong>Ziel:</strong> Fernzugriffsfunktionalität über das Web-Interface testen, mit besonderem Fokus auf plattformübergreifende Kompatibilität, Multi-Browser-Tests, Tastatureingabe-Spiegelung und Stabilität bei Verbindungsabbruch.<br>
-<strong>Voraussetzungen:</strong> NanoVNA verbunden, Zugang zu mindestens zwei Geräten im selben Netzwerk (z.B. Mac + Windows, Mac + iPhone, Windows + iPhone). Mehrere Browser installiert (Safari, Firefox, Chrome/Edge).</p>
-
-<h4>Teil A: Web-Interface starten und Grundlagen (5 Minuten)</h4>
+<h3>Szenario 11: Web-Interface (20 Minuten)</h3>
+<p><strong>Ziel:</strong> Fernzugriffsfunktionalität über Web-Interface testen, insbesondere die interaktiven Aktions-Buttons und Kontextwechsel.  <strong>Voraussetzungen:</strong> NanoVNA verbunden, anderes Gerät (Smartphone/Tablet) im selben Netzwerk.</p>
 <ol>
-    <li>I-Taste im Hauptmenü drücken, dann S zum Starten</li>
-    <li>Angezeigte URLs notieren (localhost und Netzwerk-IP)</li>
-    <li>Prüfen, ob ggf. eine Firewall-Eingabeaufforderung erscheint und bestätigt werden muss</li>
+    <li><strong>Web-Interface starten:</strong></li>
 </ol>
-
-<h4>Teil B: Lokaler Zugriff – Gleiches Gerät, verschiedene Browser (10 Minuten)</h4>
-<p>Server auf dem <strong>Mac</strong> starten und vom selben Mac aus testen:</p>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Browser</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>B-1</td><td>Safari (Mac)</td><td>http://localhost:8080 öffnen. Tasten auf der physischen Tastatur drücken (z.B. T, U, ESC). Auch Aktions-Buttons klicken.</td><td>Tastatureingaben werden in der Konsole verarbeitet UND im Browser-Terminal gespiegelt. Buttons funktionieren.</td><td>[ ]</td></tr>
-        <tr><td>B-2</td><td>Firefox (Mac)</td><td>http://localhost:8080 öffnen. Gleiche Tasten testen (T, U, ESC). Buttons klicken.</td><td>Alle Eingaben werden verarbeitet und im Browser-Terminal gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>B-3</td><td>Chrome (Mac)</td><td>http://localhost:8080 öffnen. Gleiche Tasten testen.</td><td>Alle Eingaben werden verarbeitet und gespiegelt.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-<p>Server auf <strong>Windows</strong> starten und vom selben Windows-PC aus testen:</p>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Browser</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>B-4</td><td>Edge (Windows)</td><td>http://localhost:8080 öffnen. Tasten drücken und Buttons klicken.</td><td>Eingaben werden verarbeitet und im Browser gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>B-5</td><td>Firefox (Windows)</td><td>http://localhost:8080 öffnen. Gleiche Tests.</td><td>Eingaben werden verarbeitet und gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>B-6</td><td>Chrome (Windows)</td><td>http://localhost:8080 öffnen. Gleiche Tests.</td><td>Eingaben werden verarbeitet und gespiegelt.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Teil C: Netzwerkzugriff – Verschiedene Geräte und Browser (15 Minuten)</h4>
-<p>Server auf dem <strong>Mac</strong> starten und von <strong>anderen Geräten</strong> darauf zugreifen:</p>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Client-Gerät</th><th>Browser</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>C-1</td><td>Windows-PC</td><td>Edge</td><td>Netzwerk-URL (z.B. http://192.168.1.x:8080) öffnen. Tasten drücken und Buttons klicken.</td><td>Tasten lösen Aktionen auf dem Mac-Server aus UND werden im Edge-Interface gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>C-2</td><td>Windows-PC</td><td>Firefox</td><td>Netzwerk-URL öffnen. Gleiche Tests.</td><td>Eingaben werden auf Mac verarbeitet und im Firefox gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>C-3</td><td>iPhone</td><td>Safari</td><td>Netzwerk-URL in Safari öffnen. Bildschirmtastatur und ggf. angeschlossene Bluetooth-Tastatur testen.</td><td>Eingaben lösen Aktionen auf dem Mac-Server aus und werden im Safari-Interface auf dem iPhone gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>C-4</td><td>iPad</td><td>Safari</td><td>Netzwerk-URL öffnen. Tastatur und Buttons testen.</td><td>Eingaben werden verarbeitet und gespiegelt.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-<p>Server auf <strong>Windows</strong> starten und von <strong>anderen Geräten</strong> darauf zugreifen:</p>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Client-Gerät</th><th>Browser</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>C-5</td><td>Mac</td><td>Safari</td><td>Netzwerk-URL öffnen. Tasten und Buttons testen.</td><td>Eingaben lösen Aktionen auf dem Windows-Server aus und werden im Safari auf dem Mac gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>C-6</td><td>Mac</td><td>Firefox</td><td>Netzwerk-URL öffnen. Gleiche Tests.</td><td>Eingaben werden verarbeitet und gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>C-7</td><td>iPhone</td><td>Safari</td><td>Netzwerk-URL öffnen. Bildschirmtastatur und ggf. Bluetooth-Tastatur testen.</td><td>Eingaben werden auf dem Windows-Server verarbeitet und im Safari auf dem iPhone gespiegelt.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Teil D: Multi-Client gleichzeitig (5 Minuten)</h4>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>D-1</td><td>Zwei Browser gleichzeitig auf demselben Gerät mit dem Server verbinden. In Browser A eine Taste drücken.</td><td>Die Aktion wird im Terminal des Servers ausgeführt und BEIDE Browser zeigen das aktualisierte Ergebnis an.</td><td>[ ]</td></tr>
-        <tr><td>D-2</td><td>Einen Browser lokal und einen auf einem Remotegerät verbinden. Im Remotegerät eine Aktion auslösen.</td><td>Beide Clients zeigen die aktualisierte Ausgabe an.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Teil E: Akustische Analyse über Web-Interface (5 Minuten)</h4>
-<table>
-    <thead>
-        <tr><th>Test-ID</th><th>Testschritte</th><th>Erwartetes Ergebnis</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>E-1</td><td>Akustischen Analysemodus betreten (Taste A). Wiedergabe starten (Leertaste). Navigation testen (Pfeiltasten).</td><td>Akustische Wiedergabe startet auf dem Server. Navigation wird im Browser gespiegelt.</td><td>[ ]</td></tr>
-        <tr><td>E-2</td><td>Während die akustische Wiedergabe läuft, den Browser schließen (Tab oder Fenster schließen).</td><td>Die Konsole bleibt bedienbar. Die Leertaste funktioniert weiterhin zum Starten/Stoppen der Wiedergabe in der Konsole. Kein Programmabsturz.</td><td>[ ]</td></tr>
-        <tr><td>E-3</td><td>Nach dem Schließen des Browsers den Browser erneut öffnen und wieder verbinden.</td><td>Die Verbindung wird wiederhergestellt. Der aktuelle Zustand wird im Browser korrekt angezeigt.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Teil F: Kontextwechsel und Buttons (5 Minuten)</h4>
+<ul>
+    <li>I-Taste im Hauptmenü drücken</li>
+    <li>S drücken zum Starten</li>
+    <li>Angezeigte URLs notieren (localhost und Netzwerk)</li>
+    <li>Prüfen, ob Windows-Firewall-Eingabeaufforderung erscheint</li>
+</ul>
 <ol>
+    <li><strong>Lokalen Zugriff testen:</strong></li>
+</ol>
+<ul>
+    <li>Browser auf demselben Computer öffnen</li>
+    <li>Zu http://localhost:8080 navigieren</li>
+    <li>Erscheint die Terminal-Schnittstelle?</li>
+    <li>Werden Aktions-Buttons rechts neben der Terminalausgabe angezeigt?</li>
+    <li>Entsprechen die Buttons den Hauptmenü-Optionen (z.B. [S] Zusammenfassung, [T] Tabelle usw.)?</li>
+</ul>
+<ol>
+    <li><strong>Netzwerkzugriff testen:</strong></li>
+</ol>
+<ul>
+    <li>Browser auf anderem Gerät öffnen (Smartphone/Tablet)</li>
+    <li>Zur angezeigten Netzwerk-URL navigieren (z.B. http://192.168.1.x:8080)</li>
+    <li>Funktioniert die Verbindung?</li>
+    <li>Ist die Schnittstelle reaktionsschnell?</li>
+    <li>Werden Aktions-Buttons auf dem mobilen Gerät korrekt dargestellt?</li>
+</ul>
+<ol>
+    <li><strong>Tastatur und Buttons im Web testen:</strong></li>
+</ol>
+<ul>
+    <li>Hauptmenü-Navigation per Tastatur ausprobieren (z.B. T für Tabelle, U für Komfortfunktionen)</li>
+    <li>Gleiche Navigation per Klick auf die Aktions-Buttons ausprobieren</li>
+    <li>Prüfen, ob beide Eingabemethoden identische Ergebnisse liefern</li>
+</ul>
+<ol>
+    <li><strong>Kontextwechsel der Buttons testen:</strong></li>
+</ol>
+<ul>
     <li>Im Hauptmenü auf den Button für Komfortfunktionen klicken (oder U drücken)</li>
     <li>Prüfen: Aktualisieren sich die Buttons auf die Komfortfunktionen-Optionen (1-12)?</li>
-    <li>Eine Komfortfunktion auswählen – aktualisieren sich die Buttons auf die Unterfunktion?</li>
-    <li>ESC-Button drücken – wechseln die Buttons zurück?</li>
-    <li>Ja/Nein-Abfrage auslösen – erscheinen Ja/Nein-Buttons?</li>
-</ol>
-
-<h4>Testprotokoll – Zusammenfassung</h4>
-<p>Bitte für jeden Test notieren:</p>
-<ul>
-    <li><strong>Server-Plattform:</strong> (Mac / Windows / Linux)</li>
-    <li><strong>Client-Gerät und Browser:</strong> (z.B. iPhone Safari, Mac Firefox, Windows Edge)</li>
-    <li><strong>Eingabemethode:</strong> (physische Tastatur / Bildschirmtastatur / Bluetooth-Tastatur / Maus/Touch auf Buttons)</li>
-    <li><strong>Ergebnis:</strong> (OK / Taste löst Aktion aus aber wird nicht im Browser gespiegelt / Taste wird ignoriert / Programmabsturz)</li>
-    <li><strong>Debug-Hinweis:</strong> Bei Problemen den Debug-Modus aktivieren (<code>-d</code>), den Debug-Log im Browser einschalten (Button „Show Debug"), und sowohl den Browser-Debug-Log als auch die Server-Konsolenausgabe und <code>logs/</code>-Verzeichnis sichern.</li>
+    <li>Eine Komfortfunktion auswählen (z.B. Bandeignungstest)</li>
+    <li>Prüfen: Aktualisieren sich die Buttons auf die Optionen der Unterfunktion (z.B. Bandauswahl)?</li>
+    <li>ESC-Button drücken, um zurückzukehren – wechseln die Buttons zurück?</li>
 </ul>
-<p><strong>Melden:</strong> Verbindungsstabilität, ob Tastatureingaben in allen Browser/Plattform-Kombinationen korrekt gespiegelt werden, Button-Kontextwechsel, Verhalten bei Verbindungsabbruch (Browser schließen während Wiedergabe), Screenreader-Kompatibilität, Verbesserungsvorschläge.</p>
+<ol>
+    <li><strong>Ja/Nein-Abfragen über Buttons testen:</strong></li>
+</ol>
+<ul>
+    <li>Eine Funktion auslösen, die eine Ja/Nein-Abfrage stellt (z.B. „Möchten Sie messen?")</li>
+    <li>Prüfen: Erscheinen Ja/Nein-Buttons im Bedienfeld?</li>
+    <li>Per Button antworten – wird die Antwort korrekt übermittelt?</li>
+</ul>
+<ol>
+    <li><strong>Screenreader-Kompatibilität testen:</strong></li>
+</ol>
+<ul>
+    <li>Screenreader im Browser verwenden (NVDA, JAWS, Browser-integriert)</li>
+    <li>Durch Menüs navigieren</li>
+    <li>Sind alle Aktions-Buttons mit korrekten Labels erkennbar?</li>
+    <li>Werden die Button-Beschreibungen (z.B. „Zusammenfassung (Taste: S)") vorgelesen?</li>
+</ul>
+<ol>
+    <li><strong>Web-Interface stoppen:</strong></li>
+</ol>
+<ul>
+    <li>Zum Hauptmenü zurückkehren (ESC)</li>
+    <li>I erneut drücken</li>
+    <li>S zum Stoppen drücken</li>
+    <li>Überprüfen, ob Web-Interface stoppt</li>
+</ul>
+<p><strong>Melden:</strong> Verbindungsstabilität, Button-Kontextwechsel (korrekt/fehlerhaft), fehlende Buttons für bestimmte Kontexte, Screenreader-Kompatibilität der Buttons im Browser, Probleme mit Fernsteuerung, Verbesserungsvorschläge.</p>
 <hr>
 <h2>7. Bekannte Probleme und Einschränkungen</h2>
 <p>Dies sind bekannte Einschränkungen, die nicht gemeldet werden müssen:</p>
@@ -1320,15 +1294,6 @@ cd "$(dirname "$0")"
     <li>[ ] Braille-Export testen (Datei oder Direktdruck)</li>
     <li>[ ] Kalibrierungsassistent testen</li>
     <li>[ ] Alle U-Menü-Analysefunktionen testen</li>
-</ul>
-<p><strong>Web-Interface (Cross-Plattform):</strong></p>
-<ul>
-    <li>[ ] Server auf Mac starten, mit Safari auf dem gleichen Mac zugreifen – Tasten werden gespiegelt?</li>
-    <li>[ ] Server auf Mac starten, mit Firefox auf dem gleichen Mac zugreifen – Tasten werden gespiegelt?</li>
-    <li>[ ] Server auf Windows starten, mit Edge auf dem gleichen PC zugreifen – Tasten werden gespiegelt?</li>
-    <li>[ ] Von einem anderen Gerät über das Netzwerk zugreifen – Tasten werden gespiegelt?</li>
-    <li>[ ] Zwei Browser gleichzeitig verbinden – beide zeigen Ausgabe?</li>
-    <li>[ ] Akustische Analyse im Web-Interface testen, Browser schließen – Konsole bleibt bedienbar?</li>
 </ul>
 <p><strong>Screenreader-Benutzer:</strong></p>
 <ul>

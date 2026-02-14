@@ -1106,108 +1106,82 @@ cd "$(dirname "$0")"
     <li>Is error handling graceful?</li>
 </ul>
 <p><strong>Report:</strong> Any crashes, freezes, or unexpected behavior.</p>
-<h3>Scenario 11: Web Interface – Cross-Platform and Multi-Browser (45 minutes)</h3>
-<p><strong>Goal:</strong> Test remote access functionality via the web interface with a specific focus on cross-platform compatibility, multi-browser testing, keyboard input mirroring, and stability on disconnection.<br>
-<strong>Prerequisites:</strong> NanoVNA connected, access to at least two devices on the same network (e.g., Mac + Windows, Mac + iPhone, Windows + iPhone). Multiple browsers installed (Safari, Firefox, Chrome/Edge).</p>
-
-<h4>Part A: Start Web Interface and Basics (5 minutes)</h4>
+<h3>Scenario 11: Web Interface (20 minutes)</h3>
+<p><strong>Goal:</strong> Test remote access functionality via web interface, especially the interactive action buttons and context switching.  <strong>Prerequisites:</strong> NanoVNA connected, another device (smartphone/tablet) on same network.</p>
 <ol>
-    <li>Press I from main menu, then S to start</li>
-    <li>Note the URLs displayed (localhost and network IP)</li>
-    <li>Check if a firewall prompt appears and needs to be confirmed</li>
+    <li><strong>Start web interface:</strong></li>
 </ol>
-
-<h4>Part B: Local Access – Same Device, Different Browsers (10 minutes)</h4>
-<p>Start the server on <strong>Mac</strong> and test from the same Mac:</p>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Browser</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>B-1</td><td>Safari (Mac)</td><td>Open http://localhost:8080. Press keys on the physical keyboard (e.g., T, U, ESC). Also click action buttons.</td><td>Key presses are processed in the console AND mirrored in the browser terminal. Buttons work.</td><td>[ ]</td></tr>
-        <tr><td>B-2</td><td>Firefox (Mac)</td><td>Open http://localhost:8080. Test the same keys (T, U, ESC). Click buttons.</td><td>All inputs are processed and mirrored in the browser terminal.</td><td>[ ]</td></tr>
-        <tr><td>B-3</td><td>Chrome (Mac)</td><td>Open http://localhost:8080. Test the same keys.</td><td>All inputs are processed and mirrored.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-<p>Start the server on <strong>Windows</strong> and test from the same Windows PC:</p>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Browser</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>B-4</td><td>Edge (Windows)</td><td>Open http://localhost:8080. Press keys and click buttons.</td><td>Inputs are processed and mirrored in the browser.</td><td>[ ]</td></tr>
-        <tr><td>B-5</td><td>Firefox (Windows)</td><td>Open http://localhost:8080. Same tests.</td><td>Inputs are processed and mirrored.</td><td>[ ]</td></tr>
-        <tr><td>B-6</td><td>Chrome (Windows)</td><td>Open http://localhost:8080. Same tests.</td><td>Inputs are processed and mirrored.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Part C: Network Access – Different Devices and Browsers (15 minutes)</h4>
-<p>Start the server on <strong>Mac</strong> and access from <strong>other devices</strong>:</p>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Client Device</th><th>Browser</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>C-1</td><td>Windows PC</td><td>Edge</td><td>Open network URL (e.g., http://192.168.1.x:8080). Press keys and click buttons.</td><td>Keys trigger actions on the Mac server AND are mirrored in the Edge interface.</td><td>[ ]</td></tr>
-        <tr><td>C-2</td><td>Windows PC</td><td>Firefox</td><td>Open network URL. Same tests.</td><td>Inputs are processed on the Mac and mirrored in Firefox.</td><td>[ ]</td></tr>
-        <tr><td>C-3</td><td>iPhone</td><td>Safari</td><td>Open network URL in Safari. Test on-screen keyboard and connected Bluetooth keyboard if available.</td><td>Inputs trigger actions on the Mac server and are mirrored in Safari on the iPhone.</td><td>[ ]</td></tr>
-        <tr><td>C-4</td><td>iPad</td><td>Safari</td><td>Open network URL. Test keyboard and buttons.</td><td>Inputs are processed and mirrored.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-<p>Start the server on <strong>Windows</strong> and access from <strong>other devices</strong>:</p>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Client Device</th><th>Browser</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>C-5</td><td>Mac</td><td>Safari</td><td>Open network URL. Test keys and buttons.</td><td>Inputs trigger actions on the Windows server and are mirrored in Safari on the Mac.</td><td>[ ]</td></tr>
-        <tr><td>C-6</td><td>Mac</td><td>Firefox</td><td>Open network URL. Same tests.</td><td>Inputs are processed and mirrored.</td><td>[ ]</td></tr>
-        <tr><td>C-7</td><td>iPhone</td><td>Safari</td><td>Open network URL. Test on-screen keyboard and Bluetooth keyboard if available.</td><td>Inputs are processed on the Windows server and mirrored in Safari on the iPhone.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Part D: Multi-Client Simultaneous (5 minutes)</h4>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>D-1</td><td>Connect two browsers simultaneously on the same device to the server. Press a key in Browser A.</td><td>The action is executed in the server terminal and BOTH browsers display the updated result.</td><td>[ ]</td></tr>
-        <tr><td>D-2</td><td>Connect one browser locally and one on a remote device. Trigger an action from the remote device.</td><td>Both clients display the updated output.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Part E: Acoustic Analysis via Web Interface (5 minutes)</h4>
-<table>
-    <thead>
-        <tr><th>Test ID</th><th>Test Steps</th><th>Expected Result</th><th>Status</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>E-1</td><td>Enter acoustic analysis mode (key A). Start playback (Space). Test navigation (arrow keys).</td><td>Acoustic playback starts on the server. Navigation is mirrored in the browser.</td><td>[ ]</td></tr>
-        <tr><td>E-2</td><td>While acoustic playback is running, close the browser (close tab or window).</td><td>The console remains operational. The Space key still works to start/stop playback in the console. No program crash.</td><td>[ ]</td></tr>
-        <tr><td>E-3</td><td>After closing the browser, reopen it and reconnect.</td><td>The connection is reestablished. The current state is displayed correctly in the browser.</td><td>[ ]</td></tr>
-    </tbody>
-</table>
-
-<h4>Part F: Context Switching and Buttons (5 minutes)</h4>
+<ul>
+    <li>Press I from main menu</li>
+    <li>Press S to start</li>
+    <li>Note the URLs displayed (localhost and network)</li>
+    <li>Check if Windows Firewall prompt appears</li>
+</ul>
 <ol>
+    <li><strong>Test local access:</strong></li>
+</ol>
+<ul>
+    <li>Open browser on same computer</li>
+    <li>Navigate to http://localhost:8080</li>
+    <li>Does the terminal interface appear?</li>
+    <li>Are action buttons displayed alongside the terminal output?</li>
+    <li>Do the buttons match the main menu options (e.g., [S] Summary, [T] Table, etc.)?</li>
+</ul>
+<ol>
+    <li><strong>Test network access:</strong></li>
+</ol>
+<ul>
+    <li>Open browser on another device (smartphone/tablet)</li>
+    <li>Navigate to the network URL shown (e.g., http://192.168.1.x:8080)</li>
+    <li>Does connection work?</li>
+    <li>Is the interface responsive?</li>
+    <li>Are action buttons rendered correctly on the mobile device?</li>
+</ul>
+<ol>
+    <li><strong>Test keyboard and buttons in web:</strong></li>
+</ol>
+<ul>
+    <li>Try main menu navigation via keyboard (e.g., T for Table, U for Comfort Functions)</li>
+    <li>Try the same navigation via clicking the action buttons</li>
+    <li>Verify that both input methods produce identical results</li>
+</ul>
+<ol>
+    <li><strong>Test button context switching:</strong></li>
+</ol>
+<ul>
     <li>In the main menu, click the Comfort Functions button (or press U)</li>
     <li>Check: Do the buttons update to show comfort function options (1-12)?</li>
-    <li>Select a comfort function – do the buttons update to the sub-function?</li>
-    <li>Press ESC button – do the buttons switch back?</li>
-    <li>Trigger a yes/no prompt – do Yes/No buttons appear?</li>
-</ol>
-
-<h4>Test Protocol – Summary</h4>
-<p>Please note for each test:</p>
-<ul>
-    <li><strong>Server platform:</strong> (Mac / Windows / Linux)</li>
-    <li><strong>Client device and browser:</strong> (e.g., iPhone Safari, Mac Firefox, Windows Edge)</li>
-    <li><strong>Input method:</strong> (physical keyboard / on-screen keyboard / Bluetooth keyboard / mouse/touch on buttons)</li>
-    <li><strong>Result:</strong> (OK / Key triggers action but is not mirrored in browser / Key is ignored / Program crash)</li>
-    <li><strong>Debug hint:</strong> If issues occur, enable debug mode (<code>-d</code>), enable the browser debug log (click "Show Debug" button), and save the browser debug log, the server console output, and the <code>logs/</code> directory.</li>
+    <li>Select a comfort function (e.g., Band Suitability Check)</li>
+    <li>Check: Do the buttons update to show the sub-function options (e.g., band selection)?</li>
+    <li>Press ESC button to go back – do the buttons switch back?</li>
 </ul>
-<p><strong>Report:</strong> Connection stability, whether keyboard inputs are correctly mirrored in all browser/platform combinations, button context switching, behavior on disconnection (closing browser during playback), screen reader compatibility, suggestions for improvement.</p>
+<ol>
+    <li><strong>Test yes/no prompts via buttons:</strong></li>
+</ol>
+<ul>
+    <li>Trigger a function that asks a yes/no question (e.g., "Would you like to measure?")</li>
+    <li>Check: Do Yes/No buttons appear in the action panel?</li>
+    <li>Answer via button – is the response transmitted correctly?</li>
+</ul>
+<ol>
+    <li><strong>Test screen reader compatibility:</strong></li>
+</ol>
+<ul>
+    <li>Use screen reader in browser (NVDA, JAWS, browser's built-in)</li>
+    <li>Navigate through menus</li>
+    <li>Are all action buttons discoverable with correct labels?</li>
+    <li>Are button descriptions (e.g., "Summary (key: S)") read aloud?</li>
+</ul>
+<ol>
+    <li><strong>Stop web interface:</strong></li>
+</ol>
+<ul>
+    <li>Return to main menu (ESC)</li>
+    <li>Press I again</li>
+    <li>Press S to stop</li>
+    <li>Verify web interface stops</li>
+</ul>
+<p><strong>Report:</strong> Connection stability, button context switching (correct/incorrect), missing buttons for specific contexts, screen reader compatibility of buttons in browser, any issues with remote control, suggestions for improvement.</p>
 <hr>
 <h2>7. Known Issues and Limitations</h2>
 <p>These are known limitations that don't need to be reported:</p>
@@ -1320,15 +1294,6 @@ cd "$(dirname "$0")"
     <li>[ ] Test Braille export (file or direct print)</li>
     <li>[ ] Test calibration wizard</li>
     <li>[ ] Test all U-Menu analysis functions</li>
-</ul>
-<p><strong>Web Interface (Cross-Platform):</strong></p>
-<ul>
-    <li>[ ] Start server on Mac, access with Safari on same Mac – keys are mirrored?</li>
-    <li>[ ] Start server on Mac, access with Firefox on same Mac – keys are mirrored?</li>
-    <li>[ ] Start server on Windows, access with Edge on same PC – keys are mirrored?</li>
-    <li>[ ] Access from a different device over the network – keys are mirrored?</li>
-    <li>[ ] Connect two browsers simultaneously – both show output?</li>
-    <li>[ ] Test acoustic analysis in web interface, close browser – console remains operational?</li>
 </ul>
 <p><strong>Screen Reader Users:</strong></p>
 <ul>

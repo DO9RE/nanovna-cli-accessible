@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Scenario 6: Multiband Antenna (Multiple Resonances)">
+    <title>Training Scenario 6: Multiband Antenna (Multiple Resonances)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header role="banner">
+        <h1>Training Scenario 6: Multiband Antenna (Multiple Resonances)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_05_Tiefpass_Filter.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_07_Kabel_Daempfung.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Scenario 6: Multiband Antenna (Multiple Resonances)</h1>
+<p><strong>Training file:</strong> <code>Training/06_multiband_antenne.csv</code> <strong>Frequency range:</strong> 50.000 - 222.000 MHz (6m, 4m, 2m, 1.25m bands) <strong>Difficulty level:</strong> ⭐⭐⭐⭐ Advanced (Large frequency span!) <strong>Learning objective:</strong> Recognize multiple resonances and understand multiband behavior</p>
+<hr>
+<h2>📋 Scenario Description</h2>
+<h3>Fictional Component</h3>
+<p>You are measuring a <strong>multiband vertical antenna</strong> (e.g. Diamond V-2000 style) over a very wide frequency range. The antenna has <strong>three separate resonances</strong> at approximately 52.5 MHz (6m), 73 MHz (4m) and 146.5 MHz (2m). This is typical for <strong>trap dipoles</strong>, <strong>trap verticals</strong> or <strong>multi-element collinear arrays</strong>.</p>
+<h3>Technical Characteristics</h3>
+<ul>
+    <li><strong>Frequency ranges:</strong> 50-54 MHz (6m), 70-74 MHz (4m), 144-148 MHz (2m), 220-222 MHz (1.25m)</li>
+    <li><strong>Resonance points (SWR ≈ 1.0):</strong></li>
+    <li>52.5 MHz: SWR 1.01, Z = 50.5Ω + j0.5Ω (perfect!)</li>
+    <li>73.0 MHz: SWR 1.00, Z = 50.2Ω + j0.2Ω (perfect!)</li>
+    <li>146.5 MHz: SWR 1.01, Z = 50.5Ω + j0.3Ω (perfect!)</li>
+    <li><strong>In-between ranges:</strong> SWR up to 3.20 (poor match)</li>
+    <li><strong>Behavior:</strong> Inductive → Resistive → Capacitive cyclically at each resonance</li>
+    <li><strong>Special feature:</strong> <strong>Dramatic Smith chart movement</strong> over large frequency span!</li>
+</ul>
+<h3>Physical Significance</h3>
+<p><strong>Multiband antennas</strong> utilize various concepts:</p>
+<ol>
+    <li><strong>Traps (blocking circuits):</strong> Electrically shorter antenna sections at higher frequencies</li>
+    <li><strong>Multiple resonances:</strong> Harmonic relationships (e.g. λ/2 at f₁, λ at 2×f₁)</li>
+    <li><strong>Collinear arrays:</strong> Multiple λ/2 radiators in series (2m band)</li>
+    <li><strong>Matching networks:</strong> Internally matched for multiple bands</li>
+</ol>
+<p><strong>Typical Applications:</strong></p>
+<ul>
+    <li><strong>VHF/UHF multiband verticals</strong> (scanners, amateur radio)</li>
+    <li><strong>HF trap dipoles</strong> (e.g. 80/40/20m)</li>
+    <li><strong>Discone antennas</strong> (ultra-wideband)</li>
+    <li><strong>Mobile phone antennas</strong> (multi-frequency systems)</li>
+</ul>
+<p><strong>Advantages:</strong></p>
+<ul>
+    <li>One antenna for multiple bands</li>
+    <li>Space saving (important for balcony stations!)</li>
+    <li>Cost savings</li>
+</ul>
+<p><strong>Disadvantages:</strong></p>
+<ul>
+    <li>Compromises in gain and bandwidth</li>
+    <li>More complex tuning</li>
+    <li>Between bands: Poor matching</li>
+</ul>
+<hr>
+<h2>🎧 Acoustic Analysis</h2>
+<h3>Import and Load File</h3>
+<ol>
+    <li><strong>Main menu:</strong> Press key <strong>L</strong> (Load)</li>
+    <li>List of files appears - navigate with <strong>arrow keys</strong></li>
+    <li>Select <strong>06_multiband_antenne.csv</strong></li>
+    <li>Press <strong>Enter</strong> to load</li>
+    <li>Confirmation: "69 measurement points successfully loaded" (more points!)</li>
+    <li><strong>Attention:</strong> Very large frequency span (50-222 MHz)!</li>
+</ol>
+<h3>Start Acoustic Mode</h3>
+<ol>
+    <li><strong>Main menu:</strong> Press key <strong>A</strong> (Acoustic Analysis)</li>
+    <li>You are now in acoustic analysis mode</li>
+    <li>Press <strong>SPACEBAR</strong> to start playback</li>
+</ol>
+<hr>
+<h2>🎵 Expected Audio Events</h2>
+<h3>1. SWR Curve (Key 1 - Sine Wave) ⭐ VERY DYNAMIC!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>THREE distinct valleys</strong> (low tones) at resonance frequencies:</li>
+</ul>
+<ol>
+    <li><strong>50-54 MHz (6m band):</strong> Low at 52.5 MHz (SWR 1.01)</li>
+    <li><strong>70-74 MHz (4m band):</strong> Low at 73 MHz (SWR 1.00)</li>
+    <li><strong>144-148 MHz (2m band):</strong> Low at 146.5 MHz (SWR 1.01)</li>
+</ol>
+<ul>
+    <li><strong>HIGH peaks</strong> between resonances (SWR up to 3.20)</li>
+    <li><strong>Rollercoaster ride</strong> throughout entire sweep!</li>
+    <li>Extremely <strong>dynamic pitch progression</strong></li>
+</ul>
+<p><strong>Stereo Position:</strong></p>
+<ul>
+    <li>Sound moves <strong>dramatically</strong> in the stereo field</li>
+    <li><strong>Left (50 MHz):</strong> High → Low → High</li>
+    <li><strong>Center (70-144 MHz):</strong> High → Low → High</li>
+    <li><strong>Right (220 MHz):</strong> Rising again</li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Three frequencies with perfect matching</li>
+    <li>In between: Mismatch (antenna not resonant)</li>
+    <li>Classic <strong>multiband behavior</strong></li>
+    <li><strong>Acoustically unforgettable!</strong> - sounds like "waves in the ocean"</li>
+</ul>
+<p><strong>Comparison with other scenarios:</strong></p>
+<ul>
+    <li>Scenario 1: <strong>Flat line</strong> (single-band, perfect)</li>
+    <li>Scenario 2-3: <strong>Monotonic trend</strong> (too short/long)</li>
+    <li>Scenario 6: <strong>MULTIPLE PEAKS AND VALLEYS</strong> (multiband!)</li>
+</ul>
+<h3>2. Return Loss Curve (Key 2 - Pure Sine Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>THREE peaks</strong> (very high tones) at resonances:</li>
+    <li>52.5 MHz: ~38 dB</li>
+    <li>73.0 MHz: ~54 dB</li>
+    <li>146.5 MHz: ~38 dB</li>
+    <li><strong>Valleys</strong> (low tones) between bands (~4-9 dB)</li>
+    <li><strong>Mirror image</strong> of the SWR curve!</li>
+    <li>Extremely <strong>high-contrast</strong> progression</li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>High return loss at resonances = Little reflection</li>
+    <li>Low return loss between bands = Much reflection</li>
+    <li>Shows same information as SWR, different format</li>
+</ul>
+<h3>3. Impedance |Z| (Key 3 - Triangle Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Oscillating progression</strong> between low-impedance and high-impedance</li>
+    <li><strong>At resonances:</strong> Medium tone (~50Ω)</li>
+    <li><strong>Between resonances:</strong> Fluctuates between ~40Ω and ~85Ω</li>
+    <li><strong>Wave movement</strong> throughout entire sweep</li>
+    <li>Characteristic triangle wave sound with <strong>strong dynamics</strong></li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Impedance fluctuates around 50Ω target value</li>
+    <li>At resonance: Hits 50Ω exactly</li>
+    <li>Between resonances: Deviates (too low or too high)</li>
+    <li>Shows <strong>tuning quality</strong> of multiband matching</li>
+</ul>
+<h3>4. Reactance X (Key 4 - Sawtooth) ⚡ VERY IMPORTANT!</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>THREE zero crossings</strong> (tone around center):</li>
+    <li>52.5 MHz: X ≈ 0Ω (resistive)</li>
+    <li>73.0 MHz: X ≈ 0Ω (resistive)</li>
+    <li>146.5 MHz: X ≈ 0Ω (resistive)</li>
+    <li><strong>Between zero crossings:</strong></li>
+    <li><strong>Upward movement:</strong> Inductive (X positive)</li>
+    <li><strong>Downward movement:</strong> Capacitive (X negative)</li>
+    <li><strong>Sawtooth wave pattern</strong>: Up → Zero → Down → Zero → Up (cyclical!)</li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Zero crossing = <strong>Resonance</strong> (purely resistive)</li>
+    <li>Upward to resonance = Antenna too short (inductive)</li>
+    <li>Downward from resonance = Antenna too long (capacitive)</li>
+    <li><strong>Classic antenna behavior</strong> at EACH resonance!</li>
+</ul>
+<p><strong>Acoustic Pattern:</strong></p>
+<ul>
+    <li>Sounds like <strong>"waves on the beach"</strong> in sawtooth sound</li>
+    <li>High → Down → High → Down (cyclical)</li>
+    <li><strong>Three cycles</strong> over frequency range</li>
+</ul>
+<h3>5. Phase (Key 5 - Sine Wave)</h3>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Fluctuating phase</strong> around 0° at resonances</li>
+    <li><strong>Positive phases</strong> (inductive) and <strong>negative phases</strong> (capacitive)</li>
+    <li><strong>Passages</strong> through 0° at each resonance</li>
+    <li>Correlates with reactance curve</li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Phase ≈ 0° = Resonance</li>
+    <li>Positive phase = Inductive</li>
+    <li>Negative phase = Capacitive</li>
+    <li>Shows same information as reactance, presented differently</li>
+</ul>
+<hr>
+<h2>🎯 Smith Chart Audio Visualization</h2>
+<h3>Activate Smith Visualization</h3>
+<ol>
+    <li>In acoustic mode: Press key <strong>V</strong> (Smith visualization on/off)</li>
+    <li>Press key <strong>B</strong> to select mode:</li>
+</ol>
+<ul>
+    <li><strong>Recommended: Mode 4 (SWR Circles)</strong> - shows multiband best!</li>
+    <li>Alternative: <strong>Mode 1 (Cartesian)</strong></li>
+</ul>
+<h3>Expected Smith Audio Cues</h3>
+<h4>Mode 4: SWR Circles (RECOMMENDED!) ⭐</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Sound moves UP AND DOWN</strong> in space:</li>
+    <li><strong>Close to you</strong> (50 MHz resonance): Low SWR</li>
+    <li><strong>Far away</strong> (between bands): High SWR</li>
+    <li><strong>Close again</strong> (73 MHz resonance): Low SWR</li>
+    <li><strong>Far away</strong> (between bands)</li>
+    <li><strong>Close again</strong> (146.5 MHz resonance): Low SWR</li>
+    <li><strong>Further away again</strong> (220 MHz)</li>
+    <li><strong>THREE approaches</strong> to you = Three resonances!</li>
+    <li>Like <strong>waves coming towards you and going away again</strong></li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Close = Low SWR = Resonance = Good match</li>
+    <li>Far away = High SWR = No resonance = Poor match</li>
+    <li><strong>Perfect visualization</strong> for multiband character!</li>
+</ul>
+<p><strong>Audio Experience:</strong></p>
+<ul>
+    <li>Like <strong>"tide"</strong> - sound comes closer, goes away, comes back</li>
+    <li><strong>Three waves</strong> over the sweep</li>
+    <li><strong>Unforgettable acoustic signature!</strong></li>
+</ul>
+<h4>Mode 1: Cartesian</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Complex trajectory</strong> through Smith space</li>
+    <li>Sound moves <strong>crosswise</strong>:</li>
+    <li>Starts <strong>bottom right</strong> (inductive, low-impedance)</li>
+    <li>Moves <strong>to center</strong> (first resonance)</li>
+    <li>Moves <strong>top left</strong> (capacitive, high-impedance)</li>
+    <li><strong>Back to center</strong> (second resonance)</li>
+    <li>Again <strong>crosswise</strong> to third resonance</li>
+    <li><strong>Loop-like movement</strong> possible</li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Center = Resonance (50Ω + j0)</li>
+    <li>Movement away from center = Mismatch</li>
+    <li>Complex paths = Multiple resonances</li>
+</ul>
+<h4>Mode 2: Polar/Radius</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Rotation around center</strong> combined with <strong>radius change</strong></li>
+    <li>Radius <strong>shrinks</strong> at resonances (close to center)</li>
+    <li>Radius <strong>grows</strong> between resonances (far from center)</li>
+    <li><strong>Three shrink-grow cycles</strong></li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Radius = |Γ| (reflection coefficient magnitude)</li>
+    <li>Small radius = Little reflection = Resonance</li>
+    <li>Large radius = Much reflection = Mismatch</li>
+</ul>
+<h4>Mode 3: Impedance Direct</h4>
+<p><strong>What you should hear:</strong></p>
+<ul>
+    <li><strong>Horizontal oscillation</strong> (R fluctuates)</li>
+    <li><strong>Vertical oscillation</strong> (X fluctuates)</li>
+    <li>Sound <strong>crosses center</strong> three times</li>
+    <li>Like <strong>3D Lissajous figure</strong></li>
+</ul>
+<p><strong>Significance:</strong></p>
+<ul>
+    <li>Center crossings = Resonances (R=50Ω, X=0Ω)</li>
+    <li>Oscillation shows impedance variation across bands</li>
+</ul>
+<h3>Center Pulse (Reference Signal)</h3>
+<p><strong>Activate:</strong></p>
+<ol>
+    <li>Press key <strong>A</strong> in acoustic mode → Audio Configuration</li>
+    <li>Menu: <strong>C</strong> → <strong>Smith Audio</strong> → Enable Center Pulse</li>
+</ol>
+<p><strong>What you hear:</strong></p>
+<ul>
+    <li><strong>Periodic pulse from the CENTER</strong> (reference = 50Ω + j0)</li>
+    <li>Your measurement <strong>crosses the pulse THREE TIMES</strong>!</li>
+    <li>At each crossing = One resonance reached</li>
+    <li>Between crossings: Sound moves away from pulse</li>
+</ul>
+<hr>
+<h2>🔧 Exercises and Learning Tasks</h2>
+<h3>Exercise 1: Count Resonances</h3>
+<p><strong>Goal:</strong> Acoustically identify number of resonances</p>
+<ol>
+    <li><strong>Enable SWR only</strong> (Key 1)</li>
+    <li>Press <strong>SPACEBAR</strong></li>
+    <li><strong>Count</strong> the SWR minima (low tones)</li>
+    <li><strong>Question:</strong> How many resonances do you hear? → <strong>THREE!</strong></li>
+    <li><strong>Repeat</strong> with Reactance (Key 4) - count zero crossings</li>
+</ol>
+<h3>Exercise 2: Estimate Resonance Frequencies</h3>
+<p><strong>Goal:</strong> Acoustically locate resonance frequencies</p>
+<ol>
+    <li><strong>Enable SWR</strong> (Key 1), <strong>Smith SWR Circles</strong> (Mode 4)</li>
+    <li>Press <strong>SPACEBAR</strong></li>
+    <li><strong>At each SWR minimum:</strong></li>
+</ol>
+<ul>
+    <li>Press <strong>SPACEBAR</strong> (Pause)</li>
+    <li>Press <strong>I</strong> (Info about current point)</li>
+    <li>Read frequency</li>
+</ul>
+<ol>
+    <li><strong>Note</strong> the three resonance frequencies</li>
+    <li>Should be: ~52.5 MHz, ~73 MHz, ~146.5 MHz</li>
+</ol>
+<h3>Exercise 3: Evaluate Band Suitability</h3>
+<p><strong>Goal:</strong> Understand on which bands the antenna is usable</p>
+<ol>
+    <li>Open <strong>U-Menu</strong> (Key <strong>U</strong>)</li>
+    <li><strong>Key 1</strong> (Band Suitability Check)</li>
+    <li><strong>Read</strong> the results:</li>
+</ol>
+<ul>
+    <li>6m band (50-54 MHz): ✓ Suitable?</li>
+    <li>4m band (70-74 MHz): ✓ Suitable?</li>
+    <li>2m band (144-148 MHz): ✓ Suitable?</li>
+    <li>1.25m band (220-225 MHz): ⚠️ Conditional?</li>
+</ul>
+<ol>
+    <li><strong>Interpretation:</strong> Three bands good, one band moderate</li>
+</ol>
+<h3>Exercise 4: Smith Mode Comparison</h3>
+<p><strong>Goal:</strong> Experience multiband behavior in different modes</p>
+<ol>
+    <li><strong>Smith Mode 4</strong> (SWR Circles): Three approaches</li>
+    <li><strong>Smith Mode 1</strong> (Cartesian): Complex cross paths</li>
+    <li><strong>Smith Mode 2</strong> (Polar): Radius pulsing</li>
+    <li><strong>Smith Mode 3</strong> (Impedance): 3D oscillation</li>
+    <li><strong>Question:</strong> Which mode shows multiband character most clearly? → <strong>Mode 4!</strong></li>
+</ol>
+<h3>Exercise 5: Compare Single-Band vs. Multiband</h3>
+<p><strong>Goal:</strong> Understand the difference</p>
+<ol>
+    <li>Listen to <strong>Scenario 6</strong> completely (Multiband)</li>
+    <li>Then load <strong>Scenario 1</strong> (Single-band perfect)</li>
+    <li><strong>Compare:</strong></li>
+</ol>
+<ul>
+    <li><strong>Scenario 1:</strong> Everything constant, one resonance</li>
+    <li><strong>Scenario 6:</strong> Dynamic, three resonances</li>
+    <li><strong>Huge contrast!</strong></li>
+</ul>
+<h3>Exercise 6: Set Loop Markers on One Band</h3>
+<p><strong>Goal:</strong> Analyze single band in isolation</p>
+<ol>
+    <li>Use <strong>arrow keys</strong> to navigate</li>
+    <li>At <strong>144.0 MHz</strong> (2m band start): <strong>Key L</strong> (Left marker)</li>
+    <li>At <strong>148.0 MHz</strong> (2m band end): <strong>Key R</strong> (Right marker)</li>
+    <li><strong>Key O</strong> (Activate loop)</li>
+    <li>Now you hear <strong>ONLY the 2m band</strong> - sounds like single-band antenna!</li>
+    <li>Repeat for 6m band (50-54 MHz) and 4m band (70-74 MHz)</li>
+</ol>
+<hr>
+<h2>📊 U-Menu Analysis Functions</h2>
+<h3>Recommended Analyses for this Scenario</h3>
+<h4>1. Band Suitability Check (U-Menu → Key 1)</h4>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>6m Band (50-54 MHz):</strong> ✓ Suitable (SWR < 2.0 across band)</li>
+    <li><strong>4m Band (70-74 MHz):</strong> ✓ Excellent (SWR < 1.5 across band)</li>
+    <li><strong>2m Band (144-148 MHz):</strong> ✓ Suitable (SWR < 2.0 across band)</li>
+    <li><strong>1.25m Band (220-225 MHz):</strong> ⚠️ Conditional (SWR > 2.5)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Three bands are <strong>well usable</strong></li>
+    <li>1.25m band <strong>not optimal</strong> (antenna tuner recommended)</li>
+    <li>Classic <strong>tri-band antenna</strong> (6m/4m/2m)</li>
+</ul>
+<h4>2. Resonance Search (U-Menu → Key 2)</h4>
+<p><strong>What you see:</strong></p>
+<ul>
+    <li><strong>Three resonance points</strong> found:</li>
+</ul>
+<ol>
+    <li><strong>52.5 MHz:</strong> SWR 1.01, Z = 50.5Ω + j0.5Ω</li>
+    <li><strong>73.0 MHz:</strong> SWR 1.00, Z = 50.2Ω + j0.2Ω</li>
+    <li><strong>146.5 MHz:</strong> SWR 1.01, Z = 50.5Ω + j0.3Ω</li>
+</ol>
+<ul>
+    <li>All three <strong>nearly perfect</strong>!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Antenna is tuned exactly on <strong>three frequencies</strong></li>
+    <li>Probably <strong>trap antenna</strong> or <strong>multi-element design</strong></li>
+    <li>Professional tuning</li>
+</ul>
+<h4>3. SWR Bandwidth (U-Menu → Key 3)</h4>
+<p><strong>Check separately for each resonance:</strong>  <strong>At 52.5 MHz (6m):</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 bandwidth:</strong> ~1.5 MHz (50.7-52.2 MHz)</li>
+    <li><strong>SWR < 2.0:1 bandwidth:</strong> ~3.0 MHz (49.5-52.5 MHz)</li>
+    <li>Coverage: Major part of 6m band</li>
+</ul>
+<p><strong>At 73.0 MHz (4m):</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 bandwidth:</strong> ~2.0 MHz (72.0-74.0 MHz)</li>
+    <li><strong>SWR < 2.0:1 bandwidth:</strong> ~4.0 MHz (71.0-75.0 MHz)</li>
+    <li>Coverage: Entire 4m band + more</li>
+</ul>
+<p><strong>At 146.5 MHz (2m):</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 bandwidth:</strong> ~1.0 MHz (146.0-147.0 MHz)</li>
+    <li><strong>SWR < 2.0:1 bandwidth:</strong> ~2.5 MHz (145.2-147.7 MHz)</li>
+    <li>Coverage: Almost entire 2m band</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Each resonance has <strong>sufficient bandwidth</strong> for its band</li>
+    <li>Typical for multiband antennas: <strong>Narrower bandwidths</strong> than mono-band antennas</li>
+    <li>Compromise: Multiple bands vs. bandwidth per band</li>
+</ul>
+<h4>4. Feedpoint Impedance Analysis (U-Menu → Key 4)</h4>
+<p><strong>Enter frequency:</strong> 52.5 MHz (6m resonance)</p>
+<ul>
+    <li><strong>R:</strong> 50.5Ω ✓, <strong>X:</strong> 0.5Ω ✓, <strong>|Z|:</strong> 50.5Ω ✓</li>
+    <li><strong>Phase:</strong> ~0.6° ✓</li>
+    <li><strong>Classification:</strong> Almost perfectly resistive</li>
+</ul>
+<p><strong>Enter frequency:</strong> 73.0 MHz (4m resonance)</p>
+<ul>
+    <li><strong>R:</strong> 50.2Ω ✓, <strong>X:</strong> 0.2Ω ✓, <strong>|Z|:</strong> 50.2Ω ✓</li>
+    <li><strong>Phase:</strong> ~0.2° ✓</li>
+    <li><strong>Classification:</strong> Nearly perfectly resistive</li>
+</ul>
+<p><strong>Enter frequency:</strong> 146.5 MHz (2m resonance)</p>
+<ul>
+    <li><strong>R:</strong> 50.5Ω ✓, <strong>X:</strong> 0.3Ω ✓, <strong>|Z|:</strong> 50.5Ω ✓</li>
+    <li><strong>Phase:</strong> ~0.3° ✓</li>
+    <li><strong>Classification:</strong> Almost perfectly resistive</li>
+</ul>
+<p><strong>Enter frequency:</strong> 60 MHz (BETWEEN 6m and 4m)</p>
+<ul>
+    <li><strong>R:</strong> ~45Ω ⚠️, <strong>X:</strong> ~-9Ω ⚠️ (capacitive)</li>
+    <li><strong>SWR:</strong> ~1.75</li>
+    <li><strong>Classification:</strong> Moderate mismatch</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>At resonance frequencies: <strong>Perfect</strong>!</li>
+    <li>Between bands: <strong>Mismatch</strong> (normal for multiband)</li>
+    <li>Shows clear <strong>discontinuity</strong> between bands</li>
+</ul>
+<h4>5. Matching Recommendations (U-Menu → Key 5)</h4>
+<p><strong>At 52.5 MHz (6m resonance):</strong></p>
+<ul>
+    <li><strong>"No matching required"</strong> ✓</li>
+</ul>
+<p><strong>At 73.0 MHz (4m resonance):</strong></p>
+<ul>
+    <li><strong>"No matching required"</strong> ✓</li>
+</ul>
+<p><strong>At 146.5 MHz (2m resonance):</strong></p>
+<ul>
+    <li><strong>"No matching required"</strong> ✓</li>
+</ul>
+<p><strong>At 60 MHz (between bands):</strong></p>
+<ul>
+    <li><strong>"Impedance too low and capacitive"</strong></li>
+    <li>Suggestion: <strong>Series inductance</strong> (but not practical - use 6m or 4m!)</li>
+    <li>Or: <strong>Antenna tuner</strong> (if you absolutely must transmit on 60 MHz)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>On design frequencies: Perfect</li>
+    <li>Between bands: Use not intended (except with tuner)</li>
+    <li><strong>Use the antenna on its design bands!</strong></li>
+</ul>
+<hr>
+<h2>🎓 Learning Objectives and Interpretation</h2>
+<h3>What You Learn from this Scenario</h3>
+<h4>1. Understand Multiband Antenna Concept</h4>
+<ul>
+    <li><strong>Multiple resonances</strong> through traps, harmonic lengths or matching networks</li>
+    <li><strong>Between bands:</strong> Poor matching (normal!)</li>
+    <li><strong>On design bands:</strong> Good matching</li>
+    <li><strong>Compromise:</strong> Multiple bands vs. performance per band</li>
+</ul>
+<h4>2. Acoustic Signatures for Multiband</h4>
+<ul>
+    <li><strong>SWR:</strong> Multiple valleys (minima) = Multiple resonances</li>
+    <li><strong>Reactance X:</strong> Multiple zero crossings = Resonance points</li>
+    <li><strong>Smith SWR Circles:</strong> Sound comes close multiple times = Multiple matches</li>
+    <li><strong>Up-and-down pattern</strong> is characteristic!</li>
+</ul>
+<h4>3. Bandwidth Concept</h4>
+<ul>
+    <li>Each resonance has <strong>its own bandwidth</strong></li>
+    <li>Multiband ≠ Wideband!</li>
+    <li><strong>Wideband:</strong> Continuously good over large range (e.g. Discone)</li>
+    <li><strong>Multiband:</strong> Good on multiple <strong>specific</strong> bands</li>
+</ul>
+<h4>4. Trap Antenna Theory</h4>
+<p><strong>How do traps work?</strong></p>
+<ul>
+    <li><strong>Trap = Parallel resonant circuit</strong> at blocking frequency</li>
+    <li>At resonance: Very high impedance = <strong>electrical open circuit</strong></li>
+    <li><strong>Low frequency:</strong> Trap conducts → Long antenna</li>
+    <li><strong>High frequency:</strong> Trap blocks → Short antenna (rest isolated)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre><code class="language-">[←────────────── 40m element ──────────────→]
+<p>[←──── 20m element ────→][TRAP][Isolated]  At 7 MHz:   Trap conducts  → Full length (40m) At 14 MHz:  Trap blocks    → Only 20m part active</p>
+</code></pre>
+<h4>5. Practical Relevance</h4>
+<ul>
+    <li><strong>Mobile/Portable:</strong> One antenna instead of several → Space advantage!</li>
+    <li><strong>Balcony stations:</strong> Often only room for one antenna</li>
+    <li><strong>Scanner application:</strong> Listen to many bands simultaneously</li>
+    <li><strong>Amateur radio:</strong> One mast instead of three</li>
+</ul>
+<hr>
+<h2>⚠️ Important Notes</h2>
+<h3>Reality Check: Multiband Antennas in Practice</h3>
+<p><strong>Typical Multiband Antennas:</strong></p>
+<ol>
+    <li><strong>VHF/UHF verticals:</strong> 2m/70cm (most common combination)</li>
+    <li><strong>HF trap dipoles:</strong> 80/40/20m or 40/20/10m</li>
+    <li><strong>Fan dipoles:</strong> Multiple wires for different bands</li>
+    <li><strong>End-fed half-wave:</strong> Multi-band through harmonic resonances</li>
+    <li><strong>Discone:</strong> Ultra-wideband (50-1300 MHz), but lower gain</li>
+</ol>
+<p><strong>Performance Compromises:</strong></p>
+<ul>
+    <li><strong>Gain:</strong> Usually 2-3 dB less than dedicated mono-band antenna</li>
+    <li><strong>Bandwidth:</strong> Per band narrower than mono-band</li>
+    <li><strong>Efficiency:</strong> Traps cause losses (0.5-1 dB typical)</li>
+    <li><strong>Size:</strong> Still quite large (defined by lowest band)</li>
+</ul>
+<p><strong>When Multiband, When Mono-Band?</strong></p>
+<ul>
+    <li><strong>Multiband:</strong> Space problems, budget, aesthetics, portable</li>
+    <li><strong>Mono-Band:</strong> Maximum performance, contest, DXing, fixed location with space</li>
+</ul>
+<h3>Measurements on Multiband Antennas</h3>
+<p><strong>Important Points:</strong></p>
+<ol>
+    <li><strong>Wide frequency sweep:</strong> Must cover ALL design bands!</li>
+    <li><strong>Fine resolution:</strong> Resonances can be narrow</li>
+    <li><strong>Between bands:</strong> Poor values are <strong>normal</strong> (don't fix!)</li>
+    <li><strong>Tuning:</strong> Tune each resonance individually (complex!)</li>
+</ol>
+<p><strong>NanoVNA Settings for Multiband:</strong></p>
+<pre><code class="language-">Start: Lowest band - 5%
+<p>Stop:  Highest band + 5% Points: 201 or more (fine resolution!)  Example for 2m/70cm: Start: 140 MHz Stop:  450 MHz Points: 201</p>
+</code></pre>
+<h3>Building Trap Antennas Yourself</h3>
+<p><strong>Simple HF Trap:</strong></p>
+<pre><code class="language-">Components:
+<ul>
+    <li>Coil: 5-10 turns, diameter 3-4 cm</li>
+    <li>Capacitor: 50-100 pF, high voltage (>500V)</li>
+    <li>Resonance frequency: f = 1 / (2π√(LC))</li>
+</ul>
+<p>Tuning:</p>
+<ul>
+    <li>Measure resonance frequency with dip meter or VNA</li>
+    <li>Spread/compress turns for fine tuning</li>
+</ul>
+</code></pre>
+<p><strong>Caution:</strong></p>
+<ul>
+    <li>Traps are <strong>wear parts</strong> (capacitor can age)</li>
+    <li>Weather-resistant housing required</li>
+    <li>High-voltage components (QRO!)</li>
+</ul>
+<hr>
+<h2>🔊 Audio Engine Comparison</h2>
+<h3>Synthesizer Engine (Standard)</h3>
+<p><strong>Recommended for:</strong> Precise resonance detection  <strong>Sound Character:</strong></p>
+<ul>
+    <li>SWR: Sine wave - <strong>rollercoaster ride</strong> clearly audible</li>
+    <li>Reactance X: Sawtooth - <strong>wave pattern</strong> well perceivable</li>
+    <li>Smith movement: <strong>Precise spatial positioning</strong></li>
+</ul>
+<h3>MIDI Engine</h3>
+<p><strong>Recommended for:</strong> Dramatic multiband experience  <strong>Sound Character:</strong></p>
+<ul>
+    <li>SWR: Strings - <strong>Crescendo and diminuendo</strong> (louder/quieter)</li>
+    <li>Reactance X: Violin - <strong>Vibrato effect</strong> at zero crossings</li>
+    <li>Smith movement: <strong>Orchestra panning</strong> through space</li>
+</ul>
+<p><strong>Switch:</strong></p>
+<ul>
+    <li>In acoustic mode: <strong>Key A</strong> → Audio Configuration</li>
+    <li>Select <strong>MIDI Engine</strong></li>
+</ul>
+<p><strong>Recommendation for Scenario 6:</strong></p>
+<ul>
+    <li><strong>Synthesizer</strong> for precise resonance counting</li>
+    <li><strong>MIDI</strong> for <strong>dramatic experience</strong> of multiband dynamics</li>
+    <li><strong>Try both</strong> - Scenario 6 benefits greatly from MIDI!</li>
+</ul>
+<hr>
+<h2>📝 Checklist: Did You Hear Everything?</h2>
+<h3>Audio Events:</h3>
+<ul>
+    <li>[ ] SWR: <strong>Three distinct valleys</strong> at ~52.5, ~73, ~146.5 MHz</li>
+    <li>[ ] SWR: <strong>High peaks</strong> between resonances (up to SWR 3.2)</li>
+    <li>[ ] Return Loss: <strong>Three peaks</strong> at resonance frequencies</li>
+    <li>[ ] Impedance |Z|: Oscillation around 50Ω with three 50Ω hits</li>
+    <li>[ ] Reactance X: <strong>Three zero crossings</strong> (sawtooth waves)</li>
+    <li>[ ] Phase: Correlation with reactance, three 0° crossings</li>
+</ul>
+<h3>Smith Visualization:</h3>
+<ul>
+    <li>[ ] Smith SWR Circles: <strong>Three approaches</strong> to your position</li>
+    <li>[ ] Smith Cartesian: Complex cross trajectory with three center crossings</li>
+    <li>[ ] Center Pulse: Measurement crosses pulse <strong>three times</strong></li>
+</ul>
+<h3>U-Menu:</h3>
+<ul>
+    <li>[ ] Band suitability: 6m ✓, 4m ✓, 2m ✓, 1.25m ⚠️</li>
+    <li>[ ] Resonance search: <strong>Three resonances</strong> found</li>
+    <li>[ ] SWR bandwidths: Each resonance has sufficient width</li>
+    <li>[ ] Impedance at resonances: All ~50Ω + j0Ω</li>
+    <li>[ ] Impedance between bands: Mismatch (normal!)</li>
+</ul>
+<h3>Understanding:</h3>
+<ul>
+    <li>[ ] Multiband vs. wideband difference understood</li>
+    <li>[ ] Trap antenna concept grasped</li>
+    <li>[ ] Acoustic signature for multiple resonances internalized</li>
+    <li>[ ] "Up-and-down" pattern with three resonances heard</li>
+</ul>
+<hr>
+<h2>🎯 Next Steps</h2>
+<p>After this training you should:</p>
+<ol>
+    <li><strong>Be able to acoustically recognize multiple resonances</strong></li>
+</ol>
+<ul>
+    <li>Count valleys/peaks</li>
+    <li>Locate resonance frequencies</li>
+    <li>Evaluate bandwidths</li>
+</ul>
+<ol>
+    <li><strong>Work through Scenario 7 (Cable with Attenuation)</strong></li>
+</ol>
+<ul>
+    <li>Back to simpler structures</li>
+    <li>S21 measurement of cable attenuation</li>
+    <li>Understand frequency-dependent losses</li>
+</ul>
+<ol>
+    <li><strong>Work through Scenarios 8+9 (Short/Open + TDR)</strong></li>
+</ol>
+<ul>
+    <li>Extreme mismatches</li>
+    <li>Time-Domain Reflectometry</li>
+    <li>Fault finding in coax cables</li>
+</ul>
+<ol>
+    <li><strong>Measure your own multiband antennas</strong></li>
+</ol>
+<ul>
+    <li><strong>2m/70cm vertical:</strong> Most common case</li>
+    <li><strong>HF trap dipole:</strong> If available</li>
+    <li><strong>Count resonances</strong> acoustically!</li>
+</ul>
+<ol>
+    <li><strong>Design trap antennas</strong></li>
+</ol>
+<ul>
+    <li>Calculate trap resonances</li>
+    <li>Build simple 2-band dipole</li>
+    <li>Measure and hear the two resonances!</li>
+</ul>
+<hr>
+<h2>🔬 Deep Dive: Harmonic Resonances</h2>
+<h3>Why Multiple Resonances?</h3>
+<p><strong>Harmonic Theory:</strong></p>
+<pre><code class="language-">An antenna can be resonant at multiple frequencies:
+<p>Dipole length L = λ/2 at fundamental frequency f₀  At 2×f₀: L = λ (full wave) → Also resonant! At 3×f₀: L = 1.5λ            → Also resonant!  Example: 50 MHz: λ/2 = 3m → Resonance 100 MHz: λ = 3m  → Resonance 150 MHz: 1.5λ = 3m → Resonance</p>
+</code></pre>
+<p><strong>BUT:</strong></p>
+<ul>
+    <li><strong>Impedance</strong> changes!</li>
+    <li><strong>λ/2:</strong> ~70Ω (dipole-typical)</li>
+    <li><strong>λ:</strong> Very high impedance (>1000Ω) → Poor match</li>
+    <li><strong>Traps or matching networks</strong> needed for practical use</li>
+</ul>
+<p><strong>This Scenario:</strong></p>
+<ul>
+    <li>Probably uses <strong>traps + matching networks</strong></li>
+    <li>All three resonances have ~50Ω</li>
+    <li><strong>Engineered Multiband</strong> (not just harmonic)</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Good luck with your training! Multiband antennas are fascinatingly complex - master their acoustic signature and you can evaluate any antenna!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_05_Tiefpass_Filter.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_07_Kabel_Daempfung.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

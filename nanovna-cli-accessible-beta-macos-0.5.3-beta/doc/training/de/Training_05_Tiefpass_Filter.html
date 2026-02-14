@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Szenario 5: Tiefpass-Filter (mit S21-Transmission)">
+    <title>Training Szenario 5: Tiefpass-Filter (mit S21-Transmission)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>Training Szenario 5: Tiefpass-Filter (mit S21-Transmission)</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_04_Lambda_Viertel_Kabel.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_06_Multiband_Antenne.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Szenario 5: Tiefpass-Filter (mit S21-Transmission)</h1>
+<p><strong>Trainingsdatei:</strong> <code>Training/05_tiefpass_filter.csv</code> <strong>Frequenzbereich:</strong> 144.000 - 146.000 MHz (2m Amateurfunkband) <strong>Schwierigkeitsgrad:</strong> ⭐⭐ Mittel <strong>Lernziel:</strong> Verstehen von Filtern durch S21-Transmissions-Messung und Kombination S11+S21</p>
+<hr>
+<h2>📋 Szenario-Beschreibung</h2>
+<h3>Fiktive Komponente</h3>
+<p>Sie messen einen <strong>Tiefpass-Filter</strong> für 2m-Band. Der Filter ist so ausgelegt, dass er Frequenzen bis ~145 MHz mit minimaler Dämpfung durchlässt, aber höhere Frequenzen zunehmend dämpft. Dieser Typ Filter wird in Sendern zur <strong>Oberwellen-Unterdrückung</strong> eingesetzt.</p>
+<h3>Technische Eigenschaften</h3>
+<ul>
+    <li><strong>Impedanz (S11):</strong> 50.1Ω + j0.1Ω (sehr gut angepasst über gesamtes Band)</li>
+    <li><strong>SWR:</strong> 1.00 bis 1.09 (exzellent!)</li>
+    <li><strong>Return Loss (S11):</strong> 26.48 bis 54.10 dB (sehr gut)</li>
+    <li><strong>Transmission (S21):</strong></li>
+    <li>144.0 MHz: -0.015 dB (99.5% Durchlass)</li>
+    <li>145.0 MHz: -0.10 dB (99.0% Durchlass)</li>
+    <li>146.0 MHz: -0.15 dB (98.5% Durchlass)</li>
+    <li><strong>Besonderheit:</strong> <strong>Erste Training-Datei mit S21-Daten!</strong></li>
+</ul>
+<h3>Physikalische Bedeutung</h3>
+<p>Ein <strong>Tiefpass-Filter</strong> besteht typisch aus:</p>
+<ul>
+    <li><strong>Serie-Induktivitäten:</strong> Sperren hohe Frequenzen</li>
+    <li><strong>Parallel-Kapazitäten:</strong> Leiten hohe Frequenzen nach Masse ab</li>
+    <li><strong>Design-Ziel:</strong> Maximaler Durchlass im Nutzband, maximale Dämpfung darüber</li>
+</ul>
+<p><strong>Typische Anwendungen:</strong></p>
+<ul>
+    <li><strong>Oberwellen-Filter</strong> in HF-Sendern (gesetzlich oft erforderlich!)</li>
+    <li><strong>EMV-Filter</strong> (Schutz vor HF-Einstrahlung)</li>
+    <li><strong>PA-Ausgangsfilter</strong> (Transceiver, Endstufen)</li>
+    <li><strong>Harmonics-Suppression</strong> für Amateurfunk-Sender</li>
+</ul>
+<p><strong>Wichtigkeit:</strong></p>
+<ul>
+    <li>Oberwellen (2×f, 3×f, ...) können Fernseh-/Rundfunkempfang stören</li>
+    <li>Gesetzliche Grenzwerte für unerwünschte Aussendungen</li>
+    <li>Gute Filter: < -40 dB Dämpfung bei 2. Oberwelle</li>
+</ul>
+<hr>
+<h2>🎧 Akustische Analyse</h2>
+<h3>Datei importieren und laden</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>L</strong> (Laden) drücken</li>
+    <li>Liste der Dateien erscheint - navigieren Sie mit <strong>Pfeiltasten</strong></li>
+    <li>Wählen Sie <strong>05_tiefpass_filter.csv</strong></li>
+    <li><strong>Enter</strong> drücken zum Laden</li>
+    <li>Bestätigung: "41 Messpunkte erfolgreich geladen"</li>
+    <li><strong>WICHTIG:</strong> Programm erkennt automatisch, dass S21-Daten vorhanden sind!</li>
+</ol>
+<h3>Akustischen Modus starten</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>A</strong> (Akustische Analyse) drücken</li>
+    <li>Sie befinden sich nun im akustischen Analysemodus</li>
+    <li><strong>LEERTASTE</strong> drücken zum Starten der Wiedergabe</li>
+</ol>
+<hr>
+<h2>🎵 Erwartete Audio-Ereignisse</h2>
+<h3>Reflexions-Parameter (S11) - Eingangs-Anpassung</h3>
+<h4>1. SWR-Kurve (Taste 1 - Sinuswelle)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Extrem leiser, sehr tiefer Dauerton</strong> (ähnlich Szenario 1!)</li>
+    <li>SWR steigt <strong>ganz leicht</strong> von 1.00 bis 1.09</li>
+    <li>Minimal hörbarer Aufwärtstrend</li>
+    <li><strong>Nahezu konstant</strong> über gesamtes Band</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Filter ist <strong>perfekt angepasst</strong> an 50Ω-System</li>
+    <li>Eingangsimpedanz bleibt 50Ω (fast keine Reflexion)</li>
+    <li>Dies ist <strong>Qualitätsmerkmal</strong> eines guten Filters!</li>
+    <li>Unterschied zu Antennen: Filter MUSS breitbandig angepasst sein</li>
+</ul>
+<p><strong>Position im Stereofeld:</strong></p>
+<ul>
+    <li>Sound bleibt <strong>zentriert</strong> (gleiche Anpassung über Band)</li>
+    <li>Keine bedeutende Links-Rechts-Bewegung</li>
+</ul>
+<h4>2. Return Loss Kurve (Taste 2 - Reine Sinuswelle)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr hoher Ton</strong> (26-54 dB)</li>
+    <li>Leichte Variation, aber durchgehend hoch</li>
+    <li>Ton "flattert" leicht über Frequenz</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Hoher Return Loss = Wenig Reflexion = Gute Anpassung</li>
+    <li>Filter reflektiert kaum Energie zurück zum Sender</li>
+    <li>Sender "sieht" 50Ω-Last über gesamtes Band</li>
+</ul>
+<h4>3. Impedanz |Z| (Taste 3 - Dreieckswelle)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Konstanter mittlerer Ton</strong> um 50Ω</li>
+    <li>Steigt <strong>minimal</strong> von 50.1Ω auf 52.3Ω</li>
+    <li>Sehr stabiler Dreieckswellen-Klang</li>
+    <li>Fast keine Tonhöhenänderung wahrnehmbar</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Impedanz bleibt sehr nah bei 50Ω</li>
+    <li>Filter ist <strong>resistiv</strong> über gesamtes Band</li>
+    <li>Kein nennenswerter Blindanteil</li>
+</ul>
+<h4>4. Reaktanz X (Taste 4 - Sägezahn)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Extrem leiser Ton</strong> um Nulllinie</li>
+    <li>Steigt <strong>minimal</strong> von +0.2Ω auf +2.0Ω (kaum hörbar)</li>
+    <li>Sehr leichter Aufwärtstrend (leicht induktiv)</li>
+    <li>Bleibt im <strong>neutralen Bereich</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Fast keine Reaktanz = Nahezu rein resistiv</li>
+    <li>Minimale Induktivität durch Filter-Spulen</li>
+    <li>Hervorragendes Filter-Design!</li>
+</ul>
+<h4>5. Phase (Taste 5 - Sinuswelle)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr leiser Ton</strong> nahe Nullpunkt</li>
+    <li>Minimale Phasenänderung über Band</li>
+    <li>Phase bleibt nahezu konstant</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Geringe Phase = Widerstand dominiert</li>
+    <li>Filter verursacht minimale Phasenverschiebung im Durchlassbereich</li>
+</ul>
+<hr>
+<h3>Transmissions-Parameter (S21) - Durchlass-Charakteristik ⭐</h3>
+<h4>6. S21 Magnitude (Transmission Loss) - NEU!</h4>
+<p><strong>Aktivieren:</strong></p>
+<ul>
+    <li>Im akustischen Modus: <strong>Taste 6</strong> oder <strong>Taste T</strong></li>
+</ul>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr leiser, langsam absinkender Ton</strong></li>
+    <li>Beginnt bei <strong>fast unhörbarem Niveau</strong> (-0.015 dB bei 144 MHz)</li>
+    <li>Sinkt <strong>leicht ab</strong> über Frequenz</li>
+    <li>Endet bei <strong>leicht tieferem, aber immer noch hohem Ton</strong> (-0.15 dB bei 146 MHz)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li><strong>S21 = Transmissionsfaktor</strong> (wie viel Signal kommt durch?)</li>
+    <li>Hoher Ton = Geringe Dämpfung = Viel Signal kommt durch</li>
+    <li>Absinkender Ton = <strong>Tiefpass-Charakteristik</strong>!</li>
+    <li>Niedrige Frequenzen: Besser durchgelassen</li>
+    <li>Höhere Frequenzen: Stärker gedämpft</li>
+    <li>Im 2m-Band: Nur 0.15 dB Dämpfung = <strong>Exzellent!</strong></li>
+</ul>
+<p><strong>Vergleich mit anderen Werten:</strong></p>
+<pre><code class="language-">S21 (dB)  | Transmission | Was es bedeutet
+<p>----------|--------------|------------------ 0 dB      | 100%         | Perfekt (unmöglich in Praxis) -0.1 dB   | 99%          | Hervorragend (dieser Filter!) -1 dB     | 89%          | Sehr gut -3 dB     | 50%          | Halbierung der Leistung -10 dB    | 10%          | Starke Dämpfung -40 dB    | 0.01%        | Fast vollständige Sperrung</p>
+</code></pre>
+<p><strong>Stereo-Position:</strong></p>
+<ul>
+    <li>Sound bewegt sich <strong>leicht nach unten</strong> (Frequenz steigt, Dämpfung nimmt zu)</li>
+    <li>Zeigt Tiefpass-Charakteristik räumlich</li>
+</ul>
+<h4>7. S21 Phase (Transmissions-Phase) - NEU!</h4>
+<p><strong>Aktivieren:</strong></p>
+<ul>
+    <li>Im akustischen Modus: <strong>Taste 7</strong> oder <strong>Taste P</strong></li>
+</ul>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Absinkender Ton</strong> (Phase wird negativer)</li>
+    <li>Beginnt bei ca. <strong>-1°</strong> bis <strong>-2°</strong> (fast null)</li>
+    <li>Sinkt auf ca. <strong>-15°</strong> bis <strong>-20°</strong> bei 146 MHz</li>
+    <li><strong>Kontinuierlicher Abwärtstrend</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li><strong>S21 Phase = Phasenverzögerung</strong> durch Filter</li>
+    <li>Negative Phase = Signal verzögert (normale Eigenschaft von Filtern)</li>
+    <li>Zunehmende Verzögerung = <strong>Group Delay</strong> des Filters</li>
+    <li>Lineare Phase über Frequenz = Gutes Filter-Design</li>
+</ul>
+<p><strong>Praktische Bedeutung:</strong></p>
+<ul>
+    <li>Geringe Phasenverzögerung = Minimale Signalverzerrung</li>
+    <li>Wichtig für <strong>Digitale Übertragung</strong> (RTTY, FT8, etc.)</li>
+    <li>SSB-Telefonie: Meist unkritisch</li>
+</ul>
+<hr>
+<h2>🎯 Smith-Diagramm Audio-Visualisierung</h2>
+<h3>Smith-Visualisierung aktivieren (für S11)</h3>
+<ol>
+    <li>Im akustischen Modus: Taste <strong>V</strong> drücken (Smith-Visualisierung ein/aus)</li>
+    <li>Taste <strong>B</strong> drücken zum Auswählen des Modus:</li>
+</ol>
+<ul>
+    <li><strong>Empfohlen: Modus 1 (Kartesisch)</strong></li>
+    <li>Alternative: <strong>Modus 3 (Impedanz Direkt)</strong></li>
+</ul>
+<h3>Erwartete Smith-Audio-Cues</h3>
+<h4>Modus 1: Kartesisch</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound bleibt FAST EXAKT IM ZENTRUM</strong> (ähnlich Szenario 1)</li>
+    <li>Minimale Bewegung nach <strong>rechts oben</strong> (leicht induktiv, leicht hochohmig)</li>
+    <li>Position: <strong>Direkt vor Ihnen, auf mittlerer Höhe</strong></li>
+    <li><strong>Fast keine Bewegung</strong> wahrnehmbar</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Zentrale Position = Sehr gute 50Ω-Anpassung</li>
+    <li>Minimale Bewegung = Leicht induktive Reaktanz</li>
+    <li>Filter ist <strong>breitbandig angepasst</strong>!</li>
+</ul>
+<h4>Modus 3: Impedanz Direkt</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound exakt in der MITTE bis leicht rechts</strong></li>
+    <li>Minimale Bewegung nach <strong>rechts</strong> (50Ω → 52Ω)</li>
+    <li>Fast keine <strong>vertikale Bewegung</strong> (X bleibt nahe 0)</li>
+    <li>Position bleibt <strong>fast statisch</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Horizontale Mitte = 50Ω Widerstand</li>
+    <li>Vertikale Mitte = 0Ω Reaktanz</li>
+    <li>Filter verhält sich wie <strong>ideale 50Ω-Last</strong></li>
+</ul>
+<h3>Center Pulse (Referenzsignal)</h3>
+<p><strong>Aktivieren:</strong></p>
+<ol>
+    <li>Taste <strong>A</strong> im akustischen Modus → Audio-Konfiguration</li>
+    <li>Menü: <strong>C</strong> → <strong>Smith Audio</strong> → Center Pulse aktivieren</li>
+</ol>
+<p><strong>Was Sie hören:</strong></p>
+<ul>
+    <li><strong>Periodischer Puls aus der MITTE</strong></li>
+    <li>Ihre Messung sollte <strong>fast perfekt überlagern</strong> mit Puls!</li>
+    <li>Filter ist <strong>optimal angepasst</strong></li>
+</ul>
+<hr>
+<h2>🔧 Übungen und Lernaufgaben</h2>
+<h3>Übung 1: S11 vs. S21 verstehen</h3>
+<p><strong>Ziel:</strong> Unterschied zwischen Reflexion und Transmission begreifen</p>
+<ol>
+    <li><strong>Alle Kurven ausschalten</strong> (Tasten 1-7)</li>
+    <li><strong>Nur SWR einschalten</strong> (Taste 1) - zeigt Reflexion (S11)</li>
+</ol>
+<ul>
+    <li><strong>LEERTASTE</strong> drücken und hören</li>
+    <li><strong>Frage:</strong> Wie gut ist die Anpassung? → <strong>Fast perfekt (SWR~1.0)</strong></li>
+</ul>
+<ol>
+    <li><strong>SWR ausschalten</strong> (Taste 1)</li>
+    <li><strong>Nur S21 Magnitude einschalten</strong> (Taste 6)</li>
+</ol>
+<ul>
+    <li><strong>LEERTASTE</strong> drücken und hören</li>
+    <li><strong>Frage:</strong> Wie viel Signal kommt durch? → <strong>Fast alles (>99%)</strong></li>
+</ul>
+<ol>
+    <li><strong>Beide zusammen einschalten</strong> (Taste 1 + Taste 6)</li>
+</ol>
+<ul>
+    <li><strong>Vergleichen Sie</strong> beide Kurven gleichzeitig</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li><strong>S11 (SWR):</strong> Sagt, ob Quelle gut angepasst ist</li>
+    <li><strong>S21 (Transmission):</strong> Sagt, ob Signal durchkommt</li>
+    <li><strong>Guter Filter:</strong> Beides ist gut (wenig Reflexion + viel Durchlass)</li>
+</ul>
+<h3>Übung 2: Tiefpass-Charakteristik hören</h3>
+<p><strong>Ziel:</strong> Tiefpass-Verhalten akustisch identifizieren</p>
+<ol>
+    <li><strong>Nur S21 Magnitude einschalten</strong> (Taste 6)</li>
+    <li><strong>LEERTASTE</strong> drücken</li>
+    <li><strong>Konzentrieren Sie sich</strong> auf Tonhöhenänderung</li>
+    <li><strong>Frage:</strong> Wird der Ton höher oder tiefer über Frequenz?</li>
+</ol>
+<ul>
+    <li><strong>Antwort:</strong> Tiefer! (Dämpfung nimmt zu)</li>
+</ul>
+<ol>
+    <li><strong>Interpretation:</strong></li>
+</ol>
+<ul>
+    <li>Tiefpass = Hohe Frequenzen werden <strong>stärker gedämpft</strong></li>
+    <li>Ton sinkt = Mehr Dämpfung = Tiefpass!</li>
+</ul>
+<h3>Übung 3: Phase und Group Delay</h3>
+<p><strong>Ziel:</strong> Phasenverzögerung verstehen</p>
+<ol>
+    <li><strong>Nur S21 Phase einschalten</strong> (Taste 7)</li>
+    <li><strong>LEERTASTE</strong> drücken</li>
+    <li><strong>Hören Sie</strong> den Abwärtstrend</li>
+    <li><strong>Interpretation:</strong></li>
+</ol>
+<ul>
+    <li>Phasenverzögerung = Signal braucht Zeit durch Filter</li>
+    <li>Group Delay = Steigung der Phase-Kurve</li>
+    <li>Lineare Phase = Konstanter Group Delay = Gut für Signale!</li>
+</ul>
+<h3>Übung 4: Vergleich mit perfekter Resonanz</h3>
+<p><strong>Ziel:</strong> Unterschied Filter vs. Antenne verstehen</p>
+<ol>
+    <li>Dieses Szenario <strong>komplett durchhören</strong> (Filter)</li>
+    <li>Dann <strong>Szenario 1</strong> laden (perfekte Antenne)</li>
+    <li><strong>Vergleichen Sie:</strong></li>
+</ol>
+<ul>
+    <li><strong>S11-Parameter:</strong> Beide fast perfekt (SWR~1.0)</li>
+    <li><strong>S21-Parameter:</strong> Antenne hat KEINE S21-Daten, Filter schon!</li>
+    <li><strong>Unterschied:</strong></li>
+    <li>Antenne = <strong>Eintor</strong> (nur S11)</li>
+    <li>Filter = <strong>Zweitor</strong> (S11 + S21)</li>
+</ul>
+<h3>Übung 5: Insertion Loss schätzen</h3>
+<p><strong>Ziel:</strong> Absolute S21-Werte akustisch zuordnen</p>
+<ol>
+    <li><strong>Taste Y</strong> drücken (Y-Achsen-Lineal)</li>
+    <li><strong>Taste 6</strong> drücken (S21 Magnitude auswählen)</li>
+    <li>Sie hören <strong>aufsteigende Tonleiter</strong> von min bis max dB-Wert</li>
+    <li><strong>LEERTASTE</strong> für Messung</li>
+    <li>Vergleichen Sie: Messung = <strong>sehr hoher Ton</strong> = Geringe Dämpfung!</li>
+</ol>
+<h3>Übung 6: Filter-Qualität bewerten</h3>
+<p><strong>Ziel:</strong> Kriterien für gute Filter lernen  <strong>Checkliste für guten Tiefpass:</strong></p>
+<ul>
+    <li>[ ] SWR < 1.5 über Durchlassbereich? → <strong>JA (1.0-1.09)</strong></li>
+    <li>[ ] S21 < -1 dB im Durchlassbereich? → <strong>JA (-0.015 bis -0.15 dB)</strong></li>
+    <li>[ ] Reaktanz X nahe Null? → <strong>JA (0.2-2.0Ω)</strong></li>
+    <li>[ ] Phase einigermaßen linear? → <strong>JA</strong></li>
+</ul>
+<p><strong>Bewertung:</strong> Dieser Filter ist <strong>exzellent</strong>! ⭐⭐⭐⭐⭐</p>
+<hr>
+<h2>📊 U-Menü Analyse-Funktionen</h2>
+<h3>Empfohlene Analysen für dieses Szenario</h3>
+<h4>1. Bandtauglichkeitsprüfung (U-Menü → Taste 1)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ✓ Hervorragend geeignet (SWR < 1.1)</li>
+    <li>Alle Frequenzen im Band zeigen SWR ≤ 1.09</li>
+    <li><strong>Durchlass:</strong> > 98.5% über gesamtes Band</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Filter ist <strong>perfekt</strong> für 2m-Band</li>
+    <li>Minimale Einfügedämpfung (Insertion Loss)</li>
+    <li>Nutzbar für alle Betriebsarten ohne Einschränkungen</li>
+</ul>
+<h4>2. Resonanzsuche (U-Menü → Taste 2)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Multiple "Resonanzen"</strong> (eigentlich Anpassungspunkte)</li>
+    <li>SWR-Minimum bei mehreren Frequenzen (SWR ≈ 1.00)</li>
+    <li>Impedanz durchgehend nahe 50Ω</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Filter ist <strong>breitbandig angepasst</strong> (kein einzelner Resonanzpunkt)</li>
+    <li>Unterschied zu Antennen: Filter SOLL breitbandig sein!</li>
+    <li>Zeigt hohe Qualität des Filter-Designs</li>
+</ul>
+<h4>3. SWR-Bandbreite (U-Menü → Taste 3)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 Bandbreite:</strong> Gesamtes 2m-Band + mehr!</li>
+    <li><strong>SWR < 2.0:1 Bandbreite:</strong> Weit über 2m-Band hinaus</li>
+    <li>Start: Vor 144.0 MHz, Ende: Nach 146.0 MHz</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Filter ist <strong>extrem breitbandig</strong> im Durchlassbereich</li>
+    <li>Keine Limitierung durch Filter im 2m-Band</li>
+    <li>Wahrscheinlich auch für 70cm verwendbar (würde weiteren Sweep erfordern)</li>
+</ul>
+<h4>4. Fußpunktimpedanz-Analyse (U-Menü → Taste 4)</h4>
+<p><strong>Frequenz eingeben:</strong> 145.0 MHz (Bandmitte)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> 51.5Ω ✓</li>
+    <li><strong>X (Reaktanz):</strong> 1.2Ω ✓</li>
+    <li><strong>|Z| (Impedanz-Betrag):</strong> 51.5Ω ✓</li>
+    <li><strong>Phase:</strong> ~1.3° ✓</li>
+    <li><strong>Klassifikation:</strong> Fast perfekt resistiv</li>
+    <li><strong>S21 Magnitude:</strong> -0.10 dB (99.0% Durchlass)</li>
+    <li><strong>S21 Phase:</strong> ~-10° (geringe Verzögerung)</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Filter verhält sich wie idealer 50Ω-Widerstand</li>
+    <li>Minimale Einfügedämpfung</li>
+    <li>Geringe Phasenverzögerung</li>
+</ul>
+<h4>5. Anpassungshinweise (U-Menü → Taste 5)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>"Keine Anpassung erforderlich"</strong></li>
+    <li>Filter bereits optimal</li>
+    <li>Vorschlag: Unverändert verwenden!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Filter ist <strong>ready to use</strong></li>
+    <li>Keine Modifikationen nötig</li>
+    <li>Professionelles Design</li>
+</ul>
+<hr>
+<h2>🎓 Lernziele und Interpretation</h2>
+<h3>Was Sie aus diesem Szenario lernen</h3>
+<h4>1. S-Parameter-Konzept verstehen</h4>
+<ul>
+    <li><strong>S11:</strong> Reflexion am Eingang (wie bei Antennen)</li>
+    <li><strong>S21:</strong> Transmission von Port 1 zu Port 2 (nur bei Zweitoren!)</li>
+    <li><strong>S12:</strong> Transmission rückwärts (hier nicht gemessen)</li>
+    <li><strong>S22:</strong> Reflexion am Ausgang (hier nicht gemessen)</li>
+</ul>
+<p><strong>Merksatz:</strong></p>
+<ul>
+    <li><strong>Eintore</strong> (Antennen): Nur S11</li>
+    <li><strong>Zweitore</strong> (Filter, Verstärker, Kabel): S11 + S21 (+ S12 + S22)</li>
+</ul>
+<h4>2. Filter-Qualitätskriterien</h4>
+<p><strong>Guter Tiefpass:</strong></p>
+<ol>
+    <li><strong>Niedrige Einfügedämpfung</strong> im Durchlassbereich (< 1 dB)</li>
+    <li><strong>Gute Anpassung</strong> (SWR < 1.5) über Durchlassbereich</li>
+    <li><strong>Steile Flanke</strong> (Dämpfung steigt schnell über Grenzfrequenz)</li>
+    <li><strong>Hohe Sperrung</strong> im Sperrbereich (> 40 dB bei 2. Oberwelle)</li>
+</ol>
+<h4>3. Akustische Signaturen für Filter</h4>
+<ul>
+    <li><strong>S11 (SWR):</strong> Sollte tief und konstant sein (gute Anpassung)</li>
+    <li><strong>S21 Magnitude:</strong></li>
+    <li><strong>Tiefpass:</strong> Absinkend mit Frequenz</li>
+    <li><strong>Hochpass:</strong> Ansteigend mit Frequenz</li>
+    <li><strong>Bandpass:</strong> Peak in der Mitte, Flanken links/rechts</li>
+    <li><strong>Bandsperre:</strong> Einbruch in der Mitte</li>
+    <li><strong>S21 Phase:</strong> Meist linear absinkend (Group Delay)</li>
+</ul>
+<h4>4. Unterschied: Anpassung vs. Durchlass</h4>
+<ul>
+    <li><strong>Gute Anpassung (S11)</strong> bedeutet NICHT automatisch <strong>guten Durchlass (S21)</strong>!</li>
+    <li>Beispiel: Perfekt angepasster Dämpfer (50Ω)</li>
+    <li>S11: Perfekt (SWR=1.0)</li>
+    <li>S21: Schlecht (-10 dB oder mehr)</li>
+    <li><strong>Beide Parameter</strong> sind wichtig!</li>
+</ul>
+<h4>5. Praxisbezug</h4>
+<ul>
+    <li><strong>Sender ohne Tiefpass:</strong> Oberwellen stören Nachbarn (gesetzlich problematisch!)</li>
+    <li><strong>Sender mit Tiefpass:</strong> Sauber, legal, nachbarfreundlich</li>
+    <li><strong>Messung:</strong> S11 + S21 komplett charakterisieren Filter</li>
+    <li><strong>Design:</strong> Kompromiss zwischen Dämpfung, Flanke, Größe, Kosten</li>
+</ul>
+<hr>
+<h2>⚠️ Wichtige Hinweise</h2>
+<h3>Realitätscheck: Filter in der Praxis</h3>
+<p><strong>Typische Einfügedämpfung (Insertion Loss):</strong></p>
+<ul>
+    <li><strong>Professionelle Filter:</strong> 0.1 - 0.5 dB</li>
+    <li><strong>Amateur-Selbstbau:</strong> 0.5 - 1.5 dB</li>
+    <li><strong>Billige Filter:</strong> 1 - 3 dB</li>
+    <li><strong>Akzeptabel für QRP:</strong> < 1 dB</li>
+    <li><strong>Akzeptabel für QRO:</strong> < 0.5 dB</li>
+</ul>
+<p><strong>Beispiel-Rechnung:</strong></p>
+<pre><code class="language-">Sender: 100W
+<p>Filter: 0.15 dB Dämpfung Verlust: 100W × (1 - 10^(-0.15/10)) = 100W × 0.034 = 3.4W  Ergebnis: 96.6W kommen an Antenne an → Akzeptabel!</p>
+</code></pre>
+<p><strong>Oberwellen-Dämpfung:</strong></p>
+<ul>
+    <li><strong>Gesetzliche Anforderung (EU):</strong> < -40 dBc (dB bezogen auf Carrier)</li>
+    <li><strong>Gute Praxis:</strong> < -50 dBc</li>
+    <li><strong>Exzellent:</strong> < -60 dBc</li>
+</ul>
+<h3>Messtechnik-Aspekt</h3>
+<p><strong>S21-Messung erfordert:</strong></p>
+<ol>
+    <li><strong>Zweiten Port</strong> am VNA (NanoVNA hat 2 Ports!)</li>
+    <li><strong>Through-Kalibrierung</strong> (Port 1 direkt mit Port 2 verbinden)</li>
+    <li><strong>Isolation-Kalibrierung</strong> (Ports offen lassen)</li>
+    <li><strong>Filter zwischen Ports</strong> anschließen</li>
+</ol>
+<p><strong>Kalibrierungs-Reihenfolge:</strong></p>
+<ol>
+    <li><strong>OPEN</strong> (beide Ports offen)</li>
+    <li><strong>SHORT</strong> (beide Ports kurzgeschlossen)</li>
+    <li><strong>LOAD</strong> (beide Ports mit 50Ω terminiert)</li>
+    <li><strong>THROUGH</strong> (Port 1 direkt mit Port 2)</li>
+    <li><strong>ISOLATION</strong> (Ports offen, Messung des Übersprechens)</li>
+</ol>
+<h3>Filter-Design-Grundlagen</h3>
+<p><strong>Tiefpass-Topologien:</strong></p>
+<ol>
+    <li><strong>LC-Leiterfilter:</strong> Günstig, einfach, verlustarm</li>
+    <li><strong>Pi-Filter:</strong> Kompakt, gute Impedanzanpassung</li>
+    <li><strong>T-Filter:</strong> Ähnlich Pi-Filter</li>
+    <li><strong>Tschebyscheff:</strong> Steile Flanke, Welligkeit im Durchlass</li>
+    <li><strong>Butterworth:</strong> Flacher Durchlass, weniger steile Flanke</li>
+    <li><strong>Bessel:</strong> Lineare Phase (wichtig für Digitalmoden)</li>
+</ol>
+<p><strong>Grenzfrequenz vs. Nutzfrequenz:</strong></p>
+<ul>
+    <li><strong>Grenzfrequenz (-3 dB):</strong> Wo Leistung halbiert ist</li>
+    <li><strong>Nutzbereich:</strong> Sollte deutlich VOR Grenzfrequenz liegen</li>
+    <li><strong>Faustregel:</strong> Grenzfrequenz ≥ 1.5 × max. Nutzfrequenz</li>
+</ul>
+<hr>
+<h2>🔊 Audio-Engine-Vergleich</h2>
+<h3>Synthesizer-Engine (Standard)</h3>
+<p><strong>Empfohlen für:</strong> Präzise S21-Wahrnehmung  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>S21 Magnitude: Sinuswelle - <strong>Absinkender Ton</strong> klar hörbar</li>
+    <li>S21 Phase: Sinuswelle - <strong>Phasenverlauf</strong> gut wahrnehmbar</li>
+    <li>S11 (SWR): <strong>Sehr tiefer Ton</strong> = Gute Anpassung</li>
+</ul>
+<h3>MIDI-Engine</h3>
+<p><strong>Empfohlen für:</strong> Musikalische Wahrnehmung  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>S21 Magnitude: Streicher - <strong>Diminuendo</strong> (leiser werdend)</li>
+    <li>S21 Phase: Violine - <strong>Glissando</strong> abwärts</li>
+    <li>S11 (SWR): Piano - <strong>Tiefe Basstöne</strong></li>
+</ul>
+<p><strong>Wechseln:</strong></p>
+<ul>
+    <li>Im akustischen Modus: <strong>Taste A</strong> → Audio-Konfiguration</li>
+    <li><strong>MIDI-Engine</strong> auswählen</li>
+</ul>
+<p><strong>Empfehlung für Szenario 5:</strong></p>
+<ul>
+    <li><strong>Synthesizer</strong> für präzise S21-Analyse</li>
+    <li><strong>MIDI</strong> für "musikalisches Gefühl" des Frequenzgangs</li>
+</ul>
+<hr>
+<h2>📝 Checkliste: Haben Sie alles gehört?</h2>
+<h3>S11-Parameter (Reflexion):</h3>
+<ul>
+    <li>[ ] SWR: Sehr tiefer, fast konstanter Ton (1.0-1.09)</li>
+    <li>[ ] Return Loss: Hoher, leicht variierender Ton (26-54 dB)</li>
+    <li>[ ] Impedanz |Z|: Konstanter mittlerer Ton um 50Ω</li>
+    <li>[ ] Reaktanz X: Fast unhörbarer Ton um Null</li>
+    <li>[ ] Phase: Minimale Schwankungen nahe 0°</li>
+</ul>
+<h3>S21-Parameter (Transmission) ⭐:</h3>
+<ul>
+    <li>[ ] S21 Magnitude: Leicht absinkender Ton (-0.015 bis -0.15 dB)</li>
+    <li>[ ] S21 Phase: Kontinuierlich absinkender Ton (-2° bis -20°)</li>
+    <li>[ ] Tiefpass-Charakteristik: Dämpfung nimmt mit Frequenz zu</li>
+</ul>
+<h3>Smith-Visualisierung:</h3>
+<ul>
+    <li>[ ] Smith-Position: Fast zentral (gute Anpassung)</li>
+    <li>[ ] Minimale Bewegung nach rechts-oben (leicht induktiv)</li>
+    <li>[ ] Center Pulse: Messung überlappt fast perfekt</li>
+</ul>
+<h3>U-Menü:</h3>
+<ul>
+    <li>[ ] Bandtauglichkeit: Exzellent für 2m-Band</li>
+    <li>[ ] SWR-Bandbreite: > 2 MHz (breitbandig)</li>
+    <li>[ ] Impedanz bei 145 MHz: ~51.5Ω + j1.2Ω</li>
+    <li>[ ] S21 bei 145 MHz: -0.10 dB (99% Durchlass)</li>
+</ul>
+<h3>Verständnis:</h3>
+<ul>
+    <li>[ ] S11 vs. S21 Unterschied verstanden</li>
+    <li>[ ] Tiefpass-Charakteristik akustisch erkannt</li>
+    <li>[ ] Filter-Qualität bewertet (exzellent!)</li>
+    <li>[ ] Einfügedämpfung verstanden (<< 1 dB)</li>
+</ul>
+<hr>
+<h2>🎯 Nächste Schritte</h2>
+<p>Nach diesem Training sollten Sie:</p>
+<ol>
+    <li><strong>Das S21-Konzept verinnerlicht haben</strong></li>
+</ol>
+<ul>
+    <li>S21 = Transmission (wie viel kommt durch?)</li>
+    <li>S11 = Reflexion (wie gut angepasst?)</li>
+    <li>Beide zusammen = Vollständige Zweitor-Charakterisierung</li>
+</ul>
+<ol>
+    <li><strong>Szenario 10 durcharbeiten (Bandpass-Filter)</strong></li>
+</ol>
+<ul>
+    <li>Andere Filter-Charakteristik (Bandpass statt Tiefpass)</li>
+    <li>S21-Peak in Bandmitte, Flanken links+rechts</li>
+    <li>Vergleichen Sie mit Tiefpass!</li>
+</ul>
+<ol>
+    <li><strong>Szenario 7 durcharbeiten (Kabel mit Dämpfung)</strong></li>
+</ol>
+<ul>
+    <li>S21 zeigt Kabeldämpfung</li>
+    <li>Unterschied: Kabel hat Dämpfung, aber keine Filterwirkung</li>
+    <li>S21 steigt leicht mit Frequenz (typisch für Koax-Kabel)</li>
+</ul>
+<ol>
+    <li><strong>Eigene Filter bauen und messen</strong></li>
+</ol>
+<ul>
+    <li>Einfacher Tiefpass: 2× Spule Serie, 1× Kondensator parallel</li>
+    <li>Messen Sie S11 + S21 mit NanoVNA</li>
+    <li>Vergleichen Sie mit Simulation (z.B. AADE Filter Design)</li>
+</ul>
+<ol>
+    <li><strong>Filter-Arten unterscheiden lernen</strong></li>
+</ol>
+<ul>
+    <li><strong>Tiefpass:</strong> S21 sinkt mit Frequenz</li>
+    <li><strong>Hochpass:</strong> S21 steigt mit Frequenz</li>
+    <li><strong>Bandpass:</strong> S21 hat Peak in Mitte</li>
+    <li><strong>Bandsperre:</strong> S21 hat Einbruch in Mitte</li>
+    <li>Hören Sie den Unterschied!</li>
+</ul>
+<hr>
+<h2>🔬 Vertiefung: S-Parameter-Theorie</h2>
+<h3>Was sind S-Parameter?</h3>
+<p><strong>Definition:</strong></p>
+<pre><code class="language-">S-Parameter = Streuparameter (Scattering Parameters)
+<p>S21 = b2 / a1  (bei a2 = 0) b2 = Welle, die aus Port 2 herauskommt a1 = Welle, die in Port 1 hineingeht  → S21 beschreibt Transmission von Port 1 zu Port 2</p>
+</code></pre>
+<p><strong>In Dezibel:</strong></p>
+<pre><code class="language-">S21 (dB) = 20 × log10(|S21|)
+<p>Beispiele: |S21| = 1.0   → S21 = 0 dB    (perfekt, keine Dämpfung) |S21| = 0.99  → S21 ≈ -0.1 dB (dieser Filter!) |S21| = 0.5   → S21 = -6 dB   (halbe Spannung) |S21| = 0.1   → S21 = -20 dB  (stark gedämpft)</p>
+</code></pre>
+<p><strong>In Leistung:</strong></p>
+<pre><code class="language-">P_out / P_in = |S21|²
+<p>Beispiel: S21 = -0.15 dB |S21| = 10^(-0.15/20) = 0.983 P_out / P_in = 0.983² = 0.966 = 96.6%  → 3.4% Leistung wird im Filter absorbiert</p>
+</code></pre>
+<h3>Warum ist S21 wichtig?</h3>
+<ol>
+    <li><strong>Filter:</strong> S21 zeigt Frequenzgang (Durchlass/Sperre)</li>
+    <li><strong>Verstärker:</strong> S21 zeigt Gewinn (z.B. +20 dB)</li>
+    <li><strong>Kabel:</strong> S21 zeigt Dämpfung (frequenzabhängig)</li>
+    <li><strong>Schalter:</strong> S21 zeigt Isolation (ON vs. OFF)</li>
+    <li><strong>Mixer:</strong> S21 zeigt Conversion Loss</li>
+</ol>
+<p><strong>Praktischer Tipp:</strong></p>
+<ul>
+    <li>Wenn Sie "Dämpfung" oder "Gewinn" wissen wollen → <strong>Messen Sie S21</strong>!</li>
+    <li>Wenn Sie "Anpassung" wissen wollen → <strong>Messen Sie S11</strong>!</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Viel Erfolg beim Training! Filter-Messung mit S21 ist essentiell für professionelle HF-Technik - beherrschen Sie es akustisch!</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_04_Lambda_Viertel_Kabel.html" aria-label="Previous scenario">⬅️ Previous</a></li>
+            <li><a href="Training_06_Multiband_Antenne.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>

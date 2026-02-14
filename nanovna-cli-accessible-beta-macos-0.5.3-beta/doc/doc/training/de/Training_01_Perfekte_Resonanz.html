@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NanoVNA CLI Accessible - Training Szenario 1: Perfekte 50Ω Resonanzantenne">
+    <title>Training Szenario 1: Perfekte 50Ω Resonanzantenne</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --text-color: #333;
+            --bg-color: #fff;
+            --code-bg: #f4f4f4;
+            --border-color: #ddd;
+            --link-color: #2980b9;
+            --link-hover: #3498db;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Accessibility */
+        a:focus, button:focus {
+            outline: 3px solid var(--secondary-color);
+            outline-offset: 2px;
+        }
+        
+        /* Skip to main content link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 8px;
+            text-decoration: none;
+            z-index: 100;
+        }
+        
+        .skip-link:focus {
+            top: 0;
+        }
+        
+        /* Header Navigation */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            margin: -20px -20px 30px -20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        nav {
+            background-color: var(--code-bg);
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        nav a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+        
+        nav a:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        nav a[aria-label*="Previous"],
+        nav a[aria-label*="Next"] {
+            font-weight: bold;
+        }
+        
+        /* Main Content */
+        main {
+            margin-bottom: 40px;
+        }
+        
+        article {
+            background: white;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--primary-color);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            line-height: 1.3;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        h3 {
+            font-size: 1.4em;
+        }
+        
+        h4 {
+            font-size: 1.2em;
+        }
+        
+        /* Links */
+        a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+        
+        /* Code */
+        code {
+            background-color: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Consolas", "Monaco", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.95em;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        /* Tables */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: var(--code-bg);
+        }
+        
+        tbody tr:hover {
+            background-color: #e8f4f8;
+        }
+        
+        /* Blockquotes */
+        blockquote {
+            border-left: 4px solid var(--secondary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: var(--code-bg);
+            font-style: italic;
+        }
+        
+        /* Horizontal Rule */
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 30px 0;
+        }
+        
+        /* Images */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--code-bg);
+            padding: 20px;
+            margin: 40px -20px -20px -20px;
+            border-top: 2px solid var(--border-color);
+            text-align: center;
+        }
+        
+        footer nav {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-bottom: 15px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            header {
+                margin: -10px -10px 20px -10px;
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.4em;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            h2 {
+                font-size: 1.5em;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            th, td {
+                padding: 8px;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+                max-width: 100%;
+            }
+            
+            header, nav, footer {
+                background: white;
+                border: none;
+            }
+            
+            nav {
+                display: none;
+            }
+            
+            a {
+                color: black;
+                text-decoration: underline;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+            }
+        }
+        
+        /* Training scenario specific */
+        .training-meta {
+            background: #e8f4f8;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .training-meta p {
+            margin: 5px 0;
+        }
+        
+        /* Emoji support */
+        .emoji {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
+    
+    <header role="banner">
+        <h1>Training Szenario 1: Perfekte 50Ω Resonanzantenne</h1>
+    </header>
+    
+    <nav role="navigation" aria-label="Page navigation">
+        <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_02_Antenne_Zu_Kurz.html" aria-label="Next scenario">➡️ Next</a></li>
+        </ul>
+    </nav>
+    
+    <main id="main-content" role="main">
+        <article>
+<h1>Training Szenario 1: Perfekte 50Ω Resonanzantenne</h1>
+<p><strong>Trainingsdatei:</strong> <code>Training/01_perfekte_resonanz_50ohm.csv</code> <strong>Frequenzbereich:</strong> 144.000 - 146.000 MHz (2m Amateurfunkband) <strong>Schwierigkeitsgrad:</strong> ⭐ Einfach (Einsteiger) <strong>Lernziel:</strong> Verstehen, wie eine perfekt abgestimmte Antenne klingt</p>
+<hr>
+<h2>📋 Szenario-Beschreibung</h2>
+<h3>Fiktive Komponente</h3>
+<p>Sie messen eine <strong>ideal abgestimmte 2m-Yagi-Antenne</strong> für das 2-Meter-Amateurfunkband (144-146 MHz). Die Antenne wurde präzise auf die Bandmitte bei ca. 145 MHz abgestimmt. Der Strahler hat die exakte Länge, sodass die Impedanz über das gesamte Band nahe 50Ω liegt.</p>
+<h3>Technische Eigenschaften</h3>
+<ul>
+    <li><strong>Impedanz:</strong> 50Ω ±0.1Ω (fast perfekt resistiv)</li>
+    <li><strong>SWR:</strong> 1.00 bis 1.003 (exzellent!)</li>
+    <li><strong>Return Loss:</strong> > 46 dB (hervorragend)</li>
+    <li><strong>Reaktanz (X):</strong> ±0.2Ω (praktisch null - rein resistiv)</li>
+    <li><strong>Widerstand (R):</strong> 49.9 bis 50.1Ω (sehr stabil)</li>
+    <li><strong>Reflexionskoeffizient:</strong> |Γ| < 0.003 (vernachlässigbar)</li>
+</ul>
+<h3>Physikalische Bedeutung</h3>
+<p>Dies ist das <strong>Ideal-Szenario</strong> in der Antennentechnik! Eine solche Anpassung erreicht man durch:</p>
+<ul>
+    <li>Exakte Strahler-Länge</li>
+    <li>Korrekte Speisepunkt-Position</li>
+    <li>Hochwertige Materialien</li>
+    <li>Professionelle Abstimmung</li>
+    <li>Optimale mechanische Konstruktion</li>
+</ul>
+<p>In der Praxis ist eine so perfekte Anpassung selten - dieses Training zeigt Ihnen das theoretische Optimum.</p>
+<hr>
+<h2>🎧 Akustische Analyse</h2>
+<h3>Datei importieren und laden</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>L</strong> (Laden) drücken</li>
+    <li>Liste der Dateien erscheint - navigieren Sie mit <strong>Pfeiltasten</strong></li>
+    <li>Wählen Sie <strong>01_perfekte_resonanz_50ohm.csv</strong></li>
+    <li><strong>Enter</strong> drücken zum Laden</li>
+    <li>Bestätigung: "41 Messpunkte erfolgreich geladen"</li>
+</ol>
+<h3>Akustischen Modus starten</h3>
+<ol>
+    <li><strong>Hauptmenü:</strong> Taste <strong>A</strong> (Akustische Analyse) drücken</li>
+    <li>Sie befinden sich nun im akustischen Analysemodus</li>
+    <li><strong>LEERTASTE</strong> drücken zum Starten der Wiedergabe</li>
+</ol>
+<hr>
+<h2>🎵 Erwartete Audio-Ereignisse</h2>
+<h3>1. SWR-Kurve (Taste 1 - Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Extrem leiser, sehr tiefer Dauerton</strong></li>
+    <li>Der Ton verändert sich <strong>kaum</strong> über die Frequenz</li>
+    <li>Tonhöhe bleibt <strong>praktisch konstant</strong> auf niedrigstem Level</li>
+    <li><strong>Keine Schwankungen</strong> wahrnehmbar</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Tiefste Tonhöhe = SWR nahe 1.0 (perfekt!)</li>
+    <li>Konstanter Ton = Gleichbleibende Anpassung über gesamtes Band</li>
+    <li>Dies ist das <strong>Referenz-Audio</strong> für "ideale Antenne"</li>
+</ul>
+<p><strong>Position im Stereofeld:</strong></p>
+<ul>
+    <li>Sound bleibt <strong>zentriert</strong> (gleiche Anpassung über ganzes Band)</li>
+    <li>Keine Links-Rechts-Bewegung</li>
+</ul>
+<h3>2. Return Loss Kurve (Taste 2 - Reine Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr hoher, konstanter Ton</strong> (> 46 dB)</li>
+    <li>Tonhöhe bleibt <strong>extrem hoch</strong> und stabil</li>
+    <li>Minimal hörbares "Flattern" um 145 MHz (leichte Variation 46-60 dB)</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Hohe Tonhöhe = Hohe Rückflussdämpfung = Wenig Reflexion</li>
+    <li>Konstanz = Durchgehend gute Anpassung</li>
+    <li>Leichtes Flattern bei 145 MHz = Optimaler Punkt (bis zu 60 dB oder mehr)</li>
+</ul>
+<h3>3. Impedanz |Z| (Taste 3 - Dreieckswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Konstanter mittlerer Ton</strong> um 50Ω</li>
+    <li><strong>Fast keine Tonhöhenänderung</strong> (49.9 - 50.1Ω)</li>
+    <li>Charakteristischer Dreiecks-Klang, aber sehr stabil</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Mittlere Tonhöhe = Impedanz um Systemimpedanz (50Ω)</li>
+    <li>Stabilität = Impedanz bleibt konstant über Frequenz</li>
+    <li>Perfekt für Sender-Matching</li>
+</ul>
+<h3>4. Reaktanz X (Taste 4 - Sägezahn)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Extrem leiser, fast unhörbarer Ton</strong> um Nulllinie</li>
+    <li>Ton "schwebt" um die Mitte (±0.2Ω)</li>
+    <li><strong>Keine klare Aufwärts- oder Abwärtsbewegung</strong></li>
+    <li>Sound bleibt im <strong>neutralen Bereich</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Nulllinie = Rein resistive Impedanz (kein induktiver/kapazitiver Anteil)</li>
+    <li>Keine Bewegung = Antenne ist weder zu kurz (induktiv) noch zu lang (kapazitiv)</li>
+    <li>Dies ist das akustische <strong>"Sweet Spot"-Signal</strong></li>
+</ul>
+<h3>5. Phase (Taste 5 - Sinuswelle)</h3>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sehr leiser Ton nahe Nullpunkt</strong> (±2°)</li>
+    <li>Minimale Tonhöhenschwankungen</li>
+    <li>Phase bleibt praktisch konstant</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Nullphase = Widerstand dominiert, Reaktanz vernachlässigbar</li>
+    <li>Keine großen Phasensprünge = Stabile, breitbandige Anpassung</li>
+</ul>
+<hr>
+<h2>🎯 Smith-Diagramm Audio-Visualisierung</h2>
+<h3>Smith-Visualisierung aktivieren</h3>
+<ol>
+    <li>Im akustischen Modus: Taste <strong>V</strong> drücken (Smith-Visualisierung ein/aus)</li>
+    <li>Taste <strong>B</strong> drücken zum Auswählen des Modus:</li>
+</ol>
+<ul>
+    <li>Empfohlen für Anfänger: <strong>Modus 1 (Kartesisch)</strong></li>
+    <li>Alternative: <strong>Modus 3 (Impedanz Direkt)</strong></li>
+</ul>
+<h3>Erwartete Smith-Audio-Cues</h3>
+<h4>Modus 1: Kartesisch (Empfohlen)</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound bleibt EXAKT IM ZENTRUM</strong> des Raums</li>
+    <li>Position: <strong>Direkt vor Ihnen, auf mittlerer Höhe</strong></li>
+    <li><strong>Keine Bewegung</strong> nach links/rechts (Re(Γ) ≈ 0)</li>
+    <li><strong>Keine Bewegung</strong> nach vorne/hinten (Im(Γ) ≈ 0)</li>
+    <li>Sound "klebt" am Zentrum = Sie stehen AM optimalen Punkt</li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Zentrumsposition = Perfekte 50Ω Anpassung (Sie sind AM Ziel!)</li>
+    <li>Keine Bewegung = Reflexionskoeffizient nahe Null</li>
+    <li>Dies ist das <strong>"Zuhause"-Gefühl</strong> im Smith-Diagramm</li>
+</ul>
+<p><strong>Audio-Test:</strong></p>
+<ul>
+    <li>Drücken Sie mehrmals <strong>V</strong> (ein/aus) und vergleichen Sie</li>
+    <li><strong>OHNE Smith:</strong> Kurven spielen normal</li>
+    <li><strong>MIT Smith:</strong> Subtiles Rauschen/Ambient <strong>exakt zentral positioniert</strong></li>
+</ul>
+<h4>Modus 3: Impedanz Direkt</h4>
+<p><strong>Was Sie hören sollten:</strong></p>
+<ul>
+    <li><strong>Sound exakt in der MITTE</strong> (R = 50Ω → zentral)</li>
+    <li><strong>Keine Vorne/Hinten-Bewegung</strong> (X = 0Ω → zentral)</li>
+    <li>Position bleibt <strong>stabil im neutralen Raum</strong></li>
+</ul>
+<p><strong>Bedeutung:</strong></p>
+<ul>
+    <li>Mittlere Position horizontal = 50Ω Widerstand</li>
+    <li>Mittlere Position vertikal = 0Ω Reaktanz</li>
+    <li>Perfekte Zentrierung = Perfekte Impedanzanpassung</li>
+</ul>
+<h3>Center Pulse (Referenzsignal)</h3>
+<p><strong>Aktivieren:</strong></p>
+<ol>
+    <li>Taste <strong>A</strong> im akustischen Modus → Audio-Konfiguration</li>
+    <li>Menü: <strong>C</strong> → <strong>Smith Audio</strong> → Center Pulse aktivieren</li>
+</ol>
+<p><strong>Was Sie hören:</strong></p>
+<ul>
+    <li><strong>Periodischer Puls aus der MITTE</strong></li>
+    <li>Ihre Messung sollte <strong>genau dort bleiben</strong>!</li>
+    <li>Wenn Sie den Center Pulse hören und Ihre Messung gleichzeitig → <strong>PERFEKT!</strong></li>
+</ul>
+<hr>
+<h2>🔧 Übungen und Lernaufgaben</h2>
+<h3>Übung 1: Kurven einzeln durchhören</h3>
+<p><strong>Ziel:</strong> Jede Kurve isoliert kennenlernen</p>
+<ol>
+    <li><strong>Alle Kurven ausschalten:</strong> Taste <strong>1</strong>, <strong>2</strong>, <strong>3</strong>, <strong>4</strong>, <strong>5</strong> nacheinander drücken</li>
+    <li><strong>Nur SWR einschalten:</strong> Taste <strong>1</strong></li>
+    <li><strong>LEERTASTE</strong> drücken und <strong>genau hinhören</strong></li>
+    <li>Frage: Wie tief ist der Ton? → <strong>Sehr tief = SWR nahe 1.0</strong></li>
+    <li>Wiederholen für Kurven 2-5 einzeln</li>
+</ol>
+<h3>Übung 2: Vergleich mit anderen Szenarien</h3>
+<p><strong>Ziel:</strong> Referenz-Audio verinnerlichen</p>
+<ol>
+    <li>Dieses Szenario <strong>komplett durchhören</strong></li>
+    <li>Dann Szenario 2 (zu kurze Antenne) laden und vergleichen</li>
+    <li><strong>Unterschiede wahrnehmen:</strong></li>
+</ol>
+<ul>
+    <li>Perfekte Antenne: Alle Kurven ruhig, zentral</li>
+    <li>Fehlangepasste Antenne: Kurven bewegen sich</li>
+</ul>
+<h3>Übung 3: Smith-Modi vergleichen</h3>
+<p><strong>Ziel:</strong> Verschiedene Smith-Darstellungen verstehen</p>
+<ol>
+    <li>Smith <strong>Modus 1</strong> (Kartesisch) aktivieren</li>
+    <li>Position merken: <strong>Zentrum</strong></li>
+    <li>Smith <strong>Modus 2</strong> (Polar) aktivieren</li>
+    <li>Position merken: <strong>Zentrum, keine Rotation</strong></li>
+    <li>Smith <strong>Modus 4</strong> (SWR-Kreise) aktivieren</li>
+    <li>Position merken: <strong>Nah bei Ihnen</strong> (niedriges SWR)</li>
+</ol>
+<h3>Übung 4: Y-Achsen-Lineal nutzen</h3>
+<p><strong>Ziel:</strong> Tonhöhen-zu-Wert-Mapping verstehen</p>
+<ol>
+    <li><strong>Taste Y</strong> drücken (Y-Achsen-Lineal)</li>
+    <li>Sie hören <strong>aufsteigende Tonleiter</strong> von min bis max Wert</li>
+    <li>Für <strong>SWR-Kurve</strong> (Taste 1): Tiefster Ton = 1.0, höchster Ton = Maximum in Daten</li>
+    <li>Vergleichen Sie: Ihre Messung = <strong>tiefster Ton</strong> der Skala!</li>
+</ol>
+<h3>Übung 5: Loop-Marker setzen</h3>
+<p><strong>Ziel:</strong> Bestimmten Frequenzbereich analysieren</p>
+<ol>
+    <li><strong>Pfeiltasten</strong> nutzen zum Navigieren</li>
+    <li>Bei <strong>145.0 MHz</strong> (Bandmitte): <strong>Taste L</strong> (Linker Marker)</li>
+    <li>Bei <strong>145.5 MHz</strong>: <strong>Taste R</strong> (Rechter Marker)</li>
+    <li><strong>Taste O</strong> (Loop aktivieren)</li>
+    <li>Wiedergabe konzentriert sich auf Bandmitte → Noch stabiler!</li>
+</ol>
+<hr>
+<h2>📊 U-Menü Analyse-Funktionen</h2>
+<h3>Empfohlene Analysen für dieses Szenario</h3>
+<h4>1. Resonanzsuche (U-Menü → Taste 2)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>Mehrere Resonanzpunkte</strong> bei 145.2 MHz und 145.3 MHz</li>
+    <li>SWR-Minimum: <strong>1.000</strong> (mathematisches Optimum!)</li>
+    <li>Impedanz bei Resonanz: <strong>50.0Ω + j0.0Ω</strong></li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Perfekte Resonanz = SWR = 1.0</li>
+    <li>Mehrere Punkte nahe 1.0 = <strong>Breitbandige Anpassung</strong></li>
+</ul>
+<h4>2. SWR-Bandbreite (U-Menü → Taste 3)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>SWR < 1.5:1 Bandbreite:</strong> Gesamtes 2m-Band (ca. 2 MHz!)</li>
+    <li><strong>SWR < 2.0:1 Bandbreite:</strong> Ebenfalls gesamtes Band</li>
+    <li>Start: 144.0 MHz, Ende: 146.0 MHz</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Extrem breitbandig!</li>
+    <li>Antenne nutzbar über GESAMTES 2m-Band ohne Retuning</li>
+    <li>In Praxis selten: Zeigt Qualität professioneller Antenne</li>
+</ul>
+<h4>3. Fußpunktimpedanz-Analyse (U-Menü → Taste 4)</h4>
+<p><strong>Frequenz eingeben:</strong> 145.0 MHz (Bandmitte)  <strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>R (Widerstand):</strong> 50.0Ω ✓</li>
+    <li><strong>X (Reaktanz):</strong> 0.0Ω ✓</li>
+    <li><strong>|Z| (Impedanz-Betrag):</strong> 50.0Ω ✓</li>
+    <li><strong>Phase:</strong> 0.0° ✓</li>
+    <li><strong>Klassifikation:</strong> Rein resistiv</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Mathematisch perfekt!</li>
+    <li>Keine Blindkomponente → Volle Leistungsübertragung</li>
+    <li>Sender sieht exakt 50Ω resistiv</li>
+</ul>
+<h4>4. Anpassungshinweise (U-Menü → Taste 5)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>"Keine Anpassung erforderlich"</strong></li>
+    <li>Impedanz bereits optimal</li>
+    <li>Vorschlag: Keine Änderungen!</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Programm erkennt perfekte Anpassung</li>
+    <li>Keine L/C-Netzwerke nötig</li>
+    <li><strong>Ideal-Zustand erreicht</strong></li>
+</ul>
+<h4>5. Bandtauglichkeitsprüfung (U-Menü → Taste 1)</h4>
+<p><strong>Was Sie sehen:</strong></p>
+<ul>
+    <li><strong>2m Band (144-146 MHz):</strong> ✓ Geeignet (SWR < 1.5)</li>
+    <li>Alle Frequenzen im Band zeigen SWR < 1.01</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<ul>
+    <li>Antenne perfekt für 2m-Band</li>
+    <li>Nutzbar für alle Betriebsarten (FM, SSB, CW, Digital)</li>
+</ul>
+<hr>
+<h2>🎓 Lernziele und Interpretation</h2>
+<h3>Was Sie aus diesem Szenario lernen</h3>
+<h4>1. Referenz-Audio für perfekte Anpassung</h4>
+<ul>
+    <li><strong>SWR:</strong> Tiefster möglicher Ton, konstant</li>
+    <li><strong>Return Loss:</strong> Höchster Ton, stabil</li>
+    <li><strong>Reaktanz:</strong> Unhörbar, um Null schwebend</li>
+    <li><strong>Smith-Position:</strong> Exakt zentral, keine Bewegung</li>
+</ul>
+<h4>2. Verständnis des Smith-Diagramm-Zentrums</h4>
+<ul>
+    <li><strong>Kartesischer Modus:</strong> Mitte = Sie stehen am Ziel</li>
+    <li><strong>Polarer Modus:</strong> Keine Kreisbewegung = Perfekte Anpassung</li>
+    <li><strong>SWR-Kreis-Modus:</strong> Nah bei Ihnen = Niedriges SWR</li>
+</ul>
+<h4>3. Akustische Landmarken</h4>
+<ul>
+    <li>Wenn alle Kurven "ruhig" und "zentriert" → <strong>Gute Anpassung</strong></li>
+    <li>Wenn Reaktanz unhörbar → <strong>Rein resistiv</strong></li>
+    <li>Wenn Smith zentral → <strong>50Ω erreicht</strong></li>
+</ul>
+<h4>4. Praxisbezug</h4>
+<ul>
+    <li>Solche Werte sind <strong>Zielwerte</strong> beim Antennentuning</li>
+    <li>In Realität: Meist SWR 1.1 - 1.3 → Immer noch sehr gut</li>
+    <li>Dieses Training = <strong>Ideal-Referenz</strong> zum Vergleich</li>
+</ul>
+<hr>
+<h2>⚠️ Wichtige Hinweise</h2>
+<h3>Realitätscheck</h3>
+<p><strong>In der Praxis:</strong></p>
+<ul>
+    <li>SWR 1.0 über 2 MHz Band ist <strong>extrem selten</strong></li>
+    <li>SWR < 1.5 über Band ist bereits <strong>hervorragend</strong></li>
+    <li>SWR < 2.0 über Band ist <strong>gut nutzbar</strong></li>
+</ul>
+<p><strong>Dieses Training zeigt:</strong></p>
+<ul>
+    <li>Theoretisches <strong>Optimum</strong></li>
+    <li>Referenz zum Vergleich mit realen Messungen</li>
+    <li>Ziel beim Tuning (oft nicht erreichbar, aber Orientierung)</li>
+</ul>
+<h3>Technische Details</h3>
+<p><strong>Return Loss > 46 dB bedeutet:</strong></p>
+<ul>
+    <li>Weniger als <strong>0.5%</strong> der Leistung wird reflektiert</li>
+    <li><strong>99.5%</strong> der Leistung erreicht die Antenne</li>
+    <li>Praktisch <strong>keine Verluste</strong> durch Fehlanpassung</li>
+</ul>
+<p><strong>|Γ| < 0.003 bedeutet:</strong></p>
+<ul>
+    <li>Reflexionskoeffizient nahe Null</li>
+    <li>Im Smith-Diagramm: <strong>Punkt liegt exakt im Zentrum</strong></li>
+    <li>VSWR (Spannungs-Stehwellenverhältnis) = 1.006</li>
+</ul>
+<hr>
+<h2>🔊 Audio-Engine-Vergleich</h2>
+<h3>Synthesizer-Engine (Standard)</h3>
+<p><strong>Empfohlen für:</strong> Präzise Frequenzwahrnehmung  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>SWR: Reine Sinuswelle - sehr <strong>klar und definiert</strong></li>
+    <li>Reaktanz: Sägezahn - <strong>neutral</strong> bei X=0</li>
+</ul>
+<h3>MIDI-Engine</h3>
+<p><strong>Empfohlen für:</strong> Musikal  ische Wahrnehmung  <strong>Klangcharakter:</strong></p>
+<ul>
+    <li>SWR: Streicherensemble - <strong>weich und harmonisch</strong></li>
+    <li>Reaktanz: Violine - <strong>neutral und melodisch</strong> bei X=0</li>
+</ul>
+<p><strong>Wechseln:</strong></p>
+<ul>
+    <li>Im akustischen Modus: <strong>Taste A</strong> → Audio-Konfiguration</li>
+    <li><strong>MIDI-Engine</strong> auswählen</li>
+</ul>
+<hr>
+<h2>📝 Checkliste: Haben Sie alles gehört?</h2>
+<ul>
+    <li>[ ] SWR-Kurve: Konstanter, sehr tiefer Ton</li>
+    <li>[ ] Return Loss: Konstanter, sehr hoher Ton</li>
+    <li>[ ] Impedanz |Z|: Stabiler Ton um 50Ω</li>
+    <li>[ ] Reaktanz X: Fast unhörbarer Ton um Null</li>
+    <li>[ ] Phase: Minimale Schwankungen um 0°</li>
+    <li>[ ] Smith-Visualisierung: Sound bleibt zentral</li>
+    <li>[ ] Center Pulse: Messung überlappt mit Referenzpuls</li>
+    <li>[ ] U-Menü: Resonanz gefunden bei 145.2 MHz</li>
+    <li>[ ] U-Menü: SWR-Bandbreite > 2 MHz</li>
+    <li>[ ] U-Menü: Keine Anpassung erforderlich</li>
+</ul>
+<hr>
+<h2>🎯 Nächste Schritte</h2>
+<p>Nach diesem Training sollten Sie:</p>
+<ol>
+    <li><strong>Szenario 2</strong> durcharbeiten (Antenne zu kurz - induktiv)</li>
+</ol>
+<ul>
+    <li>Vergleichen Sie: Wie klingt <strong>Fehlanpassung</strong>?</li>
+    <li>Reaktanz-Kurve wird <strong>hörbar aufwärts</strong> gehen</li>
+    <li>Smith-Position bewegt sich <strong>nach vorne</strong> (induktiv)</li>
+</ul>
+<ol>
+    <li><strong>Szenario 3</strong> durcharbeiten (Antenne zu lang - kapazitiv)</li>
+</ol>
+<ul>
+    <li>Reaktanz-Kurve wird <strong>hörbar abwärts</strong> gehen</li>
+    <li>Smith-Position bewegt sich <strong>nach hinten</strong> (kapazitiv)</li>
+</ul>
+<ol>
+    <li><strong>Eigene Antennen messen</strong> und mit dieser Referenz vergleichen</li>
+</ol>
+<ul>
+    <li>Wie nah kommen Sie an SWR 1.0?</li>
+    <li>Wo liegt Ihre Resonanz?</li>
+</ul>
+<hr>
+<p><strong>73 DE DO9RE</strong> 🎙️📡  <em>Viel Erfolg beim Training! Denken Sie daran: Dieses Szenario zeigt das theoretische Optimum - in der Praxis sind Werte nahe diesem Ideal bereits exzellent.</em></p>
+        </article>
+    </main>
+    
+    <footer role="contentinfo">
+        <nav aria-label="Footer navigation">
+            <ul>
+            <li><a href="Training_Index.html" aria-label="Back to Training Index">📚 Training Index</a></li>
+            <li><a href="Training_02_Antenne_Zu_Kurz.html" aria-label="Next scenario">➡️ Next</a></li>
+            </ul>
+        </nav>
+        <p>&copy; 2026 Richard Emling | <a href="https://github.com/do9re/nanovna-cli-accessible">GitHub Repository</a></p>
+    </footer>
+</body>
+</html>
