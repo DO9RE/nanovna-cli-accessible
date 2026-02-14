@@ -127,6 +127,11 @@ if (WIN32)
     target_link_libraries(nanovna-cli PRIVATE setupapi)
     target_link_libraries(nanovna-cli PRIVATE winspool)
     target_link_libraries(nanovna-cli PRIVATE ws2_32)
+    # Media Foundation libraries for MIDI to WAV rendering
+    target_link_libraries(nanovna-cli PRIVATE mf)
+    target_link_libraries(nanovna-cli PRIVATE mfplat)
+    target_link_libraries(nanovna-cli PRIVATE mfreadwrite)
+    target_link_libraries(nanovna-cli PRIVATE mfuuid)
 elseif(APPLE)
     # macOS-specific libraries
     find_package(Threads REQUIRED)
@@ -172,6 +177,7 @@ elseif(APPLE)
     target_link_libraries(nanovna-cli PRIVATE "-framework IOKit")
     target_link_libraries(nanovna-cli PRIVATE "-framework CoreAudio")
     target_link_libraries(nanovna-cli PRIVATE "-framework AudioToolbox")
+    target_link_libraries(nanovna-cli PRIVATE "-framework CoreMIDI")
     
     # Additional frameworks needed for bundled static PortAudio
     if(USE_BUNDLED_PORTAUDIO)
@@ -207,4 +213,11 @@ elseif(UNIX)
         message(WARNING "ALSA not found. MIDI functionality will be unavailable on Linux.")
         message(STATUS "Install ALSA using: sudo apt-get install libasound2-dev (Debian/Ubuntu)")
     endif()
+endif()
+
+# Copy midi preset directory to build output
+file(GLOB MIDI_PRESETS "${CMAKE_SOURCE_DIR}/midi/*.cfg")
+if(MIDI_PRESETS)
+    file(COPY ${MIDI_PRESETS} DESTINATION "${CMAKE_BINARY_DIR}/midi")
+    message(STATUS "Copied MIDI preset files to build directory")
 endif()

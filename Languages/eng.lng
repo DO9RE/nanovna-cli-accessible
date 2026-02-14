@@ -1440,6 +1440,92 @@ FEEDBACK_ERROR=Error opening email client.
 FEEDBACK_ATTACHMENTS_WARNING=IMPORTANT: Email clients cannot attach files automatically.\nYou will need to manually attach the following folders after the email opens:
 FEEDBACK_ATTACHMENTS_INFO=The following files should be attached:\n  - config/*\n  - logs/*\n  - Export/*\n\nPlease manually attach these folders to your email.
 
+# MIDI Controller Integration
+ACOUSTIC_CURVE_SOLO=[Solo: {0}]
+ACOUSTIC_CURVE_UNSOLO=[{0} unsoloed]
+ACOUSTIC_SOLO_OFF=[Solo OFF - previous state restored]
+ACOUSTIC_FREEZE_BY_TOUCH=[Freeze by Touch]
+ACOUSTIC_FREEZE_BY_TOUCH_RELEASED=[Freeze by Touch released]
+ACOUSTIC_VOLUME_AT_MINIMUM=[Master volume: minimum reached]
+ACOUSTIC_VOLUME_AT_MAXIMUM=[Master volume: maximum reached]
+ACOUSTIC_CURVE_VOLUME_AT_MINIMUM=[{0} volume: minimum reached]
+ACOUSTIC_CURVE_VOLUME_AT_MAXIMUM=[{0} volume: maximum reached]
+ACOUSTIC_MASTER_VOLUME=[Master volume: {0}%]
+ACOUSTIC_MASTER_VOLUME_ANNOUNCE=[Master volume: {0}%]
+ACOUSTIC_CURVE_VALUE_ANNOUNCE=[{0}: {1} at {2} Hz]
+ACOUSTIC_NO_DATA=[No measurement data at current position]
+
+# MIDI Controller Configuration Screen
+MIDI_CTRL_CONFIG_TITLE=MIDI Controller Configuration
+MIDI_CTRL_CONFIG_ENABLED=MIDI Controller: {0}
+MIDI_CTRL_CONFIG_DEVICE=Device: {0}
+MIDI_CTRL_CONFIG_PRESET=Preset: {0}
+MIDI_CTRL_CONFIG_FEEDBACK=Motor fader feedback: {0}
+MIDI_CTRL_CONFIG_FREEZE_TOUCH=Freeze by touch: {0}
+MIDI_CTRL_CONFIG_COMMANDS=Commands:
+MIDI_CTRL_CONFIG_TOGGLE_CMD=  E - Enable/Disable MIDI controller
+MIDI_CTRL_CONFIG_DEVICE_CMD=  D - Select MIDI device
+MIDI_CTRL_CONFIG_PRESET_CMD=  P - Load mapping preset
+MIDI_CTRL_CONFIG_MAPPING_CMD=  M - Edit mappings
+MIDI_CTRL_CONFIG_FEEDBACK_CMD=  F - Toggle motor fader feedback
+MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD=  T - Toggle freeze by touch
+MIDI_CTRL_CONFIG_SAVE_CMD=  S - Save current mappings to file
+MIDI_CTRL_TOGGLED=[MIDI Controller: {0}]
+MIDI_CTRL_SCANNING=[Scanning for MIDI input devices...]
+MIDI_CTRL_NOT_AVAILABLE=[MIDI controller support not available on this platform]
+MIDI_CTRL_NO_DEVICES=[No MIDI input devices found]
+MIDI_CTRL_CONNECT_HINT=[Connect a MIDI controller and try again]
+MIDI_CTRL_FOUND_DEVICES=[Found {0} MIDI input device(s):]
+MIDI_CTRL_SELECT_DEVICE=Select device (1-{0}), or ESC to cancel:
+MIDI_CTRL_DEVICE_SELECTED=[Selected: {0}]
+MIDI_CTRL_CONNECTED=[MIDI Controller: {0}]
+MIDI_CTRL_NOT_CONNECTED=[No MIDI controller connected. Select a device first.]
+MIDI_CTRL_PRESETS=[Available mapping presets:]
+MIDI_CTRL_SELECT_PRESET=Select preset (1-{0}), or ESC to cancel:
+MIDI_CTRL_NO_PRESETS=[No preset files found in midi/ directory]
+MIDI_CTRL_PRESET_LOADED=[Loaded preset: {0}]
+MIDI_CTRL_PRESET_INFO=[{0}: {1} mappings for {2}]
+MIDI_CTRL_PRESET_FAILED=[Failed to load preset]
+MIDI_CTRL_FEEDBACK_TOGGLED=[Motor fader feedback: {0}]
+MIDI_CTRL_FREEZE_TOUCH_TOGGLED=[Freeze by touch: {0}]
+MIDI_CTRL_SAVE_FILENAME=Enter filename (without .cfg):
+MIDI_CTRL_PRESET_SAVED=[Preset saved: {0}]
+MIDI_CTRL_SAVE_FAILED=[Failed to save preset]
+
+# MIDI Mapping Editor
+MIDI_MAPPING_TITLE=MIDI Mapping Editor
+MIDI_MAPPING_PRESET_NAME=Preset: {0}
+MIDI_MAPPING_COUNT=Mappings: {0}
+MIDI_MAPPING_NOTE_ON_HEADER=Note On mappings:
+MIDI_MAPPING_CC_HEADER=CC mappings:
+MIDI_MAPPING_COMMANDS=Commands:
+MIDI_MAPPING_ADD_NOTE_CMD=  N - Add Note On mapping
+MIDI_MAPPING_ADD_CC_CMD=  C - Add CC mapping
+MIDI_MAPPING_LEARN_CMD=  L - MIDI Learn
+MIDI_MAPPING_CLEAR_CMD=  X - Clear all mappings
+MIDI_MAPPING_ADD_NOTE_INFO=[Adding Note On mapping]
+MIDI_MAPPING_ADD_CC_INFO=[Adding CC mapping]
+MIDI_MAPPING_ENTER_NOTE=Enter MIDI note number (0-127):
+MIDI_MAPPING_ENTER_CC=Enter CC number (0-127):
+MIDI_MAPPING_INVALID_NOTE=[Invalid note number]
+MIDI_MAPPING_INVALID_CC=[Invalid CC number]
+MIDI_MAPPING_AVAILABLE_CMDS=Available commands:
+MIDI_MAPPING_CMD_LIST_NOTES=  1 - Play/Pause\n  2 - Stop\n  3 - Freeze\n  4 - Toggle Smooth/Dotted\n  5 - Toggle Loop\n  6 - Toggle Loop Zoom\n  7 - Toggle Loop Invert\n  8 - Toggle Continuous\n  9 - Set Loop Left\n  0 - Set Loop Right
+MIDI_MAPPING_AVAILABLE_CC_FUNCS=Available CC functions:
+MIDI_MAPPING_CC_FUNC_LIST=  1 - Master Volume\n  2 - Curve 1 Volume\n  3 - Curve 2 Volume\n  4 - Curve 3 Volume\n  5 - Curve 4 Volume\n  6 - Curve 5 Volume\n  7 - X-Axis Position (Motor Fader)\n  8 - SWR Value (Motor Fader)\n  9 - RL Value (Motor Fader)\n  0 - |Z| Value (Motor Fader)
+MIDI_MAPPING_ADDED_NOTE=[Mapping added: Note {0} -> {1}]
+MIDI_MAPPING_ADDED_CC=[Mapping added: CC {0} -> {1}]
+MIDI_MAPPING_CONFIRM_CLEAR=[Clear all mappings? (y/n)]
+MIDI_MAPPING_CLEARED=[All mappings cleared]
+MIDI_MAPPING_LEARN_INFO=[MIDI Learn: Press a button or move a fader on your controller...\n The received MIDI event will be shown. Press ESC to cancel.]
+MIDI_MAPPING_LEARN_CANCELLED=[MIDI Learn cancelled]
+MIDI_MAPPING_WAITING=[Waiting for MIDI input...]
+
+# MIDI Export
+MIDI_EXPORTING=[Exporting MIDI file...]
+MIDI_EXPORT_SUCCESS=[MIDI file saved: {0}]
+MIDI_EXPORT_FAILED=[MIDI export failed]
+
 # Documentation Paths
 DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_EN.html
 DOC_PATH_TRAINING=doc/training/en/Training_Index.html

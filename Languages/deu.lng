@@ -1444,6 +1444,92 @@ FEEDBACK_ERROR=Fehler beim Öffnen des E-Mail-Clients.
 FEEDBACK_ATTACHMENTS_WARNING=WICHTIG: E-Mail-Clients können Dateien nicht automatisch anhängen.\nSie müssen die folgenden Ordner manuell anhängen, nachdem die E-Mail geöffnet wurde:
 FEEDBACK_ATTACHMENTS_INFO=Die folgenden Dateien sollten angehängt werden:\n  - config/*\n  - logs/*\n  - Export/*\n\nBitte hängen Sie diese Ordner manuell an Ihre E-Mail an.
 
+# MIDI Controller Integration
+ACOUSTIC_CURVE_SOLO=[Solo: {0}]
+ACOUSTIC_CURVE_UNSOLO=[{0} Solo deaktiviert]
+ACOUSTIC_SOLO_OFF=[Solo AUS - vorheriger Zustand wiederhergestellt]
+ACOUSTIC_FREEZE_BY_TOUCH=[Einfrieren durch Berührung]
+ACOUSTIC_FREEZE_BY_TOUCH_RELEASED=[Einfrieren durch Berührung beendet]
+ACOUSTIC_VOLUME_AT_MINIMUM=[Master-Lautstärke: Minimum erreicht]
+ACOUSTIC_VOLUME_AT_MAXIMUM=[Master-Lautstärke: Maximum erreicht]
+ACOUSTIC_CURVE_VOLUME_AT_MINIMUM=[{0} Lautstärke: Minimum erreicht]
+ACOUSTIC_CURVE_VOLUME_AT_MAXIMUM=[{0} Lautstärke: Maximum erreicht]
+ACOUSTIC_MASTER_VOLUME=[Master-Lautstärke: {0}%]
+ACOUSTIC_MASTER_VOLUME_ANNOUNCE=[Master-Lautstärke: {0}%]
+ACOUSTIC_CURVE_VALUE_ANNOUNCE=[{0}: {1} bei {2} Hz]
+ACOUSTIC_NO_DATA=[Keine Messdaten an aktueller Position]
+
+# MIDI Controller Konfigurationsbildschirm
+MIDI_CTRL_CONFIG_TITLE=MIDI Controller Konfiguration
+MIDI_CTRL_CONFIG_ENABLED=MIDI Controller: {0}
+MIDI_CTRL_CONFIG_DEVICE=Gerät: {0}
+MIDI_CTRL_CONFIG_PRESET=Preset: {0}
+MIDI_CTRL_CONFIG_FEEDBACK=Motor-Fader Rückmeldung: {0}
+MIDI_CTRL_CONFIG_FREEZE_TOUCH=Einfrieren durch Berührung: {0}
+MIDI_CTRL_CONFIG_COMMANDS=Befehle:
+MIDI_CTRL_CONFIG_TOGGLE_CMD=  E - MIDI Controller ein-/ausschalten
+MIDI_CTRL_CONFIG_DEVICE_CMD=  D - MIDI Gerät auswählen
+MIDI_CTRL_CONFIG_PRESET_CMD=  P - Mapping-Preset laden
+MIDI_CTRL_CONFIG_MAPPING_CMD=  M - Mappings bearbeiten
+MIDI_CTRL_CONFIG_FEEDBACK_CMD=  F - Motor-Fader Rückmeldung umschalten
+MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD=  T - Einfrieren durch Berührung umschalten
+MIDI_CTRL_CONFIG_SAVE_CMD=  S - Aktuelle Mappings in Datei speichern
+MIDI_CTRL_TOGGLED=[MIDI Controller: {0}]
+MIDI_CTRL_SCANNING=[Suche nach MIDI Eingabegeräten...]
+MIDI_CTRL_NOT_AVAILABLE=[MIDI Controller Unterstützung auf dieser Plattform nicht verfügbar]
+MIDI_CTRL_NO_DEVICES=[Keine MIDI Eingabegeräte gefunden]
+MIDI_CTRL_CONNECT_HINT=[Bitte MIDI Controller anschließen und erneut versuchen]
+MIDI_CTRL_FOUND_DEVICES=[{0} MIDI Eingabegerät(e) gefunden:]
+MIDI_CTRL_SELECT_DEVICE=Gerät auswählen (1-{0}), oder ESC zum Abbrechen:
+MIDI_CTRL_DEVICE_SELECTED=[Ausgewählt: {0}]
+MIDI_CTRL_CONNECTED=[MIDI Controller: {0}]
+MIDI_CTRL_NOT_CONNECTED=[Kein MIDI Controller verbunden. Bitte zuerst ein Gerät auswählen.]
+MIDI_CTRL_PRESETS=[Verfügbare Mapping-Presets:]
+MIDI_CTRL_SELECT_PRESET=Preset auswählen (1-{0}), oder ESC zum Abbrechen:
+MIDI_CTRL_NO_PRESETS=[Keine Preset-Dateien im midi/ Verzeichnis gefunden]
+MIDI_CTRL_PRESET_LOADED=[Preset geladen: {0}]
+MIDI_CTRL_PRESET_INFO=[{0}: {1} Zuordnungen für {2}]
+MIDI_CTRL_PRESET_FAILED=[Preset konnte nicht geladen werden]
+MIDI_CTRL_FEEDBACK_TOGGLED=[Motor-Fader Rückmeldung: {0}]
+MIDI_CTRL_FREEZE_TOUCH_TOGGLED=[Einfrieren durch Berührung: {0}]
+MIDI_CTRL_SAVE_FILENAME=Dateiname eingeben (ohne .cfg):
+MIDI_CTRL_PRESET_SAVED=[Preset gespeichert: {0}]
+MIDI_CTRL_SAVE_FAILED=[Preset konnte nicht gespeichert werden]
+
+# MIDI Mapping Editor
+MIDI_MAPPING_TITLE=MIDI Mapping Editor
+MIDI_MAPPING_PRESET_NAME=Preset: {0}
+MIDI_MAPPING_COUNT=Zuordnungen: {0}
+MIDI_MAPPING_NOTE_ON_HEADER=Note-On Zuordnungen:
+MIDI_MAPPING_CC_HEADER=CC Zuordnungen:
+MIDI_MAPPING_COMMANDS=Befehle:
+MIDI_MAPPING_ADD_NOTE_CMD=  N - Note-On Zuordnung hinzufügen
+MIDI_MAPPING_ADD_CC_CMD=  C - CC Zuordnung hinzufügen
+MIDI_MAPPING_LEARN_CMD=  L - MIDI Lernen
+MIDI_MAPPING_CLEAR_CMD=  X - Alle Zuordnungen löschen
+MIDI_MAPPING_ADD_NOTE_INFO=[Note-On Zuordnung hinzufügen]
+MIDI_MAPPING_ADD_CC_INFO=[CC Zuordnung hinzufügen]
+MIDI_MAPPING_ENTER_NOTE=MIDI Notennummer eingeben (0-127):
+MIDI_MAPPING_ENTER_CC=CC Nummer eingeben (0-127):
+MIDI_MAPPING_INVALID_NOTE=[Ungültige Notennummer]
+MIDI_MAPPING_INVALID_CC=[Ungültige CC Nummer]
+MIDI_MAPPING_AVAILABLE_CMDS=Verfügbare Befehle:
+MIDI_MAPPING_CMD_LIST_NOTES=  1 - Wiedergabe/Pause\n  2 - Stopp\n  3 - Einfrieren\n  4 - Gleitend/Punktiert umschalten\n  5 - Schleife umschalten\n  6 - Schleifen-Zoom umschalten\n  7 - Schleifen-Invertierung umschalten\n  8 - Kontinuierlich umschalten\n  9 - Schleife links setzen\n  0 - Schleife rechts setzen
+MIDI_MAPPING_AVAILABLE_CC_FUNCS=Verfügbare CC Funktionen:
+MIDI_MAPPING_CC_FUNC_LIST=  1 - Master-Lautstärke\n  2 - Kurve 1 Lautstärke\n  3 - Kurve 2 Lautstärke\n  4 - Kurve 3 Lautstärke\n  5 - Kurve 4 Lautstärke\n  6 - Kurve 5 Lautstärke\n  7 - X-Achsen Position (Motor-Fader)\n  8 - SWR Wert (Motor-Fader)\n  9 - RL Wert (Motor-Fader)\n  0 - |Z| Wert (Motor-Fader)
+MIDI_MAPPING_ADDED_NOTE=[Zuordnung hinzugefügt: Note {0} -> {1}]
+MIDI_MAPPING_ADDED_CC=[Zuordnung hinzugefügt: CC {0} -> {1}]
+MIDI_MAPPING_CONFIRM_CLEAR=[Alle Zuordnungen löschen? (j/n)]
+MIDI_MAPPING_CLEARED=[Alle Zuordnungen gelöscht]
+MIDI_MAPPING_LEARN_INFO=[MIDI Lernen: Drücken Sie eine Taste oder bewegen Sie einen Regler an Ihrem Controller...\n Das empfangene MIDI-Ereignis wird angezeigt. ESC zum Abbrechen.]
+MIDI_MAPPING_LEARN_CANCELLED=[MIDI Lernen abgebrochen]
+MIDI_MAPPING_WAITING=[Warte auf MIDI Eingabe...]
+
+# MIDI Export
+MIDI_EXPORTING=[MIDI Datei wird exportiert...]
+MIDI_EXPORT_SUCCESS=[MIDI Datei gespeichert: {0}]
+MIDI_EXPORT_FAILED=[MIDI Export fehlgeschlagen]
+
 # Dokumentationspfade
 DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_DE.html
 DOC_PATH_TRAINING=doc/training/de/Training_Index.html

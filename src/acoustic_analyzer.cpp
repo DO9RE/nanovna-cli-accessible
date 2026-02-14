@@ -3,6 +3,7 @@
 #include "config.h"
 #include "synthesizer_engine.h"
 #include "midi_engine.h"
+#include "midi_file_writer.h"
 #include "pitch_mapping.h"
 #include <cmath>
 #include <algorithm>
@@ -13,6 +14,8 @@
 #include <iostream>
 #include <iomanip>
 #include <climits>
+#include <filesystem>
+#include <fstream>
 
 using namespace PitchMapping;
 
@@ -228,6 +231,13 @@ void AcousticAnalyzer::play() {
     }
     
     // Audio backend is initialized in constructor, no explicit open needed
+    // When resuming from FROZEN, flush audio buffers to prevent stale data blocking
+    if (state == PlaybackState::FROZEN) {
+        buffersWereFlushed.store(true);
+        if (audioEngine) {
+            audioEngine->stopAllNotes();
+        }
+    }
     state = PlaybackState::PLAYING;
     
     if (!audioThread.joinable()) {
@@ -511,39 +521,30 @@ void AcousticAnalyzer::setInvertedLoopGapMs(int gapMs) {
 void AcousticAnalyzer::toggleCurve(int curveIndex) {
     if (curveIndex < 0 || curveIndex >= 5) return;
     
-    std::lock_guard<std::mutex> lock(curveMutex);
-    curves[curveIndex].enabled = !curves[curveIndex].enabled;
+    // Toggle enabled flag atomically - no mutex needed for this operation
+    bool newEnabled = !curves[curveIndex].enabled.load();
+    curves[curveIndex].enabled.store(newEnabled);
     needsPointSelection.store(true);  // Recalculate point selection when curves change
     
     // Track last enabled curve for ruler "follow last curve" mode
-    if (curves[curveIndex].enabled) {
+    if (newEnabled) {
         lastEnabledCurve = curveIndex;
     }
     
     // If curve is being disabled, stop its note to prevent hanging
-    if (!curves[curveIndex].enabled && audioEngine) {
+    if (!newEnabled && audioEngine) {
         audioEngine->stopCurveNote(curveIndex);
     }
     
     if (logger) {
         logger->log("ACOUSTIC", curves[curveIndex].name + " " + 
-                    (curves[curveIndex].enabled ? "enabled" : "disabled"));
-    }
-    
-    // In smooth mode, pause/resume for immediate response
-    if (smoothMode.load()) {
-        PlaybackState currentState = state.load();
-        if (currentState == PlaybackState::PLAYING) {
-            pause();  // Pause playback
-            std::this_thread::sleep_for(std::chrono::milliseconds(CURVE_TOGGLE_PAUSE_DELAY_MS));  // Brief delay to ensure pause takes effect
-            play();   // Resume playback
-        }
+                    (newEnabled ? "enabled" : "disabled"));
     }
 }
 
 bool AcousticAnalyzer::isCurveEnabled(int curveIndex) const {
     if (curveIndex < 0 || curveIndex >= 5) return false;
-    return curves[curveIndex].enabled;
+    return curves[curveIndex].enabled.load();
 }
 
 void AcousticAnalyzer::setCurveVolume(int curveIndex, int volumePercent) {
@@ -558,16 +559,8 @@ void AcousticAnalyzer::setCurveVolume(int curveIndex, int volumePercent) {
         logger->log("ACOUSTIC", curves[curveIndex].name + " volume set to " + std::to_string(volumePercent) + "%");
     }
     
-    // Task 2.4: Enable pause/resume on all platforms for consistent acoustic response
-    // In smooth mode, pause and resume for immediate response
-    if (smoothMode.load()) {
-        PlaybackState currentState = state.load();
-        if (currentState == PlaybackState::PLAYING) {
-            pause();  // Pause playback
-            std::this_thread::sleep_for(std::chrono::milliseconds(CURVE_TOGGLE_PAUSE_DELAY_MS));  // Brief delay to ensure pause takes effect
-            play();   // Resume playback
-        }
-    }
+    // Volume changes are picked up on the next audio tick via needsPointSelection
+    needsPointSelection.store(true);
 }
 
 int AcousticAnalyzer::getCurveVolume(int curveIndex) const {
@@ -1098,10 +1091,16 @@ void AcousticAnalyzer::audioThreadFunc() {
                 }
             }
         } else {
-            // Frozen mode: stay at current point and play continuously
+            // Frozen mode: stay at current point without continuous audio generation
             if (isSmooth) {
-                playCurrentPositionSmooth(0.0);  // No interpolation in frozen mode
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // In smooth frozen mode, just hold position without flooding audio buffers
+                // Only re-play if position changed (e.g., user moved playback head)
+                size_t frozenPos = currentPos.load();
+                if (frozenPos != lastFrozenPos) {
+                    playCurrentPositionSmooth(0.0);  // Play once at new position
+                    lastFrozenPos = frozenPos;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(frameDurationMs));
             } else {
                 // In dotted mode (freeze), use configured freeze point pause timing
                 int dotDurationMs = dottedDurationMs.load();
@@ -3302,3 +3301,690 @@ void AcousticAnalyzer::checkAxisCrossingsInRange(size_t prevPos, size_t currentP
 }
 
 
+
+// Cross-platform MIDI export and Synth WAV rendering
+
+bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
+    // Check if audio engine is MIDI type
+    if (!audioEngine || audioEngine->getEngineType() != AudioEngineType::MIDI) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Cannot export MIDI: audio engine is not MIDI type");
+        }
+        if (outputCallback) {
+            outputCallback("Error: MIDI export is only available when using MIDI audio engine.\n");
+        }
+        return false;
+    }
+    
+    if (measurementData.empty()) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Cannot export MIDI: no measurement data");
+        }
+        if (outputCallback) {
+            outputCallback("Error: No measurement data available for export.\n");
+        }
+        return false;
+    }
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "Starting MIDI file export...");
+    }
+    if (outputCallback) {
+        outputCallback("Exporting MIDI file...\n");
+    }
+    
+    // Ensure parent directory exists
+    try {
+        std::filesystem::path parentDir = std::filesystem::path(outputPath).parent_path();
+        if (!parentDir.empty()) {
+            std::filesystem::create_directories(parentDir);
+        }
+    } catch (...) {
+        // Directory may already exist, continue
+    }
+    
+    // Get MIDIEngine for instrument configuration
+    auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+    if (!midiEngine) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Failed to cast audio engine to MIDIEngine");
+        }
+        if (outputCallback) {
+            outputCallback("Error: Audio engine is not a MIDI engine.\n");
+        }
+        return false;
+    }
+    
+    // Collect enabled curves
+    std::vector<int> enabledCurves;
+    for (int i = 0; i < 5; i++) {
+        if (curves[i].enabled) {
+            enabledCurves.push_back(i);
+        }
+    }
+    
+    bool includeXAxisRuler = xAxisRulerEnabled.load();
+    
+    // Calculate total number of tracks:
+    // 1 tempo/conductor track + 1 per enabled curve + 1 optional X-axis ruler
+    uint16_t numTracks = 1 + static_cast<uint16_t>(enabledCurves.size());
+    if (includeXAxisRuler) {
+        numTracks++;
+    }
+    
+    // Create MIDI file writer
+    MIDIFileWriter midiWriter;
+    
+    if (!midiWriter.createFile(outputPath)) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Failed to create MIDI file: " + midiWriter.getLastError());
+        }
+        if (outputCallback) {
+            outputCallback("Error creating MIDI file: " + midiWriter.getLastError() + "\n");
+        }
+        return false;
+    }
+    
+    std::string midiPath = midiWriter.getFilePath();
+    if (logger) {
+        logger->log("ACOUSTIC", "Created MIDI file: " + midiPath);
+    }
+    
+    // Write MIDI header (Format 1, multi-track)
+    if (!midiWriter.writeHeader(numTracks)) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Failed to write MIDI header: " + midiWriter.getLastError());
+        }
+        if (outputCallback) {
+            outputCallback("Error writing MIDI header: " + midiWriter.getLastError() + "\n");
+        }
+        return false;
+    }
+    
+    // Get playback parameters
+    int playbackTimeSec = playbackTimeSeconds.load();
+    double totalTimeSec = static_cast<double>(playbackTimeSec);
+    size_t numPoints = measurementData.size();
+    double timePerPoint = totalTimeSec / static_cast<double>(numPoints);
+    
+    // Playback mode
+    bool isGliding = smoothMode.load();
+    bool isDotted = !isGliding;
+    
+    // Pitch bend range matching MIDIEngine (24 semitones)
+    static constexpr int PITCH_BEND_SEMITONES = 24;
+    
+    // Calculate reference note (same as MIDIEngine::calculateReferenceNote)
+    int synthMinHz = minFreqHz.load();
+    int synthMaxHz = maxFreqHz.load();
+    double midFreqHz = std::sqrt(static_cast<double>(synthMinHz) * static_cast<double>(synthMaxHz));
+    double refNoteFloat = 69.0 + 12.0 * std::log2(midFreqHz / 440.0);
+    uint8_t referenceNote = static_cast<uint8_t>(std::clamp(std::round(refNoteFloat), 0.0, 127.0));
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "Exporting " + std::to_string(numPoints) + " points over " + 
+                    std::to_string(totalTimeSec) + " seconds, mode=" + (isGliding ? "gliding" : "dotted") +
+                    ", refNote=" + std::to_string(referenceNote));
+    }
+    
+    // Helper lambda: convert frequency to pitch bend for 24-semitone range (matches MIDIEngine::frequencyToPitchBend)
+    auto frequencyToPitchBend = [&](double freqHz) -> int16_t {
+        double refFreqHz = 440.0 * std::pow(2.0, (referenceNote - 69) / 12.0);
+        double semitonesDiff = 12.0 * std::log2(freqHz / refFreqHz);
+        semitonesDiff = std::clamp(semitonesDiff, -static_cast<double>(PITCH_BEND_SEMITONES), 
+                                                   static_cast<double>(PITCH_BEND_SEMITONES));
+        int16_t bend = static_cast<int16_t>(semitonesDiff * (8192.0 / PITCH_BEND_SEMITONES));
+        return std::clamp(bend, static_cast<int16_t>(-8192), static_cast<int16_t>(8191));
+    };
+    
+    // Helper lambda: convert frequency to note + pitch bend for dotted mode (matches MIDIEngine::frequencyToMIDI)
+    auto frequencyToMIDI = [&](double freqHz, uint8_t& outNote, int16_t& outBend) {
+        double noteFloat = 69.0 + 12.0 * std::log2(freqHz / 440.0);
+        noteFloat = std::clamp(noteFloat, 0.0, 127.0);
+        outNote = static_cast<uint8_t>(std::floor(noteFloat));
+        double fraction = noteFloat - std::floor(noteFloat);
+        // Convert fraction to pitch bend for 24-semitone range
+        // 1 semitone = 8192/24 = 341.33 bend units
+        outBend = static_cast<int16_t>(fraction * (8192.0 / PITCH_BEND_SEMITONES));
+    };
+    
+    // Helper lambda: write channel initialization matching MIDIEngine::open()
+    auto writeChannelInit = [&](MIDIFileWriter& writer, uint8_t channel, int program) -> bool {
+        // Program change
+        if (!writer.writeProgramChange(0, channel, program)) return false;
+        
+        // Disable modulation and vibrato
+        if (!writer.writeControlChange(0, channel, 1, 0)) return false;    // Modulation Wheel off
+        if (!writer.writeControlChange(0, channel, 76, 0)) return false;   // Vibrato Rate off
+        if (!writer.writeControlChange(0, channel, 77, 0)) return false;   // Vibrato Depth off
+        if (!writer.writeControlChange(0, channel, 78, 0)) return false;   // Vibrato Delay off
+        
+        // Disable reverb, chorus, and effects
+        if (!writer.writeControlChange(0, channel, 91, 0)) return false;   // Reverb off
+        if (!writer.writeControlChange(0, channel, 93, 0)) return false;   // Chorus off
+        if (!writer.writeControlChange(0, channel, 94, 0)) return false;   // Detune off
+        
+        // Disable portamento
+        if (!writer.writeControlChange(0, channel, 5, 0)) return false;    // Portamento Time = 0
+        if (!writer.writeControlChange(0, channel, 65, 0)) return false;   // Portamento Off
+        if (!writer.writeControlChange(0, channel, 84, 0)) return false;   // Portamento Control = 0
+        
+        // Set pitch bend range to 24 semitones via RPN
+        if (!writer.writeControlChange(0, channel, 101, 0)) return false;  // RPN MSB = 0
+        if (!writer.writeControlChange(0, channel, 100, 0)) return false;  // RPN LSB = 0
+        if (!writer.writeControlChange(0, channel, 6, PITCH_BEND_SEMITONES)) return false;   // Data Entry MSB
+        if (!writer.writeControlChange(0, channel, 38, 0)) return false;   // Data Entry LSB = 0
+        if (!writer.writeControlChange(0, channel, 101, 127)) return false; // RPN null
+        if (!writer.writeControlChange(0, channel, 100, 127)) return false; // RPN null
+        
+        return true;
+    };
+    
+    // Helper lambda: get pitch for a curve at a given measurement point
+    auto getCurvePitch = [&](int curveIdx, const MeasurementPoint& pt) -> double {
+        switch (curveIdx) {
+            case 0: return calcSWRPitch(pt);
+            case 1: return calcRLPitch(pt);
+            case 2: return calcZPitch(pt);
+            case 3: return calcXPitch(pt);
+            case 4: return calcPhasePitch(pt);
+            default: return 440.0;
+        }
+    };
+    
+    // Curve names for track labeling
+    const char* curveNames[] = {"SWR", "Return Loss", "Impedance Magnitude", "Reactance", "Phase"};
+    
+    // Calculate delta ticks per point
+    uint32_t pointDeltaTicks = MIDIFileWriter::secondsToTicks(timePerPoint);
+    
+    // Dotted mode parameters
+    uint32_t noteDurationTicks = 0;
+    if (isDotted) {
+        int dotDurationMs = dottedDurationMs.load();
+        double dotDurationSec = dotDurationMs / 1000.0;
+        if (dotDurationSec > timePerPoint) dotDurationSec = timePerPoint;
+        noteDurationTicks = MIDIFileWriter::secondsToTicks(dotDurationSec);
+        if (noteDurationTicks < 1) noteDurationTicks = 1;
+    } else {
+        // Gliding: note spans nearly the full point duration
+        noteDurationTicks = pointDeltaTicks > 1 ? pointDeltaTicks - 1 : 1;
+    }
+    
+    // ============================================
+    // Track 0: Tempo/conductor track
+    // ============================================
+    if (!midiWriter.beginTrack()) {
+        if (logger) logger->log("ACOUSTIC", "Failed to begin tempo track: " + midiWriter.getLastError());
+        return false;
+    }
+    if (!midiWriter.writeTrackName(0, "Tempo")) {
+        if (logger) logger->log("ACOUSTIC", "Failed to write tempo track name: " + midiWriter.getLastError());
+        return false;
+    }
+    // Write tempo meta event (500000 µs/quarter = 120 BPM, matching secondsToTicks default)
+    if (!midiWriter.writeTempo(0, 500000)) {
+        if (logger) logger->log("ACOUSTIC", "Failed to write tempo: " + midiWriter.getLastError());
+        return false;
+    }
+    if (!midiWriter.endTrack()) {
+        if (logger) logger->log("ACOUSTIC", "Failed to end tempo track: " + midiWriter.getLastError());
+        return false;
+    }
+    
+    // ============================================
+    // One track per enabled curve
+    // ============================================
+    for (int curveIdx : enabledCurves) {
+        int midiChannel = (curveIdx < 4) ? curveIdx : (curveIdx + 1);  // Skip channel 9 (drums)
+        int program = midiEngine->getCurveInstrument(curveIdx);
+        
+        if (!midiWriter.beginTrack()) {
+            if (logger) logger->log("ACOUSTIC", "Failed to begin curve track: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        // Write track name
+        if (!midiWriter.writeTrackName(0, curveNames[curveIdx])) {
+            if (logger) logger->log("ACOUSTIC", "Failed to write track name: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        // Initialize channel (instruments, effects off, pitch bend range)
+        if (!writeChannelInit(midiWriter, midiChannel, program)) {
+            if (logger) logger->log("ACOUSTIC", "Failed to write channel init: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        // Set initial volume matching playback: (curveVolumes[curveIdx] * masterVolume) / 100
+        int effectiveVolume = (curveVolumes[curveIdx] * masterVolume) / 100;
+        uint8_t volume = static_cast<uint8_t>(std::clamp(effectiveVolume * 127 / 100, 0, 127));
+        if (!midiWriter.writeControlChange(0, midiChannel, 7, volume)) {
+            if (logger) logger->log("ACOUSTIC", "Failed to write volume CC: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        if (isGliding) {
+            // ============================================
+            // GLIDING MODE: Reference note + pitch bend only (matches playback)
+            // ============================================
+            
+            // Start reference note at beginning
+            double firstPitch = getCurvePitch(curveIdx, measurementData[0]);
+            int16_t firstBend = frequencyToPitchBend(firstPitch);
+            
+            // Set initial pitch bend before the note
+            if (!midiWriter.writePitchBend(0, midiChannel, firstBend)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write pitch bend: " + midiWriter.getLastError());
+                return false;
+            }
+            
+            // Set initial pan
+            uint8_t pan0 = 0;  // First point = leftmost
+            if (!midiWriter.writeControlChange(0, midiChannel, 10, pan0)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write pan CC: " + midiWriter.getLastError());
+                return false;
+            }
+            
+            // Start the reference note (matching GLIDING_MODE_VELOCITY = 100 from MIDIEngine)
+            if (!midiWriter.writeNoteOn(0, midiChannel, referenceNote, 100)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write note on: " + midiWriter.getLastError());
+                return false;
+            }
+            
+            // Write pitch bend + pan updates for each subsequent point
+            for (size_t i = 1; i < numPoints; i++) {
+                const MeasurementPoint& pt = measurementData[i];
+                double pitchHz = getCurvePitch(curveIdx, pt);
+                int16_t bend = frequencyToPitchBend(pitchHz);
+                
+                // Pan position: left to right across the sweep
+                double panFraction = static_cast<double>(i) / static_cast<double>(numPoints - 1);
+                uint8_t pan = static_cast<uint8_t>(panFraction * 127.0);
+                
+                // Delta time from previous point
+                if (!midiWriter.writePitchBend(pointDeltaTicks, midiChannel, bend)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write pitch bend: " + midiWriter.getLastError());
+                    return false;
+                }
+                if (!midiWriter.writeControlChange(0, midiChannel, 10, pan)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write pan CC: " + midiWriter.getLastError());
+                    return false;
+                }
+            }
+            
+            // End the reference note after the last point duration
+            if (!midiWriter.writeNoteOff(pointDeltaTicks, midiChannel, referenceNote)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write note off: " + midiWriter.getLastError());
+                return false;
+            }
+        } else {
+            // ============================================
+            // DOTTED MODE: Note on/off per point (matches playback)
+            // ============================================
+            for (size_t i = 0; i < numPoints; i++) {
+                const MeasurementPoint& pt = measurementData[i];
+                double pitchHz = getCurvePitch(curveIdx, pt);
+                
+                // Convert frequency to MIDI note + pitch bend (24 semitone range)
+                uint8_t note;
+                int16_t bend;
+                frequencyToMIDI(pitchHz, note, bend);
+                
+                // Pan position
+                double panFraction = (numPoints > 1) ? static_cast<double>(i) / static_cast<double>(numPoints - 1) : 0.5;
+                uint8_t pan = static_cast<uint8_t>(panFraction * 127.0);
+                
+                // Delta time: first point has 0 delta from track start,
+                // subsequent points need gap from previous note-off to reach pointDeltaTicks spacing
+                uint32_t deltaTime;
+                if (i == 0) {
+                    deltaTime = 0;
+                } else {
+                    // After previous note-off (noteDurationTicks from note-on),
+                    // we need (pointDeltaTicks - noteDurationTicks) rest to reach the next point
+                    deltaTime = (pointDeltaTicks > noteDurationTicks) ? (pointDeltaTicks - noteDurationTicks) : 0;
+                }
+                
+                // Note on with volume as velocity (matching dotted mode playback)
+                if (!midiWriter.writeNoteOn(deltaTime, midiChannel, note, volume)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write note on: " + midiWriter.getLastError());
+                    return false;
+                }
+                
+                // Pitch bend for fine tuning
+                if (!midiWriter.writePitchBend(0, midiChannel, bend)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write pitch bend: " + midiWriter.getLastError());
+                    return false;
+                }
+                
+                // Pan
+                if (!midiWriter.writeControlChange(0, midiChannel, 10, pan)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write pan CC: " + midiWriter.getLastError());
+                    return false;
+                }
+                
+                // Note off after dot duration
+                if (!midiWriter.writeNoteOff(noteDurationTicks, midiChannel, note)) {
+                    if (logger) logger->log("ACOUSTIC", "Failed to write note off: " + midiWriter.getLastError());
+                    return false;
+                }
+            }
+        }
+        
+        if (!midiWriter.endTrack()) {
+            if (logger) logger->log("ACOUSTIC", "Failed to end curve track: " + midiWriter.getLastError());
+            return false;
+        }
+    }
+    
+    // ============================================
+    // X-Axis Ruler Track (if enabled)
+    // ============================================
+    if (includeXAxisRuler) {
+        const int drumChannel = 9;
+        int drumNote = xAxisRulerMidiDrum;
+        
+        if (!midiWriter.beginTrack()) {
+            if (logger) logger->log("ACOUSTIC", "Failed to begin X-axis ruler track: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        if (!midiWriter.writeTrackName(0, "X-Axis Ruler")) {
+            if (logger) logger->log("ACOUSTIC", "Failed to write X-axis ruler track name: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        // Set drum channel volume
+        int xBlipVolume = (xAxisRulerVolume * masterVolume) / 100;
+        uint8_t drumVolume = static_cast<uint8_t>(std::clamp(xBlipVolume * 127 / 100, 0, 127));
+        if (!midiWriter.writeControlChange(0, drumChannel, 7, drumVolume)) {
+            if (logger) logger->log("ACOUSTIC", "Failed to write drum volume: " + midiWriter.getLastError());
+            return false;
+        }
+        
+        // Calculate blip duration in ticks
+        int blipDurationMs = xAxisRulerBlipDurationMs;
+        double blipDurationSec = blipDurationMs / 1000.0;
+        if (blipDurationSec > timePerPoint) blipDurationSec = timePerPoint;
+        uint32_t blipDurationTicks = MIDIFileWriter::secondsToTicks(blipDurationSec);
+        if (blipDurationTicks < 1) blipDurationTicks = 1;
+        
+        // Write one drum hit per measurement point
+        for (size_t i = 0; i < numPoints; i++) {
+            // Pan position (follows curve panning)
+            double panFraction = (numPoints > 1) ? static_cast<double>(i) / static_cast<double>(numPoints - 1) : 0.5;
+            uint8_t pan = static_cast<uint8_t>(panFraction * 127.0);
+            
+            // Delta time: first point has 0 delta from track start,
+            // subsequent points need gap from previous note-off to reach pointDeltaTicks spacing
+            uint32_t deltaTime;
+            if (i == 0) {
+                deltaTime = 0;
+            } else {
+                deltaTime = (pointDeltaTicks > blipDurationTicks) ? (pointDeltaTicks - blipDurationTicks) : 0;
+            }
+            
+            // Pan
+            if (!midiWriter.writeControlChange(deltaTime, drumChannel, 10, pan)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write drum pan: " + midiWriter.getLastError());
+                return false;
+            }
+            
+            // Drum hit
+            if (!midiWriter.writeNoteOn(0, drumChannel, static_cast<uint8_t>(drumNote), drumVolume)) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write drum note on: " + midiWriter.getLastError());
+                return false;
+            }
+            
+            // Note off after blip duration
+            if (!midiWriter.writeNoteOff(blipDurationTicks, drumChannel, static_cast<uint8_t>(drumNote))) {
+                if (logger) logger->log("ACOUSTIC", "Failed to write drum note off: " + midiWriter.getLastError());
+                return false;
+            }
+        }
+        
+        if (!midiWriter.endTrack()) {
+            if (logger) logger->log("ACOUSTIC", "Failed to end X-axis ruler track: " + midiWriter.getLastError());
+            return false;
+        }
+    }
+    
+    midiWriter.close();
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "MIDI file exported successfully: " + midiPath);
+    }
+    if (outputCallback) {
+        outputCallback("MIDI file saved: " + midiPath + "\n");
+    }
+    
+    return true;
+}
+
+bool AcousticAnalyzer::renderSynthToWav(const std::string& outputPath) {
+    // Check if audio engine is Synthesizer type
+    if (!audioEngine || audioEngine->getEngineType() != AudioEngineType::SYNTHESIZER) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Cannot render to WAV: audio engine is not Synthesizer type");
+        }
+        if (outputCallback) {
+            outputCallback("Error: WAV rendering is only available when using Synthesizer audio engine.\n");
+        }
+        return false;
+    }
+    
+    if (measurementData.empty()) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Cannot render to WAV: no measurement data");
+        }
+        if (outputCallback) {
+            outputCallback("Error: No measurement data available for rendering.\n");
+        }
+        return false;
+    }
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "Starting Synth to WAV rendering...");
+    }
+    if (outputCallback) {
+        outputCallback("Rendering audio to WAV file...\n");
+    }
+    
+    // Ensure parent directory exists
+    try {
+        std::filesystem::path parentDir = std::filesystem::path(outputPath).parent_path();
+        if (!parentDir.empty()) {
+            std::filesystem::create_directories(parentDir);
+        }
+    } catch (...) {
+        // Directory may already exist, continue
+    }
+    
+    // Get playback parameters
+    int playbackTimeSec = playbackTimeSeconds.load();
+    double totalTimeSec = static_cast<double>(playbackTimeSec);
+    size_t numPoints = measurementData.size();
+    
+    // Calculate time per point and samples per point
+    double timePerPoint = totalTimeSec / static_cast<double>(numPoints);
+    int samplesPerPoint = static_cast<int>(SAMPLE_RATE * timePerPoint);
+    if (samplesPerPoint < 1) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Warning: very short time per point (" + 
+                        std::to_string(timePerPoint) + "s), using minimum 1 sample per point");
+        }
+        samplesPerPoint = 1;
+    }
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "Rendering " + std::to_string(numPoints) + " points over " + 
+                    std::to_string(totalTimeSec) + " seconds (" + 
+                    std::to_string(samplesPerPoint) + " samples/point)");
+    }
+    
+    // Collect all audio samples
+    std::vector<int16_t> allSamples;
+    allSamples.reserve(static_cast<size_t>(SAMPLE_RATE * totalTimeSec * CHANNELS));
+    
+    // Determine dotted mode parameters
+    bool isDotted = !smoothMode.load();
+    int dotDurationMs = dottedDurationMs.load();
+    int dotPauseMs = dottedPauseMs.load();
+    
+    // In dotted mode, split each point's time into tone + silence
+    int toneSamples = samplesPerPoint;   // default: full duration (smooth mode)
+    int silenceSamples = 0;
+    
+    if (isDotted) {
+        double timePerPointInMs = timePerPoint * 1000.0;
+        double totalDotMs = static_cast<double>(dotDurationMs) + static_cast<double>(dotPauseMs);
+        
+        if (totalDotMs > 0 && totalDotMs <= timePerPointInMs) {
+            // Enough time: use configured durations, fill rest with silence
+            toneSamples = (SAMPLE_RATE * dotDurationMs) / 1000;
+            silenceSamples = samplesPerPoint - toneSamples;
+        } else if (totalDotMs > 0) {
+            // Not enough time: scale proportionally
+            double scale = timePerPointInMs / totalDotMs;
+            int scaledDot = static_cast<int>(dotDurationMs * scale);
+            if (scaledDot < 1) scaledDot = 1;
+            toneSamples = (SAMPLE_RATE * scaledDot) / 1000;
+            if (toneSamples < 1) toneSamples = 1;
+            silenceSamples = samplesPerPoint - toneSamples;
+        }
+        if (silenceSamples < 0) silenceSamples = 0;
+        if (toneSamples > samplesPerPoint) toneSamples = samplesPerPoint;
+    }
+    
+    {
+        std::lock_guard<std::mutex> lock(curveMutex);
+        
+        for (size_t i = 0; i < numPoints; i++) {
+            const MeasurementPoint& pt = measurementData[i];
+            double frac = numPoints > 1 ? static_cast<double>(i) / static_cast<double>(numPoints - 1) : 0.5;
+            
+            // Generate tone portion
+            std::vector<int16_t> mixBuffer(toneSamples * CHANNELS, 0);
+            
+            // Generate audio for each enabled curve
+            if (curves[0].enabled) {
+                int effectiveVolume = (curveVolumes[0] * masterVolume) / 100;
+                audioEngine->generateAudio(mixBuffer, toneSamples, 0, calcSWRPitch(pt), frac, effectiveVolume);
+            }
+            if (curves[1].enabled) {
+                int effectiveVolume = (curveVolumes[1] * masterVolume) / 100;
+                audioEngine->generateAudio(mixBuffer, toneSamples, 1, calcRLPitch(pt), frac, effectiveVolume);
+            }
+            if (curves[2].enabled) {
+                int effectiveVolume = (curveVolumes[2] * masterVolume) / 100;
+                audioEngine->generateAudio(mixBuffer, toneSamples, 2, calcZPitch(pt), frac, effectiveVolume);
+            }
+            if (curves[3].enabled) {
+                int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
+                audioEngine->generateAudio(mixBuffer, toneSamples, 3, calcXPitch(pt), frac, effectiveVolume);
+            }
+            if (curves[4].enabled) {
+                int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
+                audioEngine->generateAudio(mixBuffer, toneSamples, 4, calcPhasePitch(pt), frac, effectiveVolume);
+            }
+            
+            allSamples.insert(allSamples.end(), mixBuffer.begin(), mixBuffer.end());
+            
+            // In dotted mode, append silence after each tone
+            if (isDotted && silenceSamples > 0) {
+                allSamples.insert(allSamples.end(), silenceSamples * CHANNELS, 0);
+            }
+        }
+    }
+    
+    if (allSamples.empty()) {
+        if (logger) {
+            logger->log("ACOUSTIC", "No audio data generated (no curves enabled?)");
+        }
+        if (outputCallback) {
+            outputCallback("Error: No audio data generated. Make sure at least one curve is enabled.\n");
+        }
+        return false;
+    }
+    
+    // Write WAV file
+    try {
+        std::ofstream wavFile(outputPath, std::ios::binary);
+        if (!wavFile.is_open()) {
+            if (logger) {
+                logger->log("ACOUSTIC", "Failed to create WAV file: " + outputPath);
+            }
+            if (outputCallback) {
+                outputCallback("Error: Failed to create WAV file: " + outputPath + "\n");
+            }
+            return false;
+        }
+        
+        uint32_t dataSize = static_cast<uint32_t>(allSamples.size() * sizeof(int16_t));
+        uint32_t fileSize = 36 + dataSize;
+        uint16_t blockAlign = CHANNELS * (BITS / 8);
+        uint32_t byteRate = SAMPLE_RATE * blockAlign;
+        
+        // Write RIFF header
+        wavFile.write("RIFF", 4);
+        wavFile.write(reinterpret_cast<const char*>(&fileSize), 4);
+        wavFile.write("WAVE", 4);
+        
+        // Write fmt chunk
+        wavFile.write("fmt ", 4);
+        uint32_t fmtSize = 16;
+        wavFile.write(reinterpret_cast<const char*>(&fmtSize), 4);
+        
+        uint16_t audioFormat = 1;  // PCM
+        wavFile.write(reinterpret_cast<const char*>(&audioFormat), 2);
+        
+        uint16_t numChannels = CHANNELS;
+        wavFile.write(reinterpret_cast<const char*>(&numChannels), 2);
+        
+        uint32_t sampleRate = SAMPLE_RATE;
+        wavFile.write(reinterpret_cast<const char*>(&sampleRate), 4);
+        
+        wavFile.write(reinterpret_cast<const char*>(&byteRate), 4);
+        wavFile.write(reinterpret_cast<const char*>(&blockAlign), 2);
+        
+        uint16_t bitsPerSample = BITS;
+        wavFile.write(reinterpret_cast<const char*>(&bitsPerSample), 2);
+        
+        // Write data chunk
+        wavFile.write("data", 4);
+        wavFile.write(reinterpret_cast<const char*>(&dataSize), 4);
+        
+        // Write audio samples
+        wavFile.write(reinterpret_cast<const char*>(allSamples.data()), dataSize);
+        
+        wavFile.close();
+        
+        if (!wavFile.good()) {
+            if (logger) {
+                logger->log("ACOUSTIC", "Error writing WAV file data");
+            }
+            if (outputCallback) {
+                outputCallback("Error: Failed to write WAV file data.\n");
+            }
+            return false;
+        }
+    } catch (const std::exception& e) {
+        if (logger) {
+            logger->log("ACOUSTIC", "Exception writing WAV file: " + std::string(e.what()));
+        }
+        if (outputCallback) {
+            outputCallback("Error writing WAV file: " + std::string(e.what()) + "\n");
+        }
+        return false;
+    }
+    
+    if (logger) {
+        logger->log("ACOUSTIC", "WAV file created successfully: " + outputPath);
+    }
+    if (outputCallback) {
+        outputCallback("WAV file saved: " + outputPath + "\n");
+    }
+    
+    return true;
+}

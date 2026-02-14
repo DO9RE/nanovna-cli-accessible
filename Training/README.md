@@ -25,6 +25,20 @@ nanovna-cli.exe
 3. Drücken Sie **V** für Smith-Diagramm-Visualisierung
 4. Drücken Sie **H** für Hilfe
 
+### 4. MIDI Controller einrichten (optional)
+Wenn Sie einen MIDI Controller (z.B. Behringer X-Touch Compact) besitzen:
+1. Controller per USB anschließen
+2. In der Akustischen Analyse **A** drücken (Audio-Konfiguration)
+3. **C** drücken (MIDI Controller Konfiguration)
+4. **E** drücken zum Aktivieren
+5. **D** drücken und Gerät wählen
+6. **P** drücken und Preset wählen (z.B. `behringer_x_touch_compact.cfg`)
+7. **ESC** zweimal drücken um zurück zur Analyse zu kommen
+8. Die Motor-Fader bewegen sich nun mit den Kurvenamplituden!
+
+**Tipp:** Aktivieren Sie **Freeze by Touch** (T im MIDI-Menü), um durch Berühren der Fader 
+die Wiedergabe zu pausieren und die aktuellen Werte zu ertasten.
+
 ---
 
 ## 📁 Enthaltene Training-Dateien

@@ -328,4 +328,12 @@ struct AppConfig {
         double side_speaker_distance = 1.0;     // Relative side speaker distance (0.5-2.0)
         
     } spatial_calibration;
+    
+    // MIDI Controller settings
+    bool midi_controller_enabled = false;     // Whether MIDI controller input is enabled
+    int midi_controller_device_id = -1;       // Platform-specific device ID (-1 = none selected)
+    std::string midi_controller_device_name;  // Stored device name for display
+    std::string midi_controller_preset = "";  // Preset filename (e.g., "behringer_x_touch_compact.cfg")
+    bool midi_controller_feedback = true;     // Send motor fader feedback to controller
+    bool midi_controller_freeze_by_touch = false;  // Freeze playback when motor fader is touched
 };

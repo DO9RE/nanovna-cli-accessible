@@ -9,6 +9,16 @@ static void trim(std::string &s) {
     while(!s.empty() && isspace((unsigned char)s.back())) s.pop_back();
 }
 
+// Strip inline comments: "value  # comment" → "value"
+// Only strips if '#' is preceded by whitespace (to avoid stripping e.g. color codes)
+static void stripInlineComment(std::string &s) {
+    size_t pos = s.find('#');
+    if (pos != std::string::npos && pos > 0 && isspace((unsigned char)s[pos - 1])) {
+        s = s.substr(0, pos);
+        trim(s);
+    }
+}
+
 // Helper function to safely parse unsigned 64-bit integer from string
 // Returns true if parsing was successful, false otherwise
 // If parsing fails or string is empty, result is set to 0
@@ -45,7 +55,7 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         if (pos == std::string::npos) continue;
         std::string k = line.substr(0,pos);
         std::string v = line.substr(pos+1);
-        trim(k); trim(v);
+        trim(k); trim(v); stripInlineComment(v);
         if (k == "serial_port") cfg.serial_port = v;
         else if (k == "baud") cfg.baud = std::stoul(v);
         else if (k == "start_freq") parseUInt64(v, cfg.start_freq);
@@ -399,6 +409,14 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         else if (k == "spatial_back_speaker_distance") cfg.spatial_calibration.back_speaker_distance = std::stod(v);
         else if (k == "spatial_side_speaker_distance") cfg.spatial_calibration.side_speaker_distance = std::stod(v);
         
+        // MIDI Controller settings
+        else if (k == "midi_controller_enabled") cfg.midi_controller_enabled = (v == "1" || v == "true");
+        else if (k == "midi_controller_device_id") cfg.midi_controller_device_id = std::stoi(v);
+        else if (k == "midi_controller_device_name") cfg.midi_controller_device_name = v;
+        else if (k == "midi_controller_preset") cfg.midi_controller_preset = v;
+        else if (k == "midi_controller_feedback") cfg.midi_controller_feedback = (v == "1" || v == "true");
+        else if (k == "midi_controller_freeze_by_touch") cfg.midi_controller_freeze_by_touch = (v == "1" || v == "true");
+        
         else if (k == "table_columns") {
             // Parse comma-separated list of columns
             cfg.table_columns.clear();
@@ -750,6 +768,15 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "spatial_front_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.front_speaker_distance << "  # Front speaker distance (0.5-2.0)\n";
     ofs << "spatial_back_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.back_speaker_distance << "  # Back speaker distance (0.5-2.0)\n";
     ofs << "spatial_side_speaker_distance=" << std::fixed << std::setprecision(2) << cfg.spatial_calibration.side_speaker_distance << "  # Side speaker distance (0.5-2.0)\n";
+    
+    // MIDI Controller settings
+    ofs << "\n# MIDI Controller settings\n";
+    ofs << "midi_controller_enabled=" << (cfg.midi_controller_enabled ? "1" : "0") << "  # Enable MIDI controller input\n";
+    ofs << "midi_controller_device_id=" << cfg.midi_controller_device_id << "  # MIDI controller device ID (-1 = none)\n";
+    ofs << "midi_controller_device_name=" << cfg.midi_controller_device_name << "  # MIDI controller device name\n";
+    ofs << "midi_controller_preset=" << cfg.midi_controller_preset << "  # MIDI mapping preset filename\n";
+    ofs << "midi_controller_feedback=" << (cfg.midi_controller_feedback ? "1" : "0") << "  # Send motor fader feedback\n";
+    ofs << "midi_controller_freeze_by_touch=" << (cfg.midi_controller_freeze_by_touch ? "1" : "0") << "  # Freeze playback when fader touched\n";
     
     ofs << "\n# Table view preferences\n";
     ofs << "table_columns=";

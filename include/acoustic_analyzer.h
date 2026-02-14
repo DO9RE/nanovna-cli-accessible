@@ -26,7 +26,7 @@ enum class PlaybackState {
 
 // Individual curve that can be enabled/disabled
 struct AcousticCurve {
-    bool enabled = false;
+    std::atomic<bool> enabled{false};
     std::string name;
 };
 
@@ -211,6 +211,20 @@ public:
     int getRulerCustomSoundSynth() const { return rulerCustomSoundSynth; }
     int getRulerCustomSoundMidiGliding() const { return rulerCustomSoundMidiGliding; }
     int getRulerCustomSoundMidiDotted() const { return rulerCustomSoundMidiDotted; }
+    
+    /**
+     * Export MIDI file to the Export directory (cross-platform)
+     * @param outputPath Full path for the output MIDI file
+     * @return true on success, false on failure
+     */
+    bool exportMIDIFile(const std::string& outputPath);
+    
+    /**
+     * Render synthesizer audio to a WAV file (cross-platform)
+     * @param outputPath Full path for the output WAV file
+     * @return true on success, false on failure
+     */
+    bool renderSynthToWav(const std::string& outputPath);
 
 private:
     Logger* logger;
@@ -266,6 +280,7 @@ private:
     std::thread audioThread;
     std::atomic<bool> shouldStop;
     std::atomic<bool> buffersWereFlushed;  // Flag to signal immediate restart after flush
+    size_t lastFrozenPos = SIZE_MAX;  // Track position changes in frozen smooth mode
     
     // Y-Axis Ruler state
     std::atomic<bool> rulerPlaying;  // Whether ruler is currently playing

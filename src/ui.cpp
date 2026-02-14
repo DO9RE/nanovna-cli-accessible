@@ -42,6 +42,11 @@ ConsoleUI::ConsoleUI(AppConfig cfg_, Logger* logger_, MathLogger* mathLogger_, S
     // Initialize comfort functions with math logger
     comfortFuncs.setMathLogger(mathLogger_);
     
+    // Initialize MIDI controller manager
+    midiControllerMgr = std::make_unique<MidiControllerManager>();
+    midiControllerMgr->setLogger(logger);
+    if (logger) logger->log("UI", "MIDI controller manager initialized");
+    
     // Load language file
     std::string err;
     if (!translation.loadLanguage(cfg.language, err)) {
@@ -2237,6 +2242,649 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     bool running = true;
     bool spaceWasPressed = false;
     
+    // MIDI Controller integration: set up command queue for thread-safe event dispatch
+    std::mutex midiCommandMutex;
+    std::vector<MidiAppCommand> midiCommandQueue;
+    std::mutex midiCCMutex;
+    std::vector<std::pair<MidiCCFunction, int>> midiCCQueue;
+    size_t lastMidiFeedbackPos = std::numeric_limits<size_t>::max();  // Track last motor fader position
+    
+    // Solo state tracking: save/restore curve enabled state on solo toggle
+    bool soloActive[5] = {false, false, false, false, false};  // Which curves are currently solo'd
+    bool preSoloEnabled[5] = {false, false, false, false, false};  // Curve states before any solo was activated
+    bool anySoloActive = false;  // Whether any solo is currently active
+    
+    // Frozen fader positions (for snap-back in freeze mode)
+    int frozenFaderValues[5] = {0, 0, 0, 0, 0};
+    
+    // Dynamic curve range tracking for proper 0-127 normalization
+    struct CurveRange {
+        double minVal = 0.0;
+        double maxVal = 1.0;
+        bool computed = false;
+    };
+    CurveRange curveRanges[5];
+    
+    // Helper: get curve value from a MeasurementPoint by curve index (0-4)
+    auto getCurveValue = [](const MeasurementPoint& pt, int curveIndex) -> double {
+        switch (curveIndex) {
+            case 0: return pt.swr;
+            case 1: return pt.rl;
+            case 2: return pt.impedance_mag;
+            case 3: return pt.X;
+            case 4: return pt.phase_deg;
+            default: return 0.0;
+        }
+    };
+    
+    // Helper: normalize a curve value to 0.0-1.0 using the dynamic range from the dataset
+    // Uses the actual min/max of the data for relative mapping to 0-127
+    auto normalizeCurveValue = [&](const MeasurementPoint& pt, int curveIndex) -> double {
+        double val = getCurveValue(pt, curveIndex);
+        // Use fixed ranges that match the physical meaning, but cover practical measurement ranges
+        double minV, maxV;
+        switch (curveIndex) {
+            case 0: // SWR: 1.0 is perfect, higher is worse. Use log-like scale for better resolution
+                minV = 1.0; maxV = 10.0;
+                break;
+            case 1: // RL: 0 dB is worst, -40 dB is very good (negative values)
+                // Map so that -40 dB = full fader, 0 dB = zero fader (better match = higher fader)
+                minV = -40.0; maxV = 0.0;
+                break;
+            case 2: // |Z|: 0 to practical maximum
+                minV = 0.0; maxV = 500.0;
+                break;
+            case 3: // X (reactance): can be negative or positive
+                minV = -250.0; maxV = 250.0;
+                break;
+            case 4: // Phase: -180 to +180 degrees
+                minV = -180.0; maxV = 180.0;
+                break;
+            default:
+                return 0.0;
+        }
+        
+        // Override with dynamic range from actual data if we have it
+        if (curveRanges[curveIndex].computed) {
+            minV = curveRanges[curveIndex].minVal;
+            maxV = curveRanges[curveIndex].maxVal;
+        }
+        
+        if (maxV <= minV) return 0.5; // Avoid division by zero
+        double norm = (val - minV) / (maxV - minV);
+        return std::min(1.0, std::max(0.0, norm));
+    };
+    
+    // Helper: send all 5 curve faders to a specific position (0 for reset, or computed values)
+    auto sendAllFadersToZero = [&]() {
+        if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
+        for (int i = 0; i < 5; i++) {
+            midiControllerMgr->sendCurveValueFeedback(i, 0.0);
+            frozenFaderValues[i] = 0;
+        }
+    };
+    
+    // Helper: send curve fader values based on current measurement point, respecting enabled/solo state
+    auto sendCurveFaderValues = [&](const MeasurementPoint& pt) {
+        if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
+        for (int i = 0; i < 5; i++) {
+            bool isActive = analyzer.isCurveEnabled(i);
+            if (isActive) {
+                double norm = normalizeCurveValue(pt, i);
+                midiControllerMgr->sendCurveValueFeedback(i, norm);
+                frozenFaderValues[i] = MidiControllerManager::normalizedToMidi(norm);
+            } else {
+                midiControllerMgr->sendCurveValueFeedback(i, 0.0);
+                frozenFaderValues[i] = 0;
+            }
+        }
+    };
+    
+    // Set up MIDI controller if enabled
+    if (midiControllerMgr && cfg.midi_controller_enabled) {
+        // Load mapping preset if configured
+        if (!cfg.midi_controller_preset.empty()) {
+            std::string presetPath = "midi/" + cfg.midi_controller_preset;
+            if (midiControllerMgr->loadMappingsFromFile(presetPath)) {
+                if (logger) logger->log("MIDI_CTRL", "Loaded MIDI controller preset: " + presetPath);
+            } else {
+                if (logger) logger->log("MIDI_CTRL", "Failed to load preset: " + presetPath);
+            }
+        }
+        
+        // Open the MIDI controller device
+        if (cfg.midi_controller_device_id >= 0) {
+            if (midiControllerMgr->openDevice(cfg.midi_controller_device_id)) {
+                if (logger) logger->log("MIDI_CTRL", "MIDI controller opened: " + midiControllerMgr->getDeviceName());
+                print(translation.format("MIDI_CTRL_CONNECTED", "[MIDI Controller: {0}]", midiControllerMgr->getDeviceName()) + "\n");
+            } else {
+                if (logger) logger->log("MIDI_CTRL", "Failed to open MIDI controller device ID " + std::to_string(cfg.midi_controller_device_id));
+            }
+        }
+        
+        // Set command callback: push commands to thread-safe queue
+        midiControllerMgr->setCommandCallback([&midiCommandMutex, &midiCommandQueue](MidiAppCommand cmd) {
+            std::lock_guard<std::mutex> lock(midiCommandMutex);
+            midiCommandQueue.push_back(cmd);
+        });
+        
+        // Set CC value callback: push CC events to thread-safe queue
+        midiControllerMgr->setCCValueCallback([&midiCCMutex, &midiCCQueue](MidiCCFunction func, int value) {
+            std::lock_guard<std::mutex> lock(midiCCMutex);
+            midiCCQueue.push_back({func, value});
+        });
+    }
+    
+    // Compute dynamic curve ranges from measurement data for better 0-127 normalization
+    {
+        size_t dataSize = pts.size();
+        if (dataSize > 0) {
+            for (int c = 0; c < 5; c++) {
+                double minV = std::numeric_limits<double>::max();
+                double maxV = std::numeric_limits<double>::lowest();
+                for (size_t i = 0; i < dataSize; i++) {
+                    double val = getCurveValue(pts[i], c);
+                    if (val < minV) minV = val;
+                    if (val > maxV) maxV = val;
+                }
+                // Add a small margin to avoid values sitting exactly at 0 or 127
+                double margin = (maxV - minV) * 0.02;
+                if (margin < 0.001) margin = 0.001;
+                curveRanges[c].minVal = minV - margin;
+                curveRanges[c].maxVal = maxV + margin;
+                curveRanges[c].computed = true;
+                if (logger) logger->log("MIDI_CTRL", "Curve " + std::to_string(c) + " range: " + 
+                    std::to_string(minV) + " - " + std::to_string(maxV));
+            }
+        }
+    }
+    
+    // Send all curve faders to zero on initial entry
+    sendAllFadersToZero();
+    
+    // Lambda to re-initialize MIDI controller (called after config changes)
+    auto reinitMidiController = [&]() {
+        // Close existing connection if open
+        if (midiControllerMgr && midiControllerMgr->isDeviceOpen()) {
+            midiControllerMgr->closeDevice();
+        }
+        
+        // Re-open if enabled
+        if (midiControllerMgr && cfg.midi_controller_enabled) {
+            if (!cfg.midi_controller_preset.empty()) {
+                std::string presetPath = "midi/" + cfg.midi_controller_preset;
+                if (midiControllerMgr->loadMappingsFromFile(presetPath)) {
+                    if (logger) logger->log("MIDI_CTRL", "Reloaded MIDI controller preset: " + presetPath);
+                }
+            }
+            
+            if (cfg.midi_controller_device_id >= 0) {
+                if (midiControllerMgr->openDevice(cfg.midi_controller_device_id)) {
+                    if (logger) logger->log("MIDI_CTRL", "MIDI controller reopened: " + midiControllerMgr->getDeviceName());
+                    print(translation.format("MIDI_CTRL_CONNECTED", "[MIDI Controller: {0}]", midiControllerMgr->getDeviceName()) + "\n");
+                }
+            }
+            
+            // Re-set callbacks
+            midiControllerMgr->setCommandCallback([&midiCommandMutex, &midiCommandQueue](MidiAppCommand cmd) {
+                std::lock_guard<std::mutex> lock(midiCommandMutex);
+                midiCommandQueue.push_back(cmd);
+            });
+            midiControllerMgr->setCCValueCallback([&midiCCMutex, &midiCCQueue](MidiCCFunction func, int value) {
+                std::lock_guard<std::mutex> lock(midiCCMutex);
+                midiCCQueue.push_back({func, value});
+            });
+            
+            // Reset faders to 0 after reconnection
+            sendAllFadersToZero();
+        }
+    };
+    
+    // Freeze-by-touch state: tracks which faders are currently touched
+    bool faderTouched[5] = {false, false, false, false, false};
+    bool freezeByTouchActive = false;  // True when at least one fader is touched
+    
+    // Lambda to process MIDI app commands (same actions as keyboard)
+    auto processMidiCommand = [&](MidiAppCommand cmd) {
+        if (logger) logger->log("MIDI_CTRL", "Processing command: " + MidiControllerManager::getCommandName(cmd));
+        
+        switch (cmd) {
+            case MidiAppCommand::PLAY_PAUSE:
+                // Reset freeze-by-touch state on manual play/pause
+                freezeByTouchActive = false;
+                for (int i = 0; i < 5; i++) faderTouched[i] = false;
+                if (analyzer.getState() == PlaybackState::PLAYING) {
+                    analyzer.pause();
+                    print("\n" + translation.get("ACOUSTIC_PAUSED", "[PAUSED]") + "\n");
+                } else {
+                    analyzer.play();
+                    print("\n" + translation.get("ACOUSTIC_PLAYING", "[PLAYING]") + "\n");
+                }
+                break;
+            case MidiAppCommand::STOP:
+                // Reset freeze-by-touch state on stop
+                freezeByTouchActive = false;
+                for (int i = 0; i < 5; i++) faderTouched[i] = false;
+                analyzer.stopYAxisRuler();
+                analyzer.stop();
+                print("\n" + translation.get("ACOUSTIC_STOPPED", "[STOPPED and reset to start]") + "\n");
+                sendAllFadersToZero();
+                break;
+            case MidiAppCommand::FREEZE:
+                analyzer.freeze();
+                print("\n" + translation.format("ACOUSTIC_FROZEN", "[FROZEN at position {0}]", analyzer.getPosition()) + "\n");
+                // Capture current fader values for freeze snap-back
+                {
+                    const MeasurementPoint* freezePt = analyzer.getCurrentMeasurement();
+                    if (freezePt) {
+                        for (int i = 0; i < 5; i++) {
+                            if (analyzer.isCurveEnabled(i)) {
+                                double norm = normalizeCurveValue(*freezePt, i);
+                                frozenFaderValues[i] = MidiControllerManager::normalizedToMidi(norm);
+                            } else {
+                                frozenFaderValues[i] = 0;
+                            }
+                        }
+                    }
+                }
+                break;
+            case MidiAppCommand::TOGGLE_SMOOTH_DOTTED:
+                analyzer.setSmoothMode(!analyzer.isSmoothMode());
+                print("\n" + (analyzer.isSmoothMode() ? 
+                        translation.get("ACOUSTIC_MODE_SMOOTH", "[Playback mode: SMOOTH]") : 
+                        translation.get("ACOUSTIC_MODE_DOTTED", "[Playback mode: DOTTED]")) + "\n");
+                cfg.acoustic_smooth_mode = analyzer.isSmoothMode();
+                saveSettings();
+                break;
+            case MidiAppCommand::TOGGLE_LOOP:
+                analyzer.toggleLoop();
+                print("\n" + (analyzer.isLoopEnabled() ? 
+                        translation.format("ACOUSTIC_LOOP_ENABLED", "[Loop ENABLED ({0} - {1})]", analyzer.getLoopLeft(), analyzer.getLoopRight()) :
+                        translation.format("ACOUSTIC_LOOP_DISABLED", "[Loop DISABLED ({0} - {1})]", analyzer.getLoopLeft(), analyzer.getLoopRight())) + "\n");
+                break;
+            case MidiAppCommand::TOGGLE_LOOP_ZOOM:
+                analyzer.toggleLoopZoom();
+                break;
+            case MidiAppCommand::TOGGLE_LOOP_INVERT:
+                analyzer.toggleLoopInvert();
+                break;
+            case MidiAppCommand::TOGGLE_CONTINUOUS:
+                analyzer.toggleContinuousReplay();
+                break;
+            case MidiAppCommand::SET_LOOP_LEFT:
+                analyzer.setLoopLeft(analyzer.getPosition());
+                print("\n" + translation.format("ACOUSTIC_LEFT_MARKER", "[Left marker set at {0}]", analyzer.getPosition()) + "\n");
+                break;
+            case MidiAppCommand::SET_LOOP_RIGHT:
+                analyzer.setLoopRight(analyzer.getPosition());
+                print("\n" + translation.format("ACOUSTIC_RIGHT_MARKER", "[Right marker set at {0}]", analyzer.getPosition()) + "\n");
+                break;
+            case MidiAppCommand::MOVE_LEFT:
+                analyzer.movePositionWithBoundaryCheck(-cfg.navigation_jump_width);
+                displayPosition();
+                break;
+            case MidiAppCommand::MOVE_RIGHT:
+                analyzer.movePositionWithBoundaryCheck(cfg.navigation_jump_width);
+                displayPosition();
+                break;
+            case MidiAppCommand::JUMP_WIDTH_UP:
+                if (cfg.navigation_jump_width == 1) cfg.navigation_jump_width = 10;
+                else if (cfg.navigation_jump_width == 10) cfg.navigation_jump_width = 100;
+                else if (cfg.navigation_jump_width == 100) cfg.navigation_jump_width = 500;
+                else if (cfg.navigation_jump_width == 500) cfg.navigation_jump_width = 1000;
+                print("\r" + translation.format("ACOUSTIC_JUMP_WIDTH", "[Jump width: {0}]", cfg.navigation_jump_width) + "   ");
+                saveSettings();
+                break;
+            case MidiAppCommand::JUMP_WIDTH_DOWN:
+                if (cfg.navigation_jump_width == 1000) cfg.navigation_jump_width = 500;
+                else if (cfg.navigation_jump_width == 500) cfg.navigation_jump_width = 100;
+                else if (cfg.navigation_jump_width == 100) cfg.navigation_jump_width = 10;
+                else if (cfg.navigation_jump_width == 10) cfg.navigation_jump_width = 1;
+                print("\r" + translation.format("ACOUSTIC_JUMP_WIDTH", "[Jump width: {0}]", cfg.navigation_jump_width) + "   ");
+                saveSettings();
+                break;
+            case MidiAppCommand::SPEED_UP:
+                analyzer.setPlaybackTimeSeconds(analyzer.getPlaybackTimeSeconds() + 1);
+                cfg.acoustic_time_seconds = analyzer.getPlaybackTimeSeconds();
+                saveSettings();
+                break;
+            case MidiAppCommand::SPEED_DOWN:
+                analyzer.setPlaybackTimeSeconds(analyzer.getPlaybackTimeSeconds() - 1);
+                cfg.acoustic_time_seconds = analyzer.getPlaybackTimeSeconds();
+                saveSettings();
+                break;
+            case MidiAppCommand::TOGGLE_CURVE_1:
+            case MidiAppCommand::TOGGLE_CURVE_2:
+            case MidiAppCommand::TOGGLE_CURVE_3:
+            case MidiAppCommand::TOGGLE_CURVE_4:
+            case MidiAppCommand::TOGGLE_CURVE_5:
+                {
+                    int idx = static_cast<int>(cmd) - static_cast<int>(MidiAppCommand::TOGGLE_CURVE_1);
+                    analyzer.toggleCurve(idx);
+                    // Display message like keyboard handler (same mechanism as number keys 1-5)
+                    std::string curveName = analyzer.getCurveName(idx);
+                    bool isEnabled = analyzer.isCurveEnabled(idx);
+                    std::string statusKey = isEnabled ? "ACOUSTIC_CURVE_ON" : "ACOUSTIC_CURVE_OFF";
+                    std::string statusFallback = isEnabled ? "[{0} ON]" : "[{0} OFF]";
+                    print("\n" + translation.format(statusKey, statusFallback, curveName) + "\n");
+                    cfg.curve_enabled[idx] = isEnabled;
+                    saveSettings();
+                    // Send fader to 0 for disabled curves
+                    if (!isEnabled && midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                        midiControllerMgr->sendCurveValueFeedback(idx, 0.0);
+                    }
+                }
+                break;
+            case MidiAppCommand::MUTE_CURVE_1:
+            case MidiAppCommand::MUTE_CURVE_2:
+            case MidiAppCommand::MUTE_CURVE_3:
+            case MidiAppCommand::MUTE_CURVE_4:
+            case MidiAppCommand::MUTE_CURVE_5:
+                {
+                    int idx = static_cast<int>(cmd) - static_cast<int>(MidiAppCommand::MUTE_CURVE_1);
+                    // Mute = set volume to 0 if non-zero, restore to default if zero
+                    int vol = analyzer.getCurveVolume(idx);
+                    if (vol > 0) {
+                        analyzer.setCurveVolume(idx, 0);
+                    } else {
+                        analyzer.setCurveVolume(idx, 100);
+                    }
+                    print("\n" + translation.format("ACOUSTIC_CURVE_VOLUME", "[Curve {0} volume: {1}%]", idx + 1, analyzer.getCurveVolume(idx)) + "\n");
+                }
+                break;
+            case MidiAppCommand::SOLO_CURVE_1:
+            case MidiAppCommand::SOLO_CURVE_2:
+            case MidiAppCommand::SOLO_CURVE_3:
+            case MidiAppCommand::SOLO_CURVE_4:
+            case MidiAppCommand::SOLO_CURVE_5:
+                {
+                    int soloIdx = static_cast<int>(cmd) - static_cast<int>(MidiAppCommand::SOLO_CURVE_1);
+                    
+                    if (soloActive[soloIdx]) {
+                        // Un-solo this curve: deactivate solo for this curve
+                        soloActive[soloIdx] = false;
+                        
+                        // Check if any other solos are still active
+                        anySoloActive = false;
+                        for (int i = 0; i < 5; i++) {
+                            if (soloActive[i]) { anySoloActive = true; break; }
+                        }
+                        
+                        if (!anySoloActive) {
+                            // No more solos active: restore pre-solo state for all curves
+                            for (int i = 0; i < 5; i++) {
+                                bool shouldBeEnabled = preSoloEnabled[i];
+                                if (analyzer.isCurveEnabled(i) != shouldBeEnabled) {
+                                    analyzer.toggleCurve(i);
+                                }
+                                cfg.curve_enabled[i] = analyzer.isCurveEnabled(i);
+                            }
+                            print("\n" + translation.get("ACOUSTIC_SOLO_OFF", "[Solo OFF - previous state restored]") + "\n");
+                        } else {
+                            // Other solos still active: disable only this un-solo'd curve (unless it was enabled pre-solo)
+                            // In multi-solo mode, only solo'd curves should be enabled
+                            bool shouldBeEnabled = false;
+                            for (int i = 0; i < 5; i++) {
+                                shouldBeEnabled = soloActive[i];
+                                if (analyzer.isCurveEnabled(i) != shouldBeEnabled) {
+                                    analyzer.toggleCurve(i);
+                                }
+                                cfg.curve_enabled[i] = analyzer.isCurveEnabled(i);
+                            }
+                            std::string curveName = analyzer.getCurveName(soloIdx);
+                            print("\n" + translation.format("ACOUSTIC_CURVE_UNSOLO", "[{0} unsoloed]", curveName) + "\n");
+                            // Send fader to 0 for the un-solo'd curve
+                            if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                                midiControllerMgr->sendCurveValueFeedback(soloIdx, 0.0);
+                            }
+                        }
+                    } else {
+                        // Activate solo for this curve
+                        if (!anySoloActive) {
+                            // First solo: save current state of all curves
+                            for (int i = 0; i < 5; i++) {
+                                preSoloEnabled[i] = analyzer.isCurveEnabled(i);
+                            }
+                        }
+                        soloActive[soloIdx] = true;
+                        anySoloActive = true;
+                        
+                        // Enable solo'd curves, disable others (multi-solo support)
+                        for (int i = 0; i < 5; i++) {
+                            bool shouldBeEnabled = soloActive[i];
+                            if (analyzer.isCurveEnabled(i) != shouldBeEnabled) {
+                                analyzer.toggleCurve(i);
+                            }
+                            cfg.curve_enabled[i] = analyzer.isCurveEnabled(i);
+                            // Send fader to 0 for disabled curves
+                            if (!analyzer.isCurveEnabled(i) && midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                                midiControllerMgr->sendCurveValueFeedback(i, 0.0);
+                            }
+                        }
+                        print("\n" + translation.format("ACOUSTIC_CURVE_SOLO", "[Solo: {0}]", analyzer.getCurveName(soloIdx)) + "\n");
+                    }
+                    saveSettings();
+                }
+                break;
+            case MidiAppCommand::SHOW_MEASUREMENT:
+                {
+                    const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                    if (pt) {
+                        print(translation.format("ACOUSTIC_FREQUENCY", "Frequency: {0} Hz", pt->freq) + "\n");
+                        print(translation.format("ACOUSTIC_SWR", "SWR: {0}", pt->swr) + "\n");
+                    }
+                }
+                break;
+            case MidiAppCommand::TOGGLE_STATUS_LINE:
+                analyzer.toggleStatusLine();
+                break;
+            case MidiAppCommand::TOGGLE_X_RULER:
+                analyzer.toggleXAxisRuler();
+                break;
+            case MidiAppCommand::ANNOUNCE_CURVE_VALUE_1:
+            case MidiAppCommand::ANNOUNCE_CURVE_VALUE_2:
+            case MidiAppCommand::ANNOUNCE_CURVE_VALUE_3:
+            case MidiAppCommand::ANNOUNCE_CURVE_VALUE_4:
+            case MidiAppCommand::ANNOUNCE_CURVE_VALUE_5:
+                {
+                    int curveIdx = static_cast<int>(cmd) - static_cast<int>(MidiAppCommand::ANNOUNCE_CURVE_VALUE_1);
+                    const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                    if (pt) {
+                        std::string curveName = analyzer.getCurveName(curveIdx);
+                        std::string valueStr = "N/A";
+                        switch (curveIdx) {
+                            case 0: valueStr = std::to_string(pt->swr); break;
+                            case 1: valueStr = std::to_string(pt->rl) + " dB"; break;
+                            case 2: valueStr = std::to_string(pt->impedance_mag) + " Ohm"; break;
+                            case 3: valueStr = std::to_string(pt->X) + " Ohm"; break;
+                            case 4: valueStr = std::to_string(pt->phase_deg) + "°"; break;
+                            default: break;
+                        }
+                        print("\n" + translation.format("ACOUSTIC_CURVE_VALUE_ANNOUNCE", 
+                            "[{0}: {1} at {2} Hz]", curveName, valueStr, pt->freq) + "\n");
+                    } else {
+                        print("\n" + translation.get("ACOUSTIC_NO_DATA", "[No measurement data at current position]") + "\n");
+                    }
+                }
+                break;
+            case MidiAppCommand::ANNOUNCE_MASTER_VOLUME:
+                {
+                    int vol = analyzer.getMasterVolume();
+                    print("\n" + translation.format("ACOUSTIC_MASTER_VOLUME_ANNOUNCE", "[Master volume: {0}%]", vol) + "\n");
+                }
+                break;
+            default:
+                break;
+        }
+        
+        // Send motor fader feedback after command processing
+        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+            // Update position feedback
+            size_t dataSize = analyzer.getDataSize();
+            if (dataSize > 1) {
+                double normalizedPos = static_cast<double>(analyzer.getPosition()) / (dataSize - 1);
+                midiControllerMgr->sendPositionFeedback(normalizedPos);
+            }
+            // Update master volume feedback
+            midiControllerMgr->sendMasterVolumeFeedback(analyzer.getMasterVolume());
+        }
+    };
+    
+    // Track last volume values to suppress redundant min/max boundary messages
+    bool masterVolumeAtMin = false, masterVolumeAtMax = false;
+    bool curveVolumeAtMin[5] = {false, false, false, false, false};
+    bool curveVolumeAtMax[5] = {false, false, false, false, false};
+    
+    // Debouncing state for volume CC: only apply after fader stops moving
+    // This prevents blocking when a motor fader sends every intermediate value
+    static constexpr int CC_DEBOUNCE_MS = 50;  // Wait 50ms of inactivity before applying
+    int pendingMasterVolume = -1;  // -1 = no pending change
+    int pendingCurveVolume[5] = {-1, -1, -1, -1, -1};
+    std::chrono::steady_clock::time_point masterVolumeLastChange;
+    std::chrono::steady_clock::time_point curveVolumeLastChange[5];
+    
+    // Lambda to check and apply debounced volume values
+    auto applyDebouncedVolumes = [&]() {
+        auto now = std::chrono::steady_clock::now();
+        
+        // Check master volume
+        if (pendingMasterVolume >= 0) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - masterVolumeLastChange).count();
+            if (elapsed >= CC_DEBOUNCE_MS) {
+                int vol = pendingMasterVolume;
+                pendingMasterVolume = -1;
+                analyzer.setMasterVolume(vol);
+                cfg.master_volume = vol;
+                print("\r" + translation.format("ACOUSTIC_MASTER_VOLUME", "[Master volume: {0}%]", vol) + "   ");
+                if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                    midiControllerMgr->sendMasterVolumeFeedback(vol);
+                }
+            }
+        }
+        
+        // Check curve volumes
+        for (int i = 0; i < 5; i++) {
+            if (pendingCurveVolume[i] >= 0) {
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - curveVolumeLastChange[i]).count();
+                if (elapsed >= CC_DEBOUNCE_MS) {
+                    int vol = pendingCurveVolume[i];
+                    pendingCurveVolume[i] = -1;
+                    std::string curveName = analyzer.getCurveName(i);
+                    analyzer.setCurveVolume(i, vol);
+                    if (cfg.audio_engine == AudioEngineType::SYNTHESIZER) {
+                        cfg.curve_volume_synth[i] = vol;
+                    } else {
+                        cfg.curve_volume_midi[i] = vol;
+                    }
+                    print("\r" + translation.format("ACOUSTIC_CURVE_VOLUME", "[{0} volume: {1}%]", curveName, vol) + "   ");
+                }
+            }
+        }
+    };
+    
+    // Lambda to process MIDI CC value changes
+    auto processMidiCC = [&](MidiCCFunction func, int midiValue) {
+        if (logger) logger->log("MIDI_CTRL", "Processing CC: " + MidiControllerManager::getCCFunctionName(func) + " = " + std::to_string(midiValue));
+        
+        switch (func) {
+            case MidiCCFunction::MASTER_VOLUME:
+                {
+                    int vol = MidiControllerManager::midiToPercent(midiValue, 100);
+                    int currentVol = analyzer.getMasterVolume();
+                    
+                    // Suppress messages when turning beyond min/max
+                    if (vol == currentVol && (midiValue == 0 || midiValue == 127)) {
+                        if (midiValue == 0 && !masterVolumeAtMin) {
+                            masterVolumeAtMin = true;
+                            print("\r" + translation.get("ACOUSTIC_VOLUME_AT_MINIMUM", "[Master volume: minimum reached]") + "   ");
+                        } else if (midiValue == 127 && !masterVolumeAtMax) {
+                            masterVolumeAtMax = true;
+                            print("\r" + translation.get("ACOUSTIC_VOLUME_AT_MAXIMUM", "[Master volume: maximum reached]") + "   ");
+                        }
+                        break;
+                    }
+                    masterVolumeAtMin = false;
+                    masterVolumeAtMax = false;
+                    
+                    // Debounce: store pending value, apply after inactivity
+                    pendingMasterVolume = vol;
+                    masterVolumeLastChange = std::chrono::steady_clock::now();
+                }
+                break;
+            case MidiCCFunction::CURVE_VOLUME_1:
+            case MidiCCFunction::CURVE_VOLUME_2:
+            case MidiCCFunction::CURVE_VOLUME_3:
+            case MidiCCFunction::CURVE_VOLUME_4:
+            case MidiCCFunction::CURVE_VOLUME_5:
+                {
+                    int idx = static_cast<int>(func) - static_cast<int>(MidiCCFunction::CURVE_VOLUME_1);
+                    int vol = MidiControllerManager::midiToPercent(midiValue, 200); // Curve vol 0-200%
+                    int currentVol = analyzer.getCurveVolume(idx);
+                    std::string curveName = analyzer.getCurveName(idx);
+                    
+                    // Suppress messages when turning beyond min/max
+                    if (vol == currentVol && (midiValue == 0 || midiValue == 127)) {
+                        if (midiValue == 0 && !curveVolumeAtMin[idx]) {
+                            curveVolumeAtMin[idx] = true;
+                            print("\r" + translation.format("ACOUSTIC_CURVE_VOLUME_AT_MINIMUM", 
+                                "[{0} volume: minimum reached]", curveName) + "   ");
+                        } else if (midiValue == 127 && !curveVolumeAtMax[idx]) {
+                            curveVolumeAtMax[idx] = true;
+                            print("\r" + translation.format("ACOUSTIC_CURVE_VOLUME_AT_MAXIMUM", 
+                                "[{0} volume: maximum reached]", curveName) + "   ");
+                        }
+                        break;
+                    }
+                    curveVolumeAtMin[idx] = false;
+                    curveVolumeAtMax[idx] = false;
+                    
+                    // Debounce: store pending value, apply after inactivity
+                    pendingCurveVolume[idx] = vol;
+                    curveVolumeLastChange[idx] = std::chrono::steady_clock::now();
+                }
+                break;
+            case MidiCCFunction::FADER_TOUCH_1:
+            case MidiCCFunction::FADER_TOUCH_2:
+            case MidiCCFunction::FADER_TOUCH_3:
+            case MidiCCFunction::FADER_TOUCH_4:
+            case MidiCCFunction::FADER_TOUCH_5:
+                {
+                    if (!cfg.midi_controller_freeze_by_touch) break;
+                    
+                    int idx = static_cast<int>(func) - static_cast<int>(MidiCCFunction::FADER_TOUCH_1);
+                    bool touched = (midiValue >= 64);  // 127 = touched, 0 = released
+                    faderTouched[idx] = touched;
+                    
+                    if (logger) logger->log("MIDI_CTRL", "Fader " + std::to_string(idx + 1) + 
+                        (touched ? " touched" : " released"));
+                    
+                    // Check if any fader is still touched
+                    bool anyTouched = false;
+                    for (int i = 0; i < 5; i++) {
+                        if (faderTouched[i]) { anyTouched = true; break; }
+                    }
+                    
+                    if (anyTouched && !freezeByTouchActive) {
+                        // Activate freeze-by-touch silently
+                        freezeByTouchActive = true;
+                        if (analyzer.getState() == PlaybackState::PLAYING) {
+                            analyzer.freeze();
+                        }
+                    } else if (!anyTouched && freezeByTouchActive) {
+                        // All faders released - deactivate freeze-by-touch silently
+                        freezeByTouchActive = false;
+                        if (analyzer.getState() == PlaybackState::FROZEN) {
+                            analyzer.play();
+                        }
+                    }
+                }
+                break;
+            default:
+                // Other CC functions (position/curve value readout) are output-only
+                break;
+        }
+    };
+    
     while (running) {
         int ch = 0;
         bool hasKeyboardInput = false;
@@ -2409,12 +3057,27 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                     case 'f':  // Freeze
                         analyzer.freeze();
                         print("\n" + translation.format("ACOUSTIC_FROZEN", "[FROZEN at position {0}]", analyzer.getPosition()) + "\n");
+                        // Capture current fader values for freeze snap-back
+                        {
+                            const MeasurementPoint* freezePt = analyzer.getCurrentMeasurement();
+                            if (freezePt) {
+                                for (int fi = 0; fi < 5; fi++) {
+                                    if (analyzer.isCurveEnabled(fi)) {
+                                        double norm = normalizeCurveValue(*freezePt, fi);
+                                        frozenFaderValues[fi] = MidiControllerManager::normalizedToMidi(norm);
+                                    } else {
+                                        frozenFaderValues[fi] = 0;
+                                    }
+                                }
+                            }
+                        }
                         break;
                         
                     case 's':  // Stop and reset
                         analyzer.stopYAxisRuler();  // Stop ruler thread first to prevent race condition
                         analyzer.stop();
                         print("\n" + translation.get("ACOUSTIC_STOPPED", "[STOPPED and reset to start]") + "\n");
+                        sendAllFadersToZero();  // Reset all motor faders to zero position
                         
                         // Stop continuous sweep when stopping
                         if (continuousSweepRunning) {
@@ -2730,6 +3393,8 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 }
                             }
                         }
+                        // Re-initialize MIDI controller if settings changed in config screen
+                        reinitMidiController();
                         // Removed unnecessary "Press any key to continue" prompt - return directly to acoustic analysis
                         break;
                     
@@ -2793,6 +3458,49 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 print(translation.get("SMITH_MODE_HINT", "[Press 'b' to change mode, 'h' for Smith help]") + "\n");
                             } else {
                                 print("\n" + translation.get("SMITH_CUES_DISABLED", "[Smith spatial cues DISABLED]") + "\n");
+                            }
+                        }
+                        break;
+                    
+                    case 'w':  // Export audio: MIDI file (MIDI mode) or WAV file (Synth mode)
+                        {
+                            analyzer.pause();  // Pause during export
+                            
+                            // Generate filename with timestamp and mode
+                            auto now = std::chrono::system_clock::now();
+                            auto now_c = std::chrono::system_clock::to_time_t(now);
+                            std::tm now_tm;
+#if defined(_WIN32)
+                            localtime_s(&now_tm, &now_c);
+#else
+                            localtime_r(&now_c, &now_tm);
+#endif
+                            
+                            const char* modeName = analyzer.isSmoothMode() ? "smooth" : "dotted";
+                            char timestamp[64];
+                            std::strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &now_tm);
+                            char filename[256];
+                            
+                            if (cfg.audio_engine == AudioEngineType::MIDI) {
+                                // MIDI mode: export MIDI file
+                                print("\n" + translation.get("MIDI_EXPORTING", "[Exporting MIDI file...]") + "\n");
+                                std::snprintf(filename, sizeof(filename), "Export/nanovna_midi_%s_%s.mid", modeName, timestamp);
+                                
+                                if (analyzer.exportMIDIFile(filename)) {
+                                    print(translation.format("MIDI_EXPORT_SUCCESS", "[MIDI file saved: {0}]", filename) + "\n");
+                                } else {
+                                    print(translation.get("MIDI_EXPORT_FAILED", "[MIDI export failed]") + "\n");
+                                }
+                            } else {
+                                // Synth mode: render to WAV file
+                                print("\n" + translation.get("SYNTH_RENDERING_WAV", "[Rendering audio to WAV file...]") + "\n");
+                                std::snprintf(filename, sizeof(filename), "Export/nanovna_synth_%s_%s.wav", modeName, timestamp);
+                                
+                                if (analyzer.renderSynthToWav(filename)) {
+                                    print(translation.format("SYNTH_WAV_SUCCESS", "[WAV file saved: {0}]", filename) + "\n");
+                                } else {
+                                    print(translation.get("SYNTH_WAV_FAILED", "[WAV rendering failed]") + "\n");
+                                }
                             }
                         }
                         break;
@@ -2897,8 +3605,82 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             }
         }
         
+        // Process MIDI controller command queue
+        {
+            std::vector<MidiAppCommand> cmds;
+            {
+                std::lock_guard<std::mutex> lock(midiCommandMutex);
+                cmds.swap(midiCommandQueue);
+            }
+            for (auto cmd : cmds) {
+                processMidiCommand(cmd);
+            }
+        }
+        
+        // Process MIDI CC value queue
+        {
+            std::vector<std::pair<MidiCCFunction, int>> ccEvents;
+            {
+                std::lock_guard<std::mutex> lock(midiCCMutex);
+                ccEvents.swap(midiCCQueue);
+            }
+            for (auto& [func, value] : ccEvents) {
+                processMidiCC(func, value);
+            }
+        }
+        
+        // Apply debounced volume changes (only after fader stops moving)
+        applyDebouncedVolumes();
+        
+        // Send periodic motor fader feedback during playback or frozen state
+        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+            PlaybackState currentState = analyzer.getState();
+            
+            if (currentState == PlaybackState::PLAYING) {
+                size_t curPos = analyzer.getPosition();
+                if (curPos != lastMidiFeedbackPos) {
+                    lastMidiFeedbackPos = curPos;
+                    size_t dataSize = analyzer.getDataSize();
+                    if (dataSize > 1) {
+                        // Send curve value feedback for enabled curves only
+                        const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                        if (pt) {
+                            sendCurveFaderValues(*pt);
+                        }
+                    }
+                }
+            } else if (currentState == PlaybackState::FROZEN) {
+                // In freeze mode: if position changed (user moved playhead), update faders
+                size_t curPos = analyzer.getPosition();
+                if (curPos != lastMidiFeedbackPos) {
+                    lastMidiFeedbackPos = curPos;
+                    const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                    if (pt) {
+                        sendCurveFaderValues(*pt);
+                    }
+                }
+            }
+        }
+        
+        // In freeze mode: snap faders back to frozen positions
+        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback &&
+            analyzer.getState() == PlaybackState::FROZEN) {
+            // Send frozen positions back for all active faders to override any user movement
+            for (int i = 0; i < 5; i++) {
+                if (analyzer.isCurveEnabled(i)) {
+                    midiControllerMgr->sendCurveValueFeedback(i, frozenFaderValues[i] / 127.0);
+                }
+            }
+        }
+        
         // Small sleep to prevent busy waiting
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    
+    // Close MIDI controller when leaving acoustic analysis
+    if (midiControllerMgr && midiControllerMgr->isDeviceOpen()) {
+        midiControllerMgr->closeDevice();
+        if (logger) logger->log("MIDI_CTRL", "MIDI controller closed on exit from acoustic analysis");
     }
     
     // Stop continuous sweep thread if running
@@ -4409,6 +5191,409 @@ bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer
     return false;  // No changes that require re-initialization
 }
 
+// ============================================================================
+// MIDI Controller Configuration Screen
+// ============================================================================
+
+bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer) {
+    clearScreen();
+    print(formatHeading(translation.get("MIDI_CTRL_CONFIG_TITLE", "MIDI Controller Configuration")));
+    
+    // Show current status
+    print(translation.format("MIDI_CTRL_CONFIG_ENABLED", "MIDI Controller: {0}", 
+        cfg.midi_controller_enabled ? "Enabled" : "Disabled") + "\n");
+    
+    if (!cfg.midi_controller_device_name.empty()) {
+        print(translation.format("MIDI_CTRL_CONFIG_DEVICE", "Device: {0}", cfg.midi_controller_device_name) + "\n");
+    }
+    if (!cfg.midi_controller_preset.empty()) {
+        print(translation.format("MIDI_CTRL_CONFIG_PRESET", "Preset: {0}", cfg.midi_controller_preset) + "\n");
+    }
+    print(translation.format("MIDI_CTRL_CONFIG_FEEDBACK", "Motor fader feedback: {0}", 
+        cfg.midi_controller_feedback ? "ON" : "OFF") + "\n");
+    print(translation.format("MIDI_CTRL_CONFIG_FREEZE_TOUCH", "Freeze by touch: {0}", 
+        cfg.midi_controller_freeze_by_touch ? "ON" : "OFF") + "\n\n");
+    
+    print(translation.get("MIDI_CTRL_CONFIG_COMMANDS", "Commands:") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_TOGGLE_CMD", "  E - Enable/Disable MIDI controller") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_DEVICE_CMD", "  D - Select MIDI input Device") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_PRESET_CMD", "  P - Select mapping Preset") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_MAPPING_CMD", "  M - Edit Mappings") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_FEEDBACK_CMD", "  F - Toggle motor Fader feedback") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD", "  T - Toggle freeze by Touch") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_SAVE_CMD", "  S - Save current mapping as new preset") + "\n");
+    print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+    
+    print(getPromptWithDepth("MIDI_CTRL_CONFIG_PROMPT", 4) + " ");
+    
+    bool running = true;
+    while (running) {
+        if (!consoleInput->kbhit()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
+        
+        int ch = consoleInput->getch();
+        // Skip extended key sequences
+        if (ch == 0 || ch == 224) {
+            if (consoleInput->kbhit()) consoleInput->getch();
+            continue;
+        }
+        
+        char key = static_cast<char>(ch);
+        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+        
+        switch (key) {
+            case 'e':  // Toggle enable
+                cfg.midi_controller_enabled = !cfg.midi_controller_enabled;
+                print("\n" + translation.format("MIDI_CTRL_TOGGLED", "[MIDI Controller: {0}]", 
+                    cfg.midi_controller_enabled ? "Enabled" : "Disabled") + "\n");
+                saveSettings();
+                break;
+                
+            case 'd':  // Select device
+                {
+                    print("\n" + translation.get("MIDI_CTRL_SCANNING", "[Scanning for MIDI input devices...]") + "\n");
+                    
+                    if (!midiControllerMgr) {
+                        print(translation.get("MIDI_CTRL_NOT_AVAILABLE", "[MIDI controller support not available on this platform]") + "\n");
+                        break;
+                    }
+                    
+                    auto devices = midiControllerMgr->listDevices();
+                    if (devices.empty()) {
+                        print(translation.get("MIDI_CTRL_NO_DEVICES", "[No MIDI input devices found]") + "\n");
+                        print(translation.get("MIDI_CTRL_CONNECT_HINT", "[Connect a MIDI controller and try again]") + "\n");
+                        break;
+                    }
+                    
+                    print(translation.format("MIDI_CTRL_FOUND_DEVICES", "[Found {0} MIDI input device(s):]", static_cast<int>(devices.size())) + "\n");
+                    for (size_t i = 0; i < devices.size(); i++) {
+                        std::string marker = (devices[i].id == cfg.midi_controller_device_id) ? " *" : "";
+                        print("  " + std::to_string(i + 1) + " - " + devices[i].name + marker + "\n");
+                    }
+                    print(translation.get("MIDI_CTRL_SELECT_DEVICE", "Select device number (or ESC to cancel): "));
+                    
+                    int devCh = consoleInput->getch();
+                    if (devCh >= '1' && devCh <= '9') {
+                        int idx = devCh - '1';
+                        if (idx < static_cast<int>(devices.size())) {
+                            cfg.midi_controller_device_id = devices[idx].id;
+                            cfg.midi_controller_device_name = devices[idx].name;
+                            print("\n" + translation.format("MIDI_CTRL_DEVICE_SELECTED", "[Selected: {0}]", devices[idx].name) + "\n");
+                            saveSettings();
+                        }
+                    }
+                }
+                break;
+                
+            case 'p':  // Select preset
+                {
+                    print("\n" + translation.get("MIDI_CTRL_PRESETS", "[Available mapping presets:]") + "\n");
+                    
+                    if (!midiControllerMgr) break;
+                    
+                    auto presets = midiControllerMgr->listPresetFiles("midi");
+                    if (presets.empty()) {
+                        print(translation.get("MIDI_CTRL_NO_PRESETS", "[No preset files found in midi/ directory]") + "\n");
+                        break;
+                    }
+                    
+                    for (size_t i = 0; i < presets.size(); i++) {
+                        std::string marker = (presets[i] == cfg.midi_controller_preset) ? " *" : "";
+                        print("  " + std::to_string(i + 1) + " - " + presets[i] + marker + "\n");
+                    }
+                    print(translation.get("MIDI_CTRL_SELECT_PRESET", "Select preset number (or ESC to cancel): "));
+                    
+                    int presetCh = consoleInput->getch();
+                    if (presetCh >= '1' && presetCh <= '9') {
+                        int idx = presetCh - '1';
+                        if (idx < static_cast<int>(presets.size())) {
+                            cfg.midi_controller_preset = presets[idx];
+                            if (midiControllerMgr->loadMappingsFromFile("midi/" + presets[idx])) {
+                                print("\n" + translation.format("MIDI_CTRL_PRESET_LOADED", "[Loaded preset: {0}]", presets[idx]) + "\n");
+                                auto& preset = midiControllerMgr->getCurrentPreset();
+                                print(translation.format("MIDI_CTRL_PRESET_INFO", "[{0}: {1} mappings for {2}]", 
+                                    preset.name, static_cast<int>(preset.mappings.size()), preset.controllerName) + "\n");
+                            } else {
+                                print(translation.get("MIDI_CTRL_PRESET_FAILED", "[Failed to load preset]") + "\n");
+                            }
+                            saveSettings();
+                        }
+                    }
+                }
+                break;
+                
+            case 'm':  // Edit mappings
+                {
+                    navStack.push("midi_mapping");
+                    runMidiMappingScreen();
+                    navStack.pop();
+                }
+                break;
+                
+            case 'f':  // Toggle feedback
+                cfg.midi_controller_feedback = !cfg.midi_controller_feedback;
+                print("\n" + translation.format("MIDI_CTRL_FEEDBACK_TOGGLED", "[Motor fader feedback: {0}]", 
+                    cfg.midi_controller_feedback ? "ON" : "OFF") + "\n");
+                saveSettings();
+                break;
+                
+            case 't':  // Toggle freeze by touch
+                cfg.midi_controller_freeze_by_touch = !cfg.midi_controller_freeze_by_touch;
+                print("\n" + translation.format("MIDI_CTRL_FREEZE_TOUCH_TOGGLED", "[Freeze by touch: {0}]", 
+                    cfg.midi_controller_freeze_by_touch ? "ON" : "OFF") + "\n");
+                saveSettings();
+                break;
+                
+            case 's':  // Save preset
+                {
+                    if (!midiControllerMgr) break;
+                    
+                    print("\n");
+                    auto result = readRawLineInput(
+                        translation.get("MIDI_CTRL_SAVE_FILENAME", "Enter filename for preset (without path/extension): "), 
+                        "custom_mapping");
+                    
+                    if (!result.cancelled && !result.value.empty()) {
+                        std::string filepath = "midi/" + result.value + ".cfg";
+                        if (midiControllerMgr->saveMappingsToFile(filepath)) {
+                            print(translation.format("MIDI_CTRL_PRESET_SAVED", "[Preset saved: {0}]", filepath) + "\n");
+                        } else {
+                            print(translation.get("MIDI_CTRL_SAVE_FAILED", "[Failed to save preset]") + "\n");
+                        }
+                    }
+                }
+                break;
+                
+            case 27:  // ESC
+                running = false;
+                break;
+        }
+        
+        if (running) {
+            print(getPromptWithDepth("MIDI_CTRL_CONFIG_PROMPT", 4) + " ");
+        }
+    }
+    
+    return false;
+}
+
+bool ConsoleUI::runMidiMappingScreen() {
+    clearScreen();
+    print(formatHeading(translation.get("MIDI_MAPPING_TITLE", "MIDI Mapping Editor")));
+    
+    if (!midiControllerMgr) {
+        print(translation.get("MIDI_CTRL_NOT_AVAILABLE", "[MIDI controller support not available]") + "\n");
+        return false;
+    }
+    
+    auto& preset = midiControllerMgr->getCurrentPreset();
+    
+    // Display current mappings
+    print(translation.format("MIDI_MAPPING_PRESET_NAME", "Preset: {0}", preset.name) + "\n");
+    print(translation.format("MIDI_MAPPING_COUNT", "Total mappings: {0}", static_cast<int>(preset.mappings.size())) + "\n\n");
+    
+    // Show Note On mappings
+    print(translation.get("MIDI_MAPPING_NOTE_ON_HEADER", "--- Note On Mappings (Button presses) ---") + "\n");
+    int noteOnCount = 0;
+    for (const auto& m : preset.mappings) {
+        if (m.triggerType == MidiMessageType::NOTE_ON && m.command != MidiAppCommand::NONE) {
+            print("  Ch" + std::to_string(m.channel) + " Note " + std::to_string(m.number) + 
+                  " -> " + MidiControllerManager::getCommandName(m.command) + 
+                  " (" + m.description + ")\n");
+            noteOnCount++;
+        }
+    }
+    if (noteOnCount == 0) print("  (none)\n");
+    
+    // Show CC mappings
+    print("\n" + translation.get("MIDI_MAPPING_CC_HEADER", "--- CC Mappings (Faders/Knobs) ---") + "\n");
+    int ccCount = 0;
+    for (const auto& m : preset.mappings) {
+        if (m.triggerType == MidiMessageType::CONTROL_CHANGE && m.ccFunction != MidiCCFunction::NONE) {
+            print("  Ch" + std::to_string(m.channel) + " CC " + std::to_string(m.number) + 
+                  " -> " + MidiControllerManager::getCCFunctionName(m.ccFunction) + 
+                  " (" + m.description + ")\n");
+            ccCount++;
+        }
+    }
+    if (ccCount == 0) print("  (none)\n");
+    
+    print("\n" + translation.get("MIDI_MAPPING_COMMANDS", "Commands:") + "\n");
+    print(translation.get("MIDI_MAPPING_ADD_NOTE_CMD", "  N - Add Note On mapping") + "\n");
+    print(translation.get("MIDI_MAPPING_ADD_CC_CMD", "  C - Add CC mapping") + "\n");
+    print(translation.get("MIDI_MAPPING_CLEAR_CMD", "  X - Clear all mappings") + "\n");
+    print(translation.get("MIDI_MAPPING_LEARN_CMD", "  L - Learn: Press a button/move a fader on your controller") + "\n");
+    print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+    
+    print(getPromptWithDepth("MIDI_MAPPING_PROMPT", 5) + " ");
+    
+    bool running = true;
+    while (running) {
+        if (!consoleInput->kbhit()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            continue;
+        }
+        
+        int ch = consoleInput->getch();
+        if (ch == 0 || ch == 224) {
+            if (consoleInput->kbhit()) consoleInput->getch();
+            continue;
+        }
+        
+        char key = static_cast<char>(ch);
+        if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
+        
+        switch (key) {
+            case 'n':  // Add Note On mapping
+                {
+                    print("\n" + translation.get("MIDI_MAPPING_ADD_NOTE_INFO", 
+                        "[Adding Note On mapping]") + "\n");
+                    
+                    // Ask for note number
+                    int noteNum;
+                    if (!readNumericInput(translation.get("MIDI_MAPPING_ENTER_NOTE", "Enter MIDI note number (0-127):"), noteNum, 5)) break;
+                    if (noteNum < 0 || noteNum > 127) { print(translation.get("MIDI_MAPPING_INVALID_NOTE", "[Invalid note number]") + "\n"); break; }
+                    
+                    // Show available commands
+                    print(translation.get("MIDI_MAPPING_AVAILABLE_CMDS", "Available commands:") + "\n");
+                    print(translation.get("MIDI_MAPPING_CMD_LIST_NOTES",
+                        "  1 - Play/Pause\n  2 - Stop\n  3 - Freeze\n  4 - Toggle Smooth/Dotted\n"
+                        "  5 - Toggle Loop\n  6 - Toggle Loop Zoom\n  7 - Toggle Loop Invert\n"
+                        "  8 - Toggle Continuous\n  9 - Set Loop Left\n  0 - Set Loop Right\n"));
+                    
+                    int cmdCh = consoleInput->getch();
+                    MidiAppCommand cmd = MidiAppCommand::NONE;
+                    switch (cmdCh) {
+                        case '1': cmd = MidiAppCommand::PLAY_PAUSE; break;
+                        case '2': cmd = MidiAppCommand::STOP; break;
+                        case '3': cmd = MidiAppCommand::FREEZE; break;
+                        case '4': cmd = MidiAppCommand::TOGGLE_SMOOTH_DOTTED; break;
+                        case '5': cmd = MidiAppCommand::TOGGLE_LOOP; break;
+                        case '6': cmd = MidiAppCommand::TOGGLE_LOOP_ZOOM; break;
+                        case '7': cmd = MidiAppCommand::TOGGLE_LOOP_INVERT; break;
+                        case '8': cmd = MidiAppCommand::TOGGLE_CONTINUOUS; break;
+                        case '9': cmd = MidiAppCommand::SET_LOOP_LEFT; break;
+                        case '0': cmd = MidiAppCommand::SET_LOOP_RIGHT; break;
+                    }
+                    
+                    if (cmd != MidiAppCommand::NONE) {
+                        MidiMapping mapping;
+                        mapping.triggerType = MidiMessageType::NOTE_ON;
+                        mapping.channel = 0;
+                        mapping.number = static_cast<uint8_t>(noteNum);
+                        mapping.command = cmd;
+                        mapping.ccFunction = MidiCCFunction::NONE;
+                        mapping.description = "User mapping: Note " + std::to_string(noteNum);
+                        midiControllerMgr->addMapping(mapping);
+                        print("\n" + translation.format("MIDI_MAPPING_ADDED_NOTE", 
+                              "[Mapping added: Note {0} -> {1}]", noteNum, 
+                              MidiControllerManager::getCommandName(cmd)) + "\n");
+                    }
+                }
+                break;
+                
+            case 'c':  // Add CC mapping
+                {
+                    print("\n" + translation.get("MIDI_MAPPING_ADD_CC_INFO", 
+                        "[Adding CC mapping]") + "\n");
+                    
+                    int ccNum;
+                    if (!readNumericInput(translation.get("MIDI_MAPPING_ENTER_CC", "Enter CC number (0-127):"), ccNum, 5)) break;
+                    if (ccNum < 0 || ccNum > 127) { print(translation.get("MIDI_MAPPING_INVALID_CC", "[Invalid CC number]") + "\n"); break; }
+                    
+                    print(translation.get("MIDI_MAPPING_AVAILABLE_CC_FUNCS", "Available CC functions:") + "\n");
+                    print(translation.get("MIDI_MAPPING_CC_FUNC_LIST",
+                        "  1 - Master Volume\n  2 - Curve 1 Volume\n  3 - Curve 2 Volume\n"
+                        "  4 - Curve 3 Volume\n  5 - Curve 4 Volume\n  6 - Curve 5 Volume\n"
+                        "  7 - X-Axis Position (Motor Fader)\n  8 - SWR Value (Motor Fader)\n"
+                        "  9 - RL Value (Motor Fader)\n  0 - |Z| Value (Motor Fader)\n"));
+                    
+                    int funcCh = consoleInput->getch();
+                    MidiCCFunction func = MidiCCFunction::NONE;
+                    switch (funcCh) {
+                        case '1': func = MidiCCFunction::MASTER_VOLUME; break;
+                        case '2': func = MidiCCFunction::CURVE_VOLUME_1; break;
+                        case '3': func = MidiCCFunction::CURVE_VOLUME_2; break;
+                        case '4': func = MidiCCFunction::CURVE_VOLUME_3; break;
+                        case '5': func = MidiCCFunction::CURVE_VOLUME_4; break;
+                        case '6': func = MidiCCFunction::CURVE_VOLUME_5; break;
+                        case '7': func = MidiCCFunction::POSITION_X_AXIS; break;
+                        case '8': func = MidiCCFunction::CURVE_VALUE_SWR; break;
+                        case '9': func = MidiCCFunction::CURVE_VALUE_RL; break;
+                        case '0': func = MidiCCFunction::CURVE_VALUE_IMPEDANCE; break;
+                    }
+                    
+                    if (func != MidiCCFunction::NONE) {
+                        MidiMapping mapping;
+                        mapping.triggerType = MidiMessageType::CONTROL_CHANGE;
+                        mapping.channel = 0;
+                        mapping.number = static_cast<uint8_t>(ccNum);
+                        mapping.command = MidiAppCommand::NONE;
+                        mapping.ccFunction = func;
+                        mapping.description = "User mapping: CC " + std::to_string(ccNum);
+                        midiControllerMgr->addMapping(mapping);
+                        print("\n" + translation.format("MIDI_MAPPING_ADDED_CC", 
+                              "[Mapping added: CC {0} -> {1}]", ccNum,
+                              MidiControllerManager::getCCFunctionName(func)) + "\n");
+                    }
+                }
+                break;
+                
+            case 'x':  // Clear all
+                print("\n" + translation.get("MIDI_MAPPING_CONFIRM_CLEAR", "[Clear all mappings? (y/n)]") + "\n");
+                if (consoleInput->getch() == 'y') {
+                    midiControllerMgr->clearMappings();
+                    print(translation.get("MIDI_MAPPING_CLEARED", "[All mappings cleared]") + "\n");
+                }
+                break;
+                
+            case 'l':  // MIDI Learn
+                {
+                    print("\n" + translation.get("MIDI_MAPPING_LEARN_INFO",
+                        "[MIDI Learn: Press a button or move a fader on your controller...\n"
+                        " The received MIDI event will be shown. Press ESC to cancel.]") + "\n");
+                    
+                    if (!midiControllerMgr->isDeviceOpen()) {
+                        print(translation.get("MIDI_CTRL_NOT_CONNECTED", "[No MIDI controller connected. Select a device first.]") + "\n");
+                        break;
+                    }
+                    
+                    // Temporarily suppress normal command processing during learn
+                    midiControllerMgr->setCommandCallback([](MidiAppCommand) {}); 
+                    midiControllerMgr->setCCValueCallback([](MidiCCFunction, int) {});
+                    
+                    print(translation.get("MIDI_MAPPING_WAITING", "[Waiting for MIDI input... Check debug log for events. Press ESC to cancel]") + "\n");
+                    
+                    // Wait for user to press ESC; MIDI events will be visible in debug log
+                    while (!consoleInput->kbhit()) {
+                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    }
+                    int learnCh = consoleInput->getch();
+                    if (learnCh == 27) {
+                        print(translation.get("MIDI_MAPPING_LEARN_CANCELLED", "[Learn cancelled]") + "\n");
+                    }
+                    
+                    // Restore callbacks to no-op (they will be properly set when returning to acoustic analysis)
+                    midiControllerMgr->setCommandCallback(nullptr);
+                    midiControllerMgr->setCCValueCallback(nullptr);
+                }
+                break;
+                
+            case 27:  // ESC
+                running = false;
+                break;
+        }
+        
+        if (running) {
+            print(getPromptWithDepth("MIDI_MAPPING_PROMPT", 5) + " ");
+        }
+    }
+    
+    return false;
+}
+
 bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     clearScreen();
     print(formatHeading(translation.get("AUDIO_CONFIG_TITLE", "Audio Configuration")));
@@ -4458,6 +5643,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     print(translation.get("AUDIO_CONFIG_X_RULER_CMD", "  X - Configure X-Axis Ruler settings") + "\n");
     print(translation.get("AUDIO_CONFIG_STATUS_LINE_CMD", "  N - Configure Status Line settings") + "\n");
     print(translation.get("AUDIO_CONFIG_SPATIAL_WIZARD_CMD", "  W - Run Spatial Audio Calibration Wizard (recommended!)") + "\n");
+    print(translation.get("AUDIO_CONFIG_MIDI_CTRL_CMD", "  C - MIDI Controller Configuration") + "\n");
     
     // MIDI-specific commands for interpolated panning
     if (cfg.audio_engine == AudioEngineType::MIDI) {
@@ -5342,6 +6528,14 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         } else {
                             print("\n" + translation.get("ERROR_NO_ANALYZER", "[Error: Audio analyzer not available]") + "\n");
                         }
+                    }
+                    break;
+                
+                case 'c':  // MIDI Controller Configuration
+                    {
+                        navStack.push("midi_controller_config");
+                        runMidiControllerConfigurationScreen(analyzer);
+                        navStack.pop();
                     }
                     break;
                 

@@ -353,6 +353,11 @@ mkdir -p Training
 cp -r ../Training/*.csv Training/ 2>/dev/null || echo "      Warning: No training CSV files found"
 cp -r ../Training/README.md Training/ 2>/dev/null || echo "      Warning: No training README found"
 
+# Copy MIDI preset files
+echo "      Copying MIDI preset files..."
+mkdir -p midi
+cp -r ../midi/*.cfg midi/ 2>/dev/null || echo "      Warning: No MIDI preset files found"
+
 echo "      Done."
 
 # Verify important files are present
@@ -546,6 +551,7 @@ echo "Band plans: build/bandplans/"
 echo "Logs will be saved to: build/logs/"
 echo "Exports will be saved to: build/Export/"
 echo "Training files: build/Training/"
+echo "MIDI presets: build/midi/"
 echo "Documentation: build/doc/"
 echo ""
 echo "To run the application:"

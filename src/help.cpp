@@ -142,6 +142,9 @@ Audio Configuration:
               - Configure frequency range for Synthesizer (R)
               - Configure MIDI instruments per curve
               - Preview MIDI sounds
+  W           Export audio file
+              - MIDI mode: exports MIDI file to Export/ directory
+              - Synth mode: renders audio to WAV file in Export/ directory
 
 Other:
   Y           Play acoustic Y-axis ruler (ascending scale reference)
