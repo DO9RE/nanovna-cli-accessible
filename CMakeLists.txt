@@ -1,6 +1,70 @@
 cmake_minimum_required(VERSION 3.10)
 project(nanovna_cli_accessible LANGUAGES CXX)
 
+# ============ VERSION MANAGEMENT (Two-Repo Safe) ============
+# Read version from VERSION file (always present, synced via push script)
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" VERSION_STRING)
+string(STRIP "${VERSION_STRING}" VERSION_STRING)
+
+# Parse version components
+string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-[a-zA-Z0-9._-]+)?" _ ${VERSION_STRING})
+set(VERSION_MAJOR ${CMAKE_MATCH_1})
+set(VERSION_MINOR ${CMAKE_MATCH_2})
+set(VERSION_PATCH ${CMAKE_MATCH_3})
+set(VERSION_SUFFIX ${CMAKE_MATCH_4})
+
+# Try to get Git info (works in both repos independently)
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    # Detect which repo we're in
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} config --get remote.origin.url
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_REMOTE_URL
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(GIT_REMOTE_URL MATCHES "nanovna-cli-accessible-cpa")
+        set(REPO_TYPE "public")
+    else()
+        set(REPO_TYPE "dev")
+    endif()
+else()
+    set(GIT_COMMIT_HASH "no-git")
+    set(REPO_TYPE "unknown")
+endif()
+
+# Build timestamp
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S UTC" UTC)
+
+# Build type indicator
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(BUILD_TYPE_STR "Release")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(BUILD_TYPE_STR "Debug")
+else()
+    set(BUILD_TYPE_STR "Dev")
+endif()
+
+# Configure version header
+configure_file(
+    "${CMAKE_SOURCE_DIR}/include/version.h.in"
+    "${CMAKE_BINARY_DIR}/generated/version.h"
+    @ONLY
+)
+
+include_directories(${CMAKE_BINARY_DIR}/generated)
+
+message(STATUS "Building ${REPO_TYPE} version: ${VERSION_STRING} (${GIT_COMMIT_HASH})")
+# ============================================
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

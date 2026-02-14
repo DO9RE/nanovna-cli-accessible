@@ -299,6 +299,19 @@ void WebServer::handleClient(int clientSocket) {
         // Server-Sent Events for real-time output
         handleSSE(clientSocket);
     }
+    else if (method == "GET" && path == "/context") {
+        // Return current UI context (available actions) as JSON
+        std::string contextData;
+        {
+            std::lock_guard<std::mutex> lock(outputMutex);
+            contextData = currentContextJSON;
+        }
+        if (contextData.empty()) {
+            contextData = "{\"context\":\"\",\"actions\":[]}";
+        }
+        std::string response = generateHTTPResponse(200, "application/json", contextData);
+        send(clientSocket, response.c_str(), response.length(), 0);
+    }
     else {
         std::string response = generateHTTPResponse(404, "text/plain", "Not Found");
         send(clientSocket, response.c_str(), response.length(), 0);
@@ -402,7 +415,7 @@ std::string WebServer::getHTMLPage() {
             background: #000;
             border: 2px solid #0f0;
             padding: 10px;
-            height: 60vh;
+            height: 50vh;
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
@@ -413,20 +426,17 @@ std::string WebServer::getHTMLPage() {
             display: flex;
             gap: 10px;
             margin-bottom: 10px;
+            align-items: center;
         }
         
-        #terminal-input {
-            flex: 1;
-            background: #000;
-            color: #0f0;
-            border: 2px solid #0f0;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 1em;
+        .nav-arrows {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 4px;
         }
         
-        #terminal-input:focus {
-            outline: 2px solid #0ff;
+        button.nav-btn {
+            min-width: 90px;
         }
         
         button {
@@ -443,6 +453,11 @@ std::string WebServer::getHTMLPage() {
             background: #0ff;
         }
         
+        button:focus {
+            outline: 3px solid #ff0;
+            outline-offset: 2px;
+        }
+        
         button.secondary {
             background: #666;
             color: #fff;
@@ -452,6 +467,54 @@ std::string WebServer::getHTMLPage() {
         
         button.secondary:hover {
             background: #888;
+        }
+        
+        /* Action buttons panel */
+        #actions-panel {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 2px solid #0ff;
+            background: #001;
+        }
+        
+        #actions-panel h2 {
+            font-size: 1em;
+            color: #0ff;
+            margin-bottom: 8px;
+        }
+        
+        #actions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        button.action-btn {
+            background: #030;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 6px 12px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        button.action-btn:hover {
+            background: #050;
+            border-color: #0ff;
+            color: #0ff;
+        }
+        
+        button.action-btn:focus {
+            outline: 3px solid #ff0;
+            outline-offset: 2px;
+        }
+        
+        button.action-btn .action-key {
+            font-weight: bold;
+            color: #0ff;
         }
         
         #debug-controls {
@@ -479,12 +542,6 @@ std::string WebServer::getHTMLPage() {
             display: block;
         }
         
-        .info {
-            color: #888;
-            font-size: 0.9em;
-            margin-top: 10px;
-        }
-        
         .debug-label {
             color: #888;
             font-size: 0.9em;
@@ -501,13 +558,16 @@ std::string WebServer::getHTMLPage() {
          aria-relevant="additions text"
          tabindex="0"></div>
     
+    <nav id="actions-panel" aria-label="Available Actions">
+        <h2 id="actions-heading">Available Actions</h2>
+        <div id="actions-container" role="toolbar" aria-labelledby="actions-heading">
+            <p style="color: #888;">Connecting...</p>
+        </div>
+    </nav>
+    
     <div id="input-container">
-        <input type="text" 
-               id="terminal-input" 
-               placeholder="Type command and press Enter..."
-               aria-label="Terminal input"
-               autocomplete="off">
-        <button onclick="sendInput()">Send</button>
+        <button onclick="sendSpecialKey('\r')">Enter</button>
+        <button onclick="sendSpecialKey('\x1B')" class="secondary">ESC</button>
     </div>
     
     <div id="debug-controls">
@@ -517,11 +577,6 @@ std::string WebServer::getHTMLPage() {
     </div>
     
     <div id="debug-output"></div>
-    
-    <div class="info">
-        <p>Screen reader optimized. All output is announced automatically.</p>
-        <p>Keyboard shortcuts: Arrow keys, Escape, and special keys are supported.</p>
-    </div>
     
     <audio id="audio-player" style="display: none;"></audio>
     
@@ -535,13 +590,16 @@ std::string WebServer::getJavaScript() {
     return R"js(
 // NanoVNA Remote Terminal JavaScript
 
-let inputField = document.getElementById('terminal-input');
 let outputDiv = document.getElementById('terminal-output');
 let audioPlayer = document.getElementById('audio-player');
 let debugOutputDiv = document.getElementById('debug-output');
 let debugToggleBtn = document.getElementById('debug-toggle');
 let debugStatusSpan = document.getElementById('debug-status');
+let actionsContainer = document.getElementById('actions-container');
+let actionsHeading = document.getElementById('actions-heading');
 let eventSource = null;
+let contextPollTimer = null;
+let lastContextJSON = '';
 
 // Debug logging
 let debugLog = [];
@@ -624,64 +682,66 @@ function copyDebugToClipboard() {
     });
 }
 
-// Handle keyboard input and map special keys to terminal sequences
-inputField.addEventListener('keydown', function(e) {
+// Handle keyboard input - ALL keys are sent immediately (matching console behavior)
+// Listen on document so keys work without focusing any specific element
+document.addEventListener('keydown', function(e) {
+    // Don't capture keys when a button has focus (let Enter/Space activate it)
+    if (e.target.tagName === 'BUTTON') {
+        if (e.key === 'Enter' || e.key === ' ') return;
+    }
+    
     logDebug('INPUT', 'Key pressed', { key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey });
     
-    // Handle special keys immediately without waiting for Enter
+    // Send keys immediately to match console single-keypress behavior
     if (e.key === 'Enter') {
         e.preventDefault();
-        sendInput();
+        sendSpecialKey('\r');
     } else if (e.key === 'Escape') {
         e.preventDefault();
-        sendSpecialKey('\x1B');  // ESC
+        sendSpecialKey('\x1B');
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        sendSpecialKey('\x1B[A');  // Up arrow
+        sendSpecialKey('\x1B[A');
     } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        sendSpecialKey('\x1B[B');  // Down arrow
+        sendSpecialKey('\x1B[B');
     } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        sendSpecialKey('\x1B[C');  // Right arrow
+        sendSpecialKey('\x1B[C');
     } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        sendSpecialKey('\x1B[D');  // Left arrow
-    } else if (e.key === ' ' && !e.ctrlKey && !e.altKey) {
-        // Space key for immediate input (without modifiers)
+        sendSpecialKey('\x1B[D');
+    } else if (e.key === 'Backspace') {
         e.preventDefault();
-        sendSpecialKey(' ');
+        sendSpecialKey('\x08');
+    } else if (e.key === 'Delete') {
+        e.preventDefault();
+        sendSpecialKey('\x1B[3~');
+    } else if (e.key === 'Home') {
+        e.preventDefault();
+        sendSpecialKey('\x1B[H');
+    } else if (e.key === 'End') {
+        e.preventDefault();
+        sendSpecialKey('\x1B[F');
+    } else if (e.key === 'Tab') {
+        // Allow Tab for accessibility navigation - don't capture
+        return;
+    } else if (e.key === 'PageUp') {
+        e.preventDefault();
+        sendSpecialKey('\x1B[5~');
+    } else if (e.key === 'PageDown') {
+        e.preventDefault();
+        sendSpecialKey('\x1B[6~');
+    } else if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && e.key.charCodeAt(0) >= 32) {
+        // Single printable character - send immediately (no Enter needed)
+        e.preventDefault();
+        sendSpecialKey(e.key);
     }
+    // Ignore modifier-only keys (Shift, Ctrl, Alt, Meta) and browser shortcuts
 });
 
-function sendInput() {
-    const text = inputField.value;
-    if (!text.trim()) return;
-    
-    // Add newline for line-based input
-    const data = text + '\n';
-    
-    logDebug('INPUT', 'Sending line input', { text: text, length: data.length });
-    
-    fetch('/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: data
-    })
-    .then(response => {
-        if (response.ok) {
-            logDebug('INPUT', 'Line input sent successfully');
-            inputField.value = '';
-            // Server will echo the input, so no need for local echo
-        } else {
-            logDebug('INPUT', 'Line input failed', { status: response.status });
-        }
-    })
-    .catch(err => {
-        logDebug('INPUT', 'Error sending line input', { error: err.toString() });
-        console.error('Error sending input:', err);
-    });
-}
+// sendInput is no longer needed - all keys are sent immediately via sendSpecialKey
+// The Enter button in the UI calls sendSpecialKey('\r') directly
 
 function sendSpecialKey(sequence) {
     logDebug('INPUT', 'Sending special key', { 
@@ -707,14 +767,97 @@ function sendSpecialKey(sequence) {
     });
 }
 
+// Send an action: key press, optionally followed by Enter
+function sendAction(key, needsEnter) {
+    logDebug('ACTION', 'Action button clicked', { key: key, needsEnter: needsEnter });
+    sendSpecialKey(key);
+    if (needsEnter) {
+        // Small delay then send Enter for multi-digit selections
+        setTimeout(function() {
+            sendSpecialKey('\r');
+        }, 100);
+    }
+}
+
+// Find the last SPAN element in the terminal output (for line overwrites)
+function findLastSpan() {
+    var nodes = outputDiv.childNodes;
+    for (var i = nodes.length - 1; i >= 0; i--) {
+        if (nodes[i].nodeName === 'SPAN') {
+            return nodes[i];
+        }
+    }
+    return null;
+}
+
+// Replace or create the last line with new HTML content
+function replaceLastLine(htmlContent) {
+    var lastSpan = findLastSpan();
+    if (lastSpan) {
+        lastSpan.innerHTML = htmlContent;
+    } else {
+        var span = document.createElement('span');
+        span.innerHTML = htmlContent;
+        outputDiv.appendChild(span);
+    }
+}
+
 function appendOutput(text) {
     logDebug('OUTPUT', 'Received output', { length: text.length, preview: text.substring(0, 50) });
     
-    // Split by newlines and create separate elements for proper ARIA announcements
-    const lines = text.split('\n');
+    // Check for screen clear ANSI sequence (ESC[2J)
+    if (text.indexOf('\x1B[2J') !== -1) {
+        outputDiv.innerHTML = '';
+        logDebug('OUTPUT', 'Screen cleared');
+        // Remove the clear sequence and cursor home from text
+        text = text.replace(/\x1B\[2J\x1B\[H/g, '');
+        if (!text) return;
+    }
     
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+    // Handle carriage return marker (\x01) - overwrite current line
+    // Server encodes \r as \x01 because SSE treats raw \r as line terminator
+    if (text.indexOf('\x01') !== -1) {
+        var segments = text.split('\x01');
+        for (var i = 0; i < segments.length; i++) {
+            var segment = segments[i];
+            if (i > 0 && segment.length > 0) {
+                // Segment after \r overwrites the last line (terminal carriage return)
+                replaceLastLine(ansiToHtml(segment));
+            } else if (segment.length > 0) {
+                // Normal text before any \r
+                appendNormalText(segment);
+            }
+        }
+    }
+    // Handle backspace (\b) - cursor movement in text editing
+    else if (text.indexOf('\b') !== -1) {
+        // Strip backspace chars and update the last line with redrawn content
+        var cleanText = text.replace(/\b/g, '');
+        if (cleanText.length > 0) {
+            replaceLastLine(ansiToHtml(cleanText));
+        }
+    }
+    else {
+        // Normal output without control characters
+        appendNormalText(text);
+    }
+    
+    // Auto-scroll to bottom
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+    
+    // Poll for context update after receiving new output
+    pollContext();
+}
+
+function appendNormalText(text) {
+    // Process ANSI color codes for HTML display
+    var htmlText = ansiToHtml(text);
+    
+    // Split by newlines and create separate elements for proper ARIA announcements
+    var lines = htmlText.split('\n');
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
         
         if (i > 0) {
             // Add line break between lines
@@ -723,14 +866,212 @@ function appendOutput(text) {
         
         if (line) {
             // Create span for each line to trigger ARIA updates
-            const span = document.createElement('span');
-            span.textContent = line;
+            var span = document.createElement('span');
+            span.innerHTML = line;
             outputDiv.appendChild(span);
         }
     }
+}
+
+// Convert ANSI color codes to HTML spans
+// Only processes codes generated by the application (bold, foreground colors)
+function ansiToHtml(text) {
+    // Map ANSI codes to CSS styles
+    const ansiMap = {
+        '1': 'font-weight:bold',
+        '30': 'color:#000', '31': 'color:#f00', '32': 'color:#0f0',
+        '33': 'color:#ff0', '34': 'color:#55f', '35': 'color:#f0f',
+        '36': 'color:#0ff', '37': 'color:#fff',
+        '90': 'color:#888', '91': 'color:#f88', '92': 'color:#8f8',
+        '93': 'color:#ff8', '94': 'color:#88f', '95': 'color:#f8f',
+        '96': 'color:#8ff', '97': 'color:#fff'
+    };
     
-    // Auto-scroll to bottom
-    outputDiv.scrollTop = outputDiv.scrollHeight;
+    let result = '';
+    let openSpans = 0;  // Track open <span> tags to avoid orphan close tags
+    let i = 0;
+    while (i < text.length) {
+        if (text[i] === '\x1B' && i + 1 < text.length && text[i+1] === '[') {
+            // Parse ANSI escape sequence
+            let j = i + 2;
+            while (j < text.length && text[j] !== 'm') j++;
+            if (j < text.length) {
+                const codes = text.substring(i + 2, j).split(';');
+                if (codes.length === 1 && codes[0] === '0') {
+                    // Reset: close all open spans
+                    while (openSpans > 0) {
+                        result += '</span>';
+                        openSpans--;
+                    }
+                } else {
+                    let styles = [];
+                    for (const code of codes) {
+                        if (ansiMap[code]) styles.push(ansiMap[code]);
+                    }
+                    if (styles.length > 0) {
+                        result += '<span style="' + styles.join(';') + '">';
+                        openSpans++;
+                    }
+                }
+                i = j + 1;
+                continue;
+            }
+        }
+        // Escape HTML special characters to prevent XSS
+        if (text[i] === '<') result += '&lt;';
+        else if (text[i] === '>') result += '&gt;';
+        else if (text[i] === '&') result += '&amp;';
+        else if (text[i] === '"') result += '&quot;';
+        else result += text[i];
+        i++;
+    }
+    // Close any remaining open spans
+    while (openSpans > 0) {
+        result += '</span>';
+        openSpans--;
+    }
+    return result;
+}
+
+// Poll the /context endpoint for available actions
+function pollContext() {
+    fetch('/context')
+        .then(response => response.json())
+        .then(data => {
+            const contextStr = JSON.stringify(data);
+            if (contextStr !== lastContextJSON) {
+                lastContextJSON = contextStr;
+                updateActionButtons(data);
+                logDebug('CONTEXT', 'Context updated', { context: data.context, actionCount: data.actions.length });
+            }
+        })
+        .catch(err => {
+            logDebug('CONTEXT', 'Failed to poll context', { error: err.toString() });
+        });
+}
+
+// Update the action buttons based on context data
+function updateActionButtons(contextData) {
+    if (!actionsContainer) return;
+    
+    // Clear existing buttons
+    actionsContainer.innerHTML = '';
+    
+    if (!contextData.actions || contextData.actions.length === 0) {
+        const msg = document.createElement('p');
+        msg.style.color = '#888';
+        msg.textContent = 'No actions available in current context.';
+        actionsContainer.appendChild(msg);
+        return;
+    }
+    
+    // Update heading with context name
+    if (actionsHeading && contextData.context) {
+        const contextName = contextData.context.replace(/_/g, ' ');
+        actionsHeading.textContent = 'Actions: ' + contextName.charAt(0).toUpperCase() + contextName.slice(1);
+    }
+    
+    // Add navigation arrow buttons for navigation mode (acoustic analysis)
+    if (contextData.inputMode === 'navigation') {
+        var navDiv = document.createElement('div');
+        navDiv.className = 'nav-arrows';
+        navDiv.setAttribute('role', 'group');
+        navDiv.setAttribute('aria-label', 'Navigation controls');
+        
+        var arrows = [
+            {key: '\x1B[D', label: '\u25C0 Left', ariaLabel: 'Move position left'},
+            {key: '\x1B[C', label: 'Right \u25B6', ariaLabel: 'Move position right'},
+            {key: '\x1B[A', label: '\u25B2 Jump +', ariaLabel: 'Increase jump width'},
+            {key: '\x1B[B', label: '\u25BC Jump -', ariaLabel: 'Decrease jump width'}
+        ];
+        
+        arrows.forEach(function(arrow) {
+            var btn = document.createElement('button');
+            btn.className = 'action-btn nav-btn';
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('aria-label', arrow.ariaLabel);
+            btn.textContent = arrow.label;
+            btn.addEventListener('click', function() {
+                sendSpecialKey(arrow.key);
+            });
+            navDiv.appendChild(btn);
+        });
+        
+        actionsContainer.appendChild(navDiv);
+        
+        // Add separator
+        var sep = document.createElement('hr');
+        sep.style.margin = '8px 0';
+        sep.style.borderColor = '#555';
+        actionsContainer.appendChild(sep);
+    }
+    
+    // Create a button for each available action
+    contextData.actions.forEach(function(action) {
+        const btn = document.createElement('button');
+        btn.className = 'action-btn';
+        btn.setAttribute('type', 'button');
+        
+        // Extract display text: remove the (X) prefix if present in the label
+        let displayLabel = action.label;
+        let keyDisplay = action.key.toUpperCase();
+        
+        // Handle special keys for display
+        if (action.key === '\r' || action.key === '\n') {
+            keyDisplay = 'ENTER';
+        }
+        
+        // Try to extract the short form, e.g. "(S)ummary" -> key "S", label "Summary"
+        const match = displayLabel.match(/^\((.+?)\)\s*(.*)$/);
+        if (match) {
+            keyDisplay = match[1];
+            displayLabel = match[2] || keyDisplay;
+        }
+        
+        // Create accessible button content
+        const keySpan = document.createElement('span');
+        keySpan.className = 'action-key';
+        keySpan.textContent = '[' + keyDisplay + '] ';
+        
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = displayLabel;
+        
+        btn.appendChild(keySpan);
+        btn.appendChild(labelSpan);
+        
+        // Accessible label
+        btn.setAttribute('aria-label', displayLabel + ' (key: ' + keyDisplay + ')');
+        
+        // Click handler - send the key, optionally followed by Enter
+        const actionKey = action.key;
+        const needsEnter = action.needsEnter;
+        btn.addEventListener('click', function() {
+            sendAction(actionKey, needsEnter);
+        });
+        
+        actionsContainer.appendChild(btn);
+    });
+    
+    // Add ESC button if not in main menu
+    if (contextData.context && contextData.context !== 'main_menu') {
+        const escBtn = document.createElement('button');
+        escBtn.className = 'action-btn';
+        escBtn.setAttribute('type', 'button');
+        escBtn.setAttribute('aria-label', 'Back (Escape key)');
+        
+        const keySpan = document.createElement('span');
+        keySpan.className = 'action-key';
+        keySpan.textContent = '[ESC] ';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Back';
+        escBtn.appendChild(keySpan);
+        escBtn.appendChild(labelSpan);
+        
+        escBtn.addEventListener('click', function() {
+            sendSpecialKey('\x1B');
+        });
+        actionsContainer.appendChild(escBtn);
+    }
 }
 
 // Connect to Server-Sent Events for real-time output
@@ -772,13 +1113,16 @@ function connectSSE() {
     };
 }
 
-// Start SSE connection when page loads
+// Start SSE connection and context polling when page loads
 window.addEventListener('load', function() {
     logDebug('PAGE', 'Page loaded, initializing');
-    inputField.focus();
-    appendOutput('Connected to NanoVNA terminal.\n');
-    appendOutput('Type commands or press keys for navigation.\n\n');
     connectSSE();
+    
+    // Initial context poll
+    pollContext();
+    
+    // Poll context periodically (every 2 seconds as fallback)
+    contextPollTimer = setInterval(pollContext, 2000);
 });
 
 // Cleanup on page unload
@@ -786,6 +1130,9 @@ window.addEventListener('beforeunload', function() {
     logDebug('PAGE', 'Page unloading, closing connections');
     if (eventSource) {
         eventSource.close();
+    }
+    if (contextPollTimer) {
+        clearInterval(contextPollTimer);
     }
 });
 )js";
@@ -873,14 +1220,27 @@ void WebServer::handleSSE(int clientSocket) {
             std::ostringstream event;
             
             // Split data by newlines and prefix each line with "data: "
+            // Preserve \r as \\r so the JS client can handle carriage return semantics
             std::istringstream dataStream(data);
             std::string line;
             while (std::getline(dataStream, line)) {
-                // Remove carriage return if present
-                if (!line.empty() && line.back() == '\r') {
+                // Check if original line had \r (carriage return for line overwrite)
+                bool hasCR = (!line.empty() && line.back() == '\r');
+                if (hasCR) {
                     line.pop_back();
                 }
-                event << "data: " << line << "\n";
+                // Also check for leading \r (used by acoustic status messages)
+                bool hasLeadingCR = (!line.empty() && line.front() == '\r');
+                if (hasLeadingCR) {
+                    line.erase(0, 1);
+                }
+                // Encode \r as \x01 marker for JS client
+                // SSE protocol treats raw \r as a line terminator, so we can't use it
+                if (hasCR || hasLeadingCR) {
+                    event << "data: \x01" << line << "\n";
+                } else {
+                    event << "data: " << line << "\n";
+                }
             }
             // Add final empty line to complete SSE message
             event << "\n";
@@ -921,6 +1281,15 @@ void WebServer::sendOutput(const std::string& text) {
     if (logger) {
         logger->log("WEBSERVER", "Output added to buffer. Length: " + std::to_string(text.length()) + 
                     ", Buffer size: " + std::to_string(outputBuffer.length()));
+    }
+}
+
+void WebServer::sendContext(const std::string& contextJSON) {
+    std::lock_guard<std::mutex> lock(outputMutex);
+    currentContextJSON = contextJSON;
+    
+    if (logger) {
+        logger->log("WEBSERVER", "Context updated: " + contextJSON.substr(0, 100));
     }
 }
 

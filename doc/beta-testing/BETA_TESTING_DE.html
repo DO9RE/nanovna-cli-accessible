@@ -359,7 +359,7 @@
     <main id="main-content" role="main">
         <article>
 <h1>Beta-Test-Anleitung - NanoVNA CLI Accessible</h1>
-<p><strong>Version:</strong> Beta <strong>Datum:</strong> Januar 2026 <strong>Sprache:</strong> Deutsch</p>
+<p><strong>Version:</strong> 0.5.0-beta <strong>Datum:</strong> 2026-02-13 12:25:53 <strong>Sprache:</strong> Deutsch</p>
 <hr>
 <h2>Inhaltsverzeichnis</h2>
 <ol>
@@ -400,7 +400,7 @@
 <h3>Priorität 1: Kernfunktionalität (Wesentlich)</h3>
 <p><strong>Gerätekommunikation:</strong></p>
 <ul>
-    <li>[ ] COM-Port-Erkennung und Auswahl</li>
+    <li>[ ] Serielle Port-Erkennung und Auswahl (COM-Ports unter Windows, /dev/cu.* unter macOS, /dev/ttyUSB* unter Linux)</li>
     <li>[ ] Geräteverbindung und -identifikation</li>
     <li>[ ] Batteriespannungsanzeige</li>
     <li>[ ] Befehlsausführung und Antwort</li>
@@ -496,7 +496,11 @@
     <li>[ ] Zugriff von localhost (gleicher Computer)</li>
     <li>[ ] Zugriff von anderem Gerät im Netzwerk</li>
     <li>[ ] Alle Menüfunktionen funktionieren über Browser</li>
-    <li>[ ] Screenreader-Kompatibilität im Browser</li>
+    <li>[ ] Aktions-Buttons werden im Web-Interface angezeigt</li>
+    <li>[ ] Buttons aktualisieren sich beim Kontextwechsel (z.B. Hauptmenü → Komfortfunktionen)</li>
+    <li>[ ] Ja/Nein-Abfragen zeigen Ja/Nein-Buttons</li>
+    <li>[ ] Klick auf Button löst gleiche Aktion wie Tastendruck aus</li>
+    <li>[ ] Screenreader-Kompatibilität im Browser (Buttons als echte Buttons erkannt)</li>
     <li>[ ] Web-Interface stoppen</li>
     <li>[ ] Behandlung von Port-Konflikten</li>
     <li>[ ] Verbindungsstabilität</li>
@@ -522,17 +526,43 @@
     <li>[ ] Paginierung</li>
     <li>[ ] Datenformatierung</li>
 </ul>
+<h3>Priorität 6: Plattformspezifische Tests</h3>
+<p><strong>Windows-Plattform:</strong></p>
+<ul>
+    <li>[ ] COM-Port-Enumeration und Auswahl</li>
+    <li>[ ] waveOut Audio-Backend-Funktionalität</li>
+    <li>[ ] WinMM MIDI-Funktionalität</li>
+    <li>[ ] Direkter Brailledrucker-Zugriff</li>
+    <li>[ ] Statische Binärdatei (keine externen Abhängigkeiten)</li>
+</ul>
+<p><strong>macOS-Plattform:</strong></p>
+<ul>
+    <li>[ ] /dev/cu.* und /dev/tty.* Port-Erkennung</li>
+    <li>[ ] PortAudio Audio-Backend (Homebrew-Installation überprüfen)</li>
+    <li>[ ] CoreMIDI mit AudioUnit DLS Synth</li>
+    <li>[ ] Dateiberechtigungen und serieller Port-Zugriff</li>
+    <li>[ ] Build-Prozess (build-macos.sh)</li>
+</ul>
+<p><strong>Linux-Plattform:</strong></p>
+<ul>
+    <li>[ ] /dev/ttyUSB* und /dev/ttyACM* Port-Erkennung</li>
+    <li>[ ] Benutzerberechtigungen (dialout-Gruppenmitgliedschaft)</li>
+    <li>[ ] PortAudio Audio-Backend (ALSA/PulseAudio)</li>
+    <li>[ ] ALSA Sequencer MIDI (mit und ohne ALSA-Entwicklungsbibliotheken)</li>
+    <li>[ ] Build-Prozess (build.sh)</li>
+    <li>[ ] Installation von Paketabhängigkeiten</li>
+</ul>
 <hr>
 <h2>3. Debug-Ausgabe aktivieren</h2>
 <p>Debug-Ausgabe ist <strong>essentiell für Beta-Tests</strong>. Sie hilft bei der Identifikation und Behebung von Fehlern.</p>
 <h3>Debug-Modus aktivieren:</h3>
-<p><strong>Methode 1: Kommandozeile (Empfohlen)</strong></p>
+<p><strong>Windows - Methode 1: Kommandozeile (Empfohlen)</strong></p>
 <ol>
     <li>Eingabeaufforderung oder PowerShell öffnen</li>
     <li>Zum Anwendungsverzeichnis navigieren: <pre><code class="language-">   cd C:\Pfad\Zu\NanoVNA-CLI </code></pre></li>
     <li>Mit Debug-Flag ausführen: <pre><code class="language-">   nanovna-cli.exe -d </code></pre></li>
 </ol>
-<p><strong>Methode 2: Verknüpfung erstellen</strong></p>
+<p><strong>Windows - Methode 2: Verknüpfung erstellen</strong></p>
 <ol>
     <li>Rechtsklick auf <code>nanovna-cli.exe</code></li>
     <li>"Verknüpfung erstellen" auswählen</li>
@@ -541,11 +571,28 @@
     <li>OK klicken</li>
     <li>Diese Verknüpfung zum Testen verwenden</li>
 </ol>
-<p><strong>Methode 3: Batch-Datei</strong> Datei namens <code>start-debug.bat</code> im Anwendungsverzeichnis erstellen:</p>
+<p><strong>Windows - Methode 3: Batch-Datei</strong> Datei namens <code>start-debug.bat</code> im Anwendungsverzeichnis erstellen:</p>
 <pre><code class="language-batch">@echo off
 <p>nanovna-cli.exe -d pause</p>
 </code></pre>
 <p>Diese Datei doppelklicken zum Starten mit Debug-Protokollierung.</p>
+
+<p><strong>macOS/Linux - Terminal-Methode</strong></p>
+<ol>
+    <li>Terminal öffnen</li>
+    <li>Zum Build-Verzeichnis navigieren: <pre><code class="language-">   cd /pfad/zu/nanovna-cli-accessible-cpa/build </code></pre></li>
+    <li>Mit Debug-Flag ausführen: <pre><code class="language-">   ./nanovna-cli -d </code></pre></li>
+</ol>
+
+<p><strong>macOS/Linux - Shell-Script-Methode</strong> Datei namens <code>start-debug.sh</code> im Build-Verzeichnis erstellen:</p>
+<pre><code class="language-bash">#!/bin/bash
+cd "$(dirname "$0")"
+./nanovna-cli -d
+</code></pre>
+<p>Ausführbar machen und starten:</p>
+<pre><code class="language-bash">chmod +x start-debug.sh
+./start-debug.sh
+</code></pre>
 <h3>Was der Debug-Modus macht:</h3>
 <ul>
     <li>Erstellt detaillierte Protokolldateien im <code>logs/</code>-Verzeichnis</li>
@@ -554,8 +601,16 @@
     <li>Protokolliert Fehler mit detaillierten Informationen</li>
     <li>Verlangsamt die Anwendung NICHT signifikant</li>
     <li>Beeinflusst die Funktionalität NICHT</li>
+    <li><strong>Verhindert automatische Bildschirm-Leerung</strong> - Im Debug-Modus wird der Bildschirm beim Kontextwechsel nicht geleert. Dies ermöglicht es Ihnen, vollständige Ausgaben vom Bildschirm zu kopieren, einschließlich aller vorherigen Meldungen. Dies ist besonders nützlich beim Beta-Testing, da Sie Fehlersequenzen komplett dokumentieren können.</li>
 </ul>
 <p><strong>Wichtig:</strong> Verwenden Sie während des Beta-Tests immer den Debug-Modus!</p>
+<p><strong>Hinweis zur Bildschirm-Leerung:</strong></p>
+<ul>
+    <li><strong>Normaler Modus:</strong> Der Bildschirm wird automatisch geleert beim Betreten neuer Kontexte (Menüs, Funktionsbildschirme) für bessere Übersichtlichkeit</li>
+    <li><strong>Debug-Modus (-d Flag):</strong> Bildschirm wird NICHT geleert - alle Ausgaben bleiben erhalten für vollständige Fehleranalyse</li>
+    <li>Dies erleichtert das Kopieren kompletter Fehlersequenzen aus dem Terminal</li>
+    <li>Besonders wichtig für Beta-Tester zur Dokumentation von Problemen</li>
+</ul>
 <hr>
 <h2>4. Debug-Protokolle verstehen</h2>
 <p>Debug-Protokolle werden im <code>logs/</code>-Verzeichnis mit zeitgestempelten Dateinamen gespeichert.</p>
@@ -1052,7 +1107,7 @@
 </ul>
 <p><strong>Melden:</strong> Abstürze, Einfrieren oder unerwartetes Verhalten.</p>
 <h3>Szenario 11: Web-Interface (20 Minuten)</h3>
-<p><strong>Ziel:</strong> Fernzugriffsfunktionalität über Web-Interface testen.  <strong>Voraussetzungen:</strong> NanoVNA verbunden, anderes Gerät (Smartphone/Tablet) im selben Netzwerk.</p>
+<p><strong>Ziel:</strong> Fernzugriffsfunktionalität über Web-Interface testen, insbesondere die interaktiven Aktions-Buttons und Kontextwechsel.  <strong>Voraussetzungen:</strong> NanoVNA verbunden, anderes Gerät (Smartphone/Tablet) im selben Netzwerk.</p>
 <ol>
     <li><strong>Web-Interface starten:</strong></li>
 </ol>
@@ -1069,7 +1124,8 @@
     <li>Browser auf demselben Computer öffnen</li>
     <li>Zu http://localhost:8080 navigieren</li>
     <li>Erscheint die Terminal-Schnittstelle?</li>
-    <li>Hauptmenü-Navigation ausprobieren</li>
+    <li>Werden Aktions-Buttons rechts neben der Terminalausgabe angezeigt?</li>
+    <li>Entsprechen die Buttons den Hauptmenü-Optionen (z.B. [S] Zusammenfassung, [T] Tabelle usw.)?</li>
 </ul>
 <ol>
     <li><strong>Netzwerkzugriff testen:</strong></li>
@@ -1079,15 +1135,33 @@
     <li>Zur angezeigten Netzwerk-URL navigieren (z.B. http://192.168.1.x:8080)</li>
     <li>Funktioniert die Verbindung?</li>
     <li>Ist die Schnittstelle reaktionsschnell?</li>
+    <li>Werden Aktions-Buttons auf dem mobilen Gerät korrekt dargestellt?</li>
 </ul>
 <ol>
-    <li><strong>Funktionalität über Web testen:</strong></li>
+    <li><strong>Tastatur und Buttons im Web testen:</strong></li>
 </ol>
 <ul>
-    <li>Messung über Web-Interface durchführen</li>
-    <li>Akustischen Modus testen (Hinweis: Audio wird auf Server abgespielt, nicht im Browser)</li>
-    <li>Export-Funktionen testen</li>
-    <li>U-Menü-Funktionen testen</li>
+    <li>Hauptmenü-Navigation per Tastatur ausprobieren (z.B. T für Tabelle, U für Komfortfunktionen)</li>
+    <li>Gleiche Navigation per Klick auf die Aktions-Buttons ausprobieren</li>
+    <li>Prüfen, ob beide Eingabemethoden identische Ergebnisse liefern</li>
+</ul>
+<ol>
+    <li><strong>Kontextwechsel der Buttons testen:</strong></li>
+</ol>
+<ul>
+    <li>Im Hauptmenü auf den Button für Komfortfunktionen klicken (oder U drücken)</li>
+    <li>Prüfen: Aktualisieren sich die Buttons auf die Komfortfunktionen-Optionen (1-12)?</li>
+    <li>Eine Komfortfunktion auswählen (z.B. Bandeignungstest)</li>
+    <li>Prüfen: Aktualisieren sich die Buttons auf die Optionen der Unterfunktion (z.B. Bandauswahl)?</li>
+    <li>ESC-Button drücken, um zurückzukehren – wechseln die Buttons zurück?</li>
+</ul>
+<ol>
+    <li><strong>Ja/Nein-Abfragen über Buttons testen:</strong></li>
+</ol>
+<ul>
+    <li>Eine Funktion auslösen, die eine Ja/Nein-Abfrage stellt (z.B. „Möchten Sie messen?")</li>
+    <li>Prüfen: Erscheinen Ja/Nein-Buttons im Bedienfeld?</li>
+    <li>Per Button antworten – wird die Antwort korrekt übermittelt?</li>
 </ul>
 <ol>
     <li><strong>Screenreader-Kompatibilität testen:</strong></li>
@@ -1095,7 +1169,8 @@
 <ul>
     <li>Screenreader im Browser verwenden (NVDA, JAWS, Browser-integriert)</li>
     <li>Durch Menüs navigieren</li>
-    <li>Sind alle Elemente zugänglich?</li>
+    <li>Sind alle Aktions-Buttons mit korrekten Labels erkennbar?</li>
+    <li>Werden die Button-Beschreibungen (z.B. „Zusammenfassung (Taste: S)") vorgelesen?</li>
 </ul>
 <ol>
     <li><strong>Web-Interface stoppen:</strong></li>
@@ -1106,15 +1181,28 @@
     <li>S zum Stoppen drücken</li>
     <li>Überprüfen, ob Web-Interface stoppt</li>
 </ul>
-<p><strong>Melden:</strong> Verbindungsstabilität, Screenreader-Kompatibilität im Browser, Probleme mit Fernsteuerung, Verbesserungsvorschläge.</p>
+<p><strong>Melden:</strong> Verbindungsstabilität, Button-Kontextwechsel (korrekt/fehlerhaft), fehlende Buttons für bestimmte Kontexte, Screenreader-Kompatibilität der Buttons im Browser, Probleme mit Fernsteuerung, Verbesserungsvorschläge.</p>
 <hr>
 <h2>7. Bekannte Probleme und Einschränkungen</h2>
 <p>Dies sind bekannte Einschränkungen, die nicht gemeldet werden müssen:</p>
-<h3>Plattform-Einschränkungen:</h3>
+<h3>Plattform-Unterstützung:</h3>
 <ul>
-    <li><strong>Nur Windows:</strong> Anwendung kann nicht auf Linux oder macOS laufen</li>
+    <li><strong>Multi-Plattform:</strong> Unterstützt auf Windows, macOS und Linux</li>
+    <li><strong>Windows:</strong> Eigenständige ausführbare Datei, keine externen Abhängigkeiten erforderlich</li>
+    <li><strong>macOS:</strong> Benötigt PortAudio (Installation via Homebrew: <code>brew install portaudio</code>)</li>
+    <li><strong>Linux:</strong> Benötigt PortAudio und optional ALSA-Entwicklungsbibliotheken für MIDI-Unterstützung</li>
     <li><strong>Nur NanoVNA-H4:</strong> Speziell für dieses Modell entwickelt</li>
-    <li><strong>Feste Baudrate:</strong> 9600 Baud, keine automatische Erkennung</li>
+</ul>
+<h3>Serielle Kommunikation:</h3>
+<ul>
+    <li><strong>Baudrate:</strong> Standard 9600 Baud, konfigurierbar via <code>--baud</code> Parameter (unterstützt: 9600-921600). Keine automatische Erkennung.</li>
+    <li><strong>Serielle Port-Benennung:</strong>
+        <ul>
+        <li><strong>Windows:</strong> COM-Ports (z.B. COM4, COM5)</li>
+        <li><strong>macOS:</strong> /dev/cu.* oder /dev/tty.* Geräte</li>
+        <li><strong>Linux:</strong> /dev/ttyUSB* oder /dev/ttyACM* Geräte (möglicherweise dialout-Gruppenmitgliedschaft erforderlich)</li>
+        </ul>
+    </li>
 </ul>
 <h3>Messeinschränkungen:</h3>
 <ul>
@@ -1122,22 +1210,35 @@
     <li><strong>Einzelner Sweep-Typ:</strong> S11 oder S21, nicht gleichzeitig</li>
     <li><strong>Begrenzter Speicher:</strong> Sehr große Datensätze können langsam sein</li>
 </ul>
-<h3>Audio-Einschränkungen:</h3>
+<h3>Audio-Backend:</h3>
 <ul>
-    <li><strong>Windows Audio-API:</strong> Benötigt funktionierendes Windows-Soundsystem</li>
-    <li><strong>MIDI-Gerät:</strong> Einige MIDI-Instrumente sind möglicherweise nicht auf allen Systemen verfügbar</li>
+    <li><strong>Plattformspezifisch:</strong>
+        <ul>
+        <li><strong>Windows:</strong> waveOut API (eingebaut, keine Abhängigkeiten)</li>
+        <li><strong>macOS:</strong> CoreAudio über PortAudio</li>
+        <li><strong>Linux:</strong> ALSA/PulseAudio über PortAudio</li>
+        </ul>
+    </li>
+    <li><strong>MIDI-Unterstützung:</strong>
+        <ul>
+        <li><strong>Windows:</strong> WinMM API (eingebaut)</li>
+        <li><strong>macOS:</strong> CoreMIDI mit AudioUnit DLS Synth</li>
+        <li><strong>Linux:</strong> ALSA Sequencer API (benötigt ALSA-Entwicklungsbibliotheken)</li>
+        </ul>
+    </li>
     <li><strong>Audio-Qualität:</strong> Hängt von Soundkarten-Qualität ab</li>
 </ul>
-<h3>Braille-Einschränkungen:</h3>
+<h3>Braille-Druck:</h3>
 <ul>
+    <li><strong>Direktdruck:</strong> Derzeit nur unter Windows unterstützt</li>
+    <li><strong>Dateiexport:</strong> Verfügbar auf allen Plattformen (.brl-Dateien)</li>
     <li><strong>Nur Index-Drucker:</strong> Direktdruck optimiert für Index V5-Serie</li>
     <li><strong>Grafikmodus:</strong> Verwendet taktile Grafiken, nicht Braille-Text</li>
-    <li><strong>Windows-Drucker:</strong> Benötigt in Windows installierten Drucker</li>
 </ul>
 <h3>Benutzeroberflächen-Einschränkungen:</h3>
 <ul>
     <li><strong>Nur Konsole:</strong> Keine grafische Oberfläche</li>
-    <li><strong>Nur Tastatur:</strong> Keine Mausunterstützung (durch Design)</li>
+    <li><strong>Tastatur bevorzugt:</strong> Die Konsolenoberfläche ist nur per Tastatur bedienbar. Das Web-Interface bietet zusätzlich anklickbare Aktions-Buttons.</li>
     <li><strong>Nur Englisch/Deutsch:</strong> Noch keine anderen Sprachen</li>
 </ul>
 <hr>

@@ -11,6 +11,7 @@
 #include "comfort_functions.h"
 #include "web_server.h"
 #include "console_input.h"
+#include "navigation_stack.h"
 #include <vector>
 #include <memory>
 
@@ -19,6 +20,9 @@ public:
     ConsoleUI(AppConfig cfg, Logger* logger, MathLogger* mathLogger, SerialComm* serial);
     ~ConsoleUI();
     void run(NanoVNAProtocol* proto);
+    
+    // Public output method for use outside the class (e.g., main.cpp)
+    void output(const std::string& text);
 
 private:
     AppConfig cfg;
@@ -32,10 +36,21 @@ private:
     TranslationManager translation;
     ComfortFunctions comfortFuncs;
     std::unique_ptr<WebServer> webServer;
+    NavigationStack navStack;  // Central state stack for managing UI depth
     
     // Snapshots for before/after comparison
     MeasurementSnapshot snapshotA;
     MeasurementSnapshot snapshotB;
+    
+    // Current UI context for web interface (which actions are available)
+    struct UIAction {
+        std::string key;           // The key to press (e.g., "s", "1", "q")
+        std::string label;         // Human-readable label (e.g., "Summary")
+        bool needsEnter;           // Whether the action requires Enter confirmation
+    };
+    std::vector<UIAction> currentActions;
+    std::string currentContext;    // Current context name for web interface
+    std::string currentInputMode; // "menu" (default), "navigation" (arrow=playback), "text_edit" (arrow=cursor)
 
     void printOptionsLine();
     void showSummary(const std::vector<MeasurementPoint>& pts);
@@ -71,7 +86,15 @@ private:
     bool runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Freeze pause submenu
     bool runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Loop pause submenu
     bool runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Inverted loop gap submenu
-    bool readNumericInput(const std::string& prompt, int& result);  // Helper for numeric input with ESC
+    bool readNumericInput(const std::string& prompt, int& result, int depth = 0);  // Helper for numeric input with ESC (depth adds depth indicator)
+    
+    // Unified raw-mode input helper (Phase 4: Canonical mode elimination)
+    // Replaces enableCanonicalMode/getline sequences
+    struct RawInputResult {
+        std::string value;
+        bool cancelled;  // true if user pressed ESC
+    };
+    RawInputResult readRawLineInput(const std::string& prompt, const std::string& defaultValue = "", bool silentCancel = false);
     
     // Options menu
     void optionsMenu();  // New options submenu
@@ -132,7 +155,13 @@ private:
     CableSelection selectCablePreset();
     
     // Helper for generating prompts with depth indication
-    std::string getPromptWithDepth(const std::string& promptKey, int depth = 1) const;
+    // Uses navStack if depth is USE_NAVIGATION_STACK, otherwise uses provided depth
+    // USE_NAVIGATION_STACK (-1) is a sentinel value indicating automatic depth detection
+    static const int USE_NAVIGATION_STACK = -1;
+    std::string getPromptWithDepth(const std::string& promptKey, int depth = USE_NAVIGATION_STACK) const;
+    
+    // Get just the depth indicator (e.g., ">>>" for depth 3)
+    std::string getDepthIndicator(int depth) const;
     
     // Helper to check if measurement data is available, and offer to measure if not
     bool ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVNAProtocol* proto, bool needsS21 = false);
@@ -149,6 +178,30 @@ private:
     // Helper function to offer repeat option after playing a sound in wizard
     // Returns true if user wants to repeat, false if user wants to continue
     bool offerRepeat();
+    
+    // Screen clearing function - clears the screen when entering a new context
+    // Respects the debug flag (-d) - does not clear if debug is enabled
+    // When preserve is true, the screen is not cleared (content stays visible)
+    // This is the ONLY place in the code where screen clearing occurs
+    void clearScreen(bool preserve = false);
+    
+    // Format a heading using ANSI colors instead of decorative characters
+    // Uses bold cyan for visibility without generating screenreader noise
+    std::string formatHeading(const std::string& title) const;
+    
+    // Format a subheading using ANSI colors
+    std::string formatSubHeading(const std::string& title) const;
+    
+    // Post-process text for display: replaces decorative === and ═══ patterns
+    // with ANSI color codes. Applied automatically in print() so that
+    // translation strings containing these patterns are handled transparently.
+    static std::string processTextForDisplay(const std::string& text);
+    
+    // Set current UI context and available actions for web interface
+    void setUIContext(const std::string& context, const std::vector<UIAction>& actions, const std::string& inputMode = "menu");
+    
+    // Get current context as JSON for web interface
+    std::string getContextJSON() const;
     
     // Output wrapper for web interface integration
     void print(const std::string& text);

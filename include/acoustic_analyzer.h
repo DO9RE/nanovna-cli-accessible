@@ -12,6 +12,7 @@
 #include <mutex>
 #include <cstdint>
 #include <memory>
+#include <functional>
 
 // Forward declaration to avoid circular dependency
 class IAudioBackend;
@@ -33,6 +34,9 @@ class AcousticAnalyzer {
 public:
     AcousticAnalyzer(Logger* logger, MathLogger* mathLogger, TranslationManager* translation);
     ~AcousticAnalyzer() noexcept;
+    
+    // Set output callback for routing text output through a centralized print wrapper
+    void setOutputCallback(std::function<void(const std::string&)> callback);
     
     // Set measurement data
     void setData(const std::vector<MeasurementPoint>& data);
@@ -212,6 +216,7 @@ private:
     Logger* logger;
     MathLogger* mathLogger;
     TranslationManager* translation;
+    std::function<void(const std::string&)> outputCallback;
     std::vector<MeasurementPoint> measurementData;
     
     // Audio engine (can be SynthesizerEngine or MIDIEngine)

@@ -78,6 +78,12 @@ public:
     void sendOutput(const std::string& text);
 
     /**
+     * @brief Send UI context update to all connected clients
+     * @param contextJSON JSON string with current context and available actions
+     */
+    void sendContext(const std::string& contextJSON);
+
+    /**
      * @brief Check if there's keyboard input from browser
      * @return true if input is available
      */
@@ -123,6 +129,9 @@ private:
     // Output buffer for SSE clients
     std::string outputBuffer;
     std::vector<int> sseClients;  // Client sockets for Server-Sent Events
+    
+    // Current UI context (available actions) for web interface
+    std::string currentContextJSON;
     
     // Server main loop
     void serverLoop();

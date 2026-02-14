@@ -18,6 +18,7 @@
 #include <memory>
 #include <limits>
 #include <filesystem>
+#include <cstdlib>
 
 #if defined(_WIN32)
 #include <windows.h> // For GetAsyncKeyState, ShellExecuteA
@@ -64,6 +65,10 @@ ConsoleUI::~ConsoleUI() {
 }
 
 void ConsoleUI::printOptionsLine() {
+    // Do NOT clearScreen here. Each sub-menu/context clears the screen
+    // when it ENTERS. This preserves important exit messages (e.g. calibration
+    // profile loaded, measurement summary) that are printed before returning.
+    print(formatHeading(translation.get("MAIN_MENU_TITLE", "Main Menu")));
     std::ostringstream menu;
     menu << translation.get("MENU_SUMMARY", "(S)ummary") << "  ";
     menu << translation.get("MENU_TABLE", "(T)able") << "  ";
@@ -90,9 +95,31 @@ void ConsoleUI::printOptionsLine() {
     menu << translation.get("MENU_QUIT", "(Q)uit") << "\n";
     
     print(menu.str());
+    
+    // Set UI context for web interface
+    setUIContext("main_menu", {
+        {"s", translation.get("MENU_SUMMARY", "(S)ummary"), false},
+        {"t", translation.get("MENU_TABLE", "(T)able"), false},
+        {"a", translation.get("MENU_ACOUSTIC", "(A)coustic"), false},
+        {"e", translation.get("MENU_EXPORT", "(E)xport"), false},
+        {"l", translation.get("MENU_LOAD", "(L)oad"), false},
+        {"k", translation.get("MENU_CALIBRATE", "(K)alibrate"), false},
+        {"p", translation.get("MENU_PORT", "(P)ort"), false},
+        {"r", translation.get("MENU_RANGE", "(R)ange"), false},
+        {"d", translation.get("MENU_DEVICE_INFO", "(D)evice Info"), false},
+        {"m", translation.get("MENU_MANUAL", "(M)anual"), false},
+        {"u", translation.get("MENU_COMFORT", "(U) Comfort Functions"), false},
+        {"w", sweepStatus, false},
+        {"o", translation.get("MENU_OPTIONS", "(O)ptions"), false},
+        {"i", translation.get("MENU_WEB_INTERFACE", "(I) Web Interface"), false},
+        {"?", translation.get("MENU_DOCS", "(?) Manuals and Training"), false},
+        {"h", translation.get("MENU_HELP", "(H)elp"), false},
+        {"q", translation.get("MENU_QUIT", "(Q)uit"), false}
+    });
 }
 
 void ConsoleUI::showSummary(const std::vector<MeasurementPoint>& pts) {
+    clearScreen();
     if (pts.empty()) { 
         print(translation.get("ERROR_NO_DATA", "No data") + "\n");
         return; 
@@ -121,7 +148,7 @@ void ConsoleUI::showSummary(const std::vector<MeasurementPoint>& pts) {
     }
     
     std::ostringstream output;
-    output << "\n=== " << translation.get("SUMMARY_TITLE", "Measurement Summary") << " ===\n";
+    output << formatHeading(translation.get("SUMMARY_TITLE", "Measurement Summary"));
     output << translation.format("SUMMARY_POINTS", "Points: {0}", pts.size()) << "\n";
     output << translation.format("SUMMARY_FREQ_RANGE", "Frequency range: {0} Hz to {1} Hz", pts[0].freq, pts[pts.size()-1].freq) << "\n";
     output << translation.format("SUMMARY_MIN_SWR", "Min SWR: {0} at {1} Hz", minSWR, pts[idxMin].freq) << "\n";
@@ -158,6 +185,7 @@ void ConsoleUI::showTable(const std::vector<MeasurementPoint>& pts, size_t cente
 
 void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
     if (pts.empty()) { 
+        clearScreen();
         print(translation.get("ERROR_NO_DATA", "No data") + "\n");
         return; 
     }
@@ -166,16 +194,17 @@ void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
     size_t currentPage = 0;
     size_t totalPages = (pts.size() + rowsPerPage - 1) / rowsPerPage;
     
-    print("\n=== " + translation.get("TABLE_TITLE", "Table View (Paginated)") + " ===\n");
-    print(translation.get("TABLE_NAVIGATION", "Navigation: SPACE/N=Next, P=Previous, C=Customize, G=Go To, ESC=Back, H=Help") + "\n\n");
-    
     while (true) {
+        clearScreen();  // Clear screen each time page is displayed
+        print(formatHeading(translation.get("TABLE_TITLE", "Table View (Paginated)")));
+        print(translation.get("TABLE_NAVIGATION", "Navigation: SPACE/N=Next, P=Previous, C=Customize, G=Go To, ESC=Back, H=Help") + "\n\n");
+        
         // Display current page
         size_t startIdx = currentPage * rowsPerPage;
         size_t endIdx = std::min(startIdx + rowsPerPage, pts.size());
         
         std::ostringstream pageOutput;
-        pageOutput << "\n--- " << translation.format("TABLE_PAGE", "Page {0} of {1} (Points {2} to {3})", currentPage + 1, totalPages, startIdx, endIdx - 1) << " ---\n";
+        pageOutput << formatSubHeading(translation.format("TABLE_PAGE", "Page {0} of {1} (Points {2} to {3})", currentPage + 1, totalPages, startIdx, endIdx - 1));
         
         // Print header based on active columns
         pageOutput << translation.get("TABLE_INDEX", "Index") << "\t";
@@ -209,6 +238,15 @@ void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
         
         pageOutput << "\n" << translation.get("TABLE_PROMPT", "[SPACE/N: Next | P: Previous | C: Customize | G: Go To | ESC: Back | H: Help] >") << " ";
         print(pageOutput.str());
+        
+        setUIContext("table_view", {
+            {" ", translation.get("TABLE_NEXT", "Next Page"), false},
+            {"n", translation.get("TABLE_NEXT", "Next Page"), false},
+            {"p", translation.get("TABLE_PREV", "Previous Page"), false},
+            {"c", translation.get("TABLE_CUSTOMIZE", "Customize Columns"), false},
+            {"g", translation.get("TABLE_GOTO", "Go To"), false},
+            {"h", translation.get("MENU_HELP", "(H)elp"), false}
+        });
         
         char key;
         // Use console input abstraction for cross-platform support
@@ -251,19 +289,22 @@ void ConsoleUI::showTablePaginated(const std::vector<MeasurementPoint>& pts) {
         } else if (key == 'h') {
             print(HelpModule::getTableViewHelp(translation));
         } else if (key == '\r' || key == '\n') {
-            // Enter key - ignore
-            continue;
+            // Enter key - refresh display (intentional redisplay per interaktionsmodell.md)
+            // Note: While content doesn't change, this provides defined behavior for Enter
+            // Loop continues naturally, causing page to redisplay
         } else {
             print(translation.get("ERROR_UNKNOWN_COMMAND", "Unknown command.") + "\n");
         }
     }
+    clearScreen();
     
     if (logger) logger->log("UI", "Exited paginated table view");
 }
 
 void ConsoleUI::customizeMenu() {
     while (true) {
-        print("\n=== " + translation.get("CUSTOMIZE_TITLE", "Customize Table Columns") + " ===\n");
+        clearScreen();  // Clear screen each time menu is displayed
+        print(formatHeading(translation.get("CUSTOMIZE_TITLE", "Customize Table Columns")));
         std::vector<std::string> cols = {"FREQ","SWR","RL","R","X","Z","PHASE"};
         for (size_t i=0;i<cols.size();++i) {
             bool active = (std::find(activeColumns.begin(), activeColumns.end(), cols[i]) != activeColumns.end());
@@ -278,8 +319,6 @@ void ConsoleUI::customizeMenu() {
         // Check for help
         if (s.length() == 1 && (s[0] == 'h' || s[0] == 'H')) {
             print(HelpModule::getCustomizeMenuHelp(translation));
-            print(translation.get("PRESS_ENTER", "Press Enter to continue..."));
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             continue;
         }
         
@@ -302,6 +341,7 @@ void ConsoleUI::customizeMenu() {
 }
 
 void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const AcousticAnalyzer* analyzer) {
+    clearScreen();
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No data to export.") + "\n");
         return;
@@ -525,7 +565,7 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
             std::string generatedFilename;
             std::string err;
             
-            print(translation.get("BRAILLE_EXPORT_TITLE") + "\n");
+            print(formatHeading(translation.get("BRAILLE_EXPORT_TITLE", "Export to Braille")));
             print(translation.get("BRAILLE_SETTINGS_INFO") + "\n");
             print(translation.get("BRAILLE_PROTOCOL_LABEL") + " " + (cfg.braille_protocol == AppConfig::BrailleProtocol::INDEX_V5 ? translation.get("BRAILLE_PROTOCOL_INDEX_V5") : translation.get("BRAILLE_PROTOCOL_INDEX_V4")) + "\n");
             print(translation.get("BRAILLE_PAPER_LABEL") + " ");
@@ -586,7 +626,7 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
             // Calculate and show page count using filtered points
             int pageCount = braillePrinter.calculatePageCount(toExportBraille, curveFlags, cfg);
             
-            print(translation.get("BRAILLE_PRINT_TITLE") + "\n");
+            print(formatHeading(translation.get("BRAILLE_PRINT_TITLE", "Print to Braille Printer")));
             print(translation.get("BRAILLE_SETTINGS_INFO") + "\n");
             print(translation.get("BRAILLE_PROTOCOL_LABEL") + " " + (cfg.braille_protocol == AppConfig::BrailleProtocol::INDEX_V5 ? translation.get("BRAILLE_PROTOCOL_INDEX_V5") : translation.get("BRAILLE_PROTOCOL_INDEX_V4")) + "\n");
             print(translation.get("BRAILLE_PAPER_LABEL") + " ");
@@ -674,7 +714,8 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
 }
 
 void ConsoleUI::importMenu(std::vector<MeasurementPoint>& pts) {
-    print("\n=== " + translation.get("IMPORT_TITLE", "Import Measurement Data") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("IMPORT_TITLE", "Import Measurement Data")));
     
     std::string err;
     auto files = ImportModule::listExportFiles(err);
@@ -694,7 +735,7 @@ void ConsoleUI::importMenu(std::vector<MeasurementPoint>& pts) {
         print(std::to_string(i + 1) + ") " + files[i] + "\n");
     }
     
-    print("\n" + translation.get("IMPORT_PROMPT", "Enter file number to import (or press Enter to cancel): >") + " ");
+    print("\n" + translation.get("IMPORT_PROMPT", "Enter file number to import (or ESC to cancel): >") + " ");
     std::string input;
     if (!readLine(input) || input.empty()) {
         print(translation.get("IMPORT_CANCELED", "Canceled.") + "\n");
@@ -728,10 +769,18 @@ void ConsoleUI::importMenu(std::vector<MeasurementPoint>& pts) {
 }
 
 void ConsoleUI::deviceInfoMenu(NanoVNAProtocol* proto) {
-    print("\n=== " + translation.get("DEVICE_INFO_TITLE", "Device Information") + " ===\n");
-    print(translation.get("DEVICE_INFO_BATTERY", "(B)attery Status") + "  " + translation.get("DEVICE_INFO_INFO", "(I)nfo") + "  " + translation.get("DEVICE_INFO_SHELL", "(S)hell") + "  " + translation.get("MENU_HELP", "(H)elp") + "  " + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
-    
     while (true) {
+        clearScreen();  // Clear screen at the start of each loop iteration
+        print(formatHeading(translation.get("DEVICE_INFO_TITLE", "Device Information")));
+        print(translation.get("DEVICE_INFO_BATTERY", "(B)attery Status") + "  " + translation.get("DEVICE_INFO_INFO", "(I)nfo") + "  " + translation.get("DEVICE_INFO_SHELL", "(S)hell") + "  " + translation.get("MENU_HELP", "(H)elp") + "  " + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
+        
+        setUIContext("device_info", {
+            {"i", translation.get("DEVICE_INFO_INFO", "(I)nfo"), false},
+            {"b", translation.get("DEVICE_INFO_BATTERY", "(B)attery Status"), false},
+            {"s", translation.get("DEVICE_INFO_SHELL", "(S)hell"), false},
+            {"h", translation.get("MENU_HELP", "(H)elp"), false}
+        });
+        
         print(getPromptWithDepth("DEVICE_INFO_PROMPT", 2) + " ");
         char key;
         int ch = 0;
@@ -779,15 +828,17 @@ void ConsoleUI::deviceInfoMenu(NanoVNAProtocol* proto) {
         } else if (key == 'h') {
             print(HelpModule::getDeviceInfoHelp(translation));
         } else if (key == '\r' || key == '\n') {
-            // Enter key - ignore
+            // Enter key - redisplay menu (defined no-op per interaktionsmodell.md)
             continue;
         } else {
             print(translation.get("ERROR_UNKNOWN_COMMAND", "Unknown command.") + "\n");
         }
     }
+    clearScreen();
 }
 
 void ConsoleUI::showBattery(NanoVNAProtocol* proto) {
+    clearScreen();
     std::string battery;
     std::string err;
     if (!proto->getBattery(battery, err)) {
@@ -800,6 +851,7 @@ void ConsoleUI::showBattery(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
+    clearScreen();
     // Check if COM port is selected
     if (!serial || !serial->isOpen()) {
         print("\n" + translation.get("ERROR_NO_PORT", 
@@ -807,7 +859,7 @@ void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
         return;
     }
     
-    print("\n=== " + translation.get("DEBUG_SHELL_TITLE", "Debug Shell - Direct NanoVNA Communication") + " ===\n");
+    print(formatHeading(translation.get("DEBUG_SHELL_TITLE", "Debug Shell - Direct NanoVNA Communication")));
     print(translation.get("DEBUG_SHELL_INSTRUCTIONS", 
         "Type commands and press Enter to send to NanoVNA. Press ESC to exit.") + "\n\n");
     
@@ -911,15 +963,18 @@ void ConsoleUI::debugShell(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::calibrateFlow(NanoVNAProtocol* proto) {
+    clearScreen();
     print(translation.get("CAL_FLOW_TITLE", "Calibration flow: Open -> Short -> Load") + "\n");
     print(translation.get("CAL_FLOW_INSTRUCTIONS", "Press Enter when standard attached for each step.") + "\n");
     std::string err;
-    std::string s;
-    print(translation.get("CAL_FLOW_OPEN", "Attach OPEN and press Enter... >") + " "); readLine(s);
+    print(translation.get("CAL_FLOW_OPEN", "Attach OPEN and press Enter... >") + " "); 
+    readRawLineInput("");  // Wait for Enter (or Escape to cancel)
     if (!proto->sendCal("open", err)) { if (logger) logger->log("CAL", "sendCal open failed: " + err); }
-    print(translation.get("CAL_FLOW_SHORT", "Attach SHORT and press Enter... >") + " "); readLine(s);
+    print(translation.get("CAL_FLOW_SHORT", "Attach SHORT and press Enter... >") + " "); 
+    readRawLineInput("");  // Wait for Enter (or Escape to cancel)
     if (!proto->sendCal("short", err)) { if (logger) logger->log("CAL", "sendCal short failed: " + err); }
-    print(translation.get("CAL_FLOW_LOAD", "Attach LOAD and press Enter... >") + " "); readLine(s);
+    print(translation.get("CAL_FLOW_LOAD", "Attach LOAD and press Enter... >") + " "); 
+    readRawLineInput("");  // Wait for Enter (or Escape to cancel)
     if (!proto->sendCal("load", err)) { if (logger) logger->log("CAL", "sendCal load failed: " + err); }
     
     // Use localized yes/no prompt
@@ -933,10 +988,17 @@ void ConsoleUI::calibrateFlow(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::calibrationMenu(NanoVNAProtocol* proto) {
-    print("\n=== " + translation.get("CAL_MENU_TITLE", "Calibration Menu") + " ===\n");
-    print(translation.get("CAL_MENU_LOAD", "(L)oad Calibration Profile") + "  " + translation.get("CAL_MENU_PERFORM", "(P)erform Calibration") + "  " + translation.get("HELP_COMMAND", "(H)elp") + "  " + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
-    
     while (true) {
+        clearScreen();  // Clear screen at the start of each loop iteration
+        print(formatHeading(translation.get("CAL_MENU_TITLE", "Calibration Menu")));
+        print(translation.get("CAL_MENU_LOAD", "(L)oad Calibration Profile") + "  " + translation.get("CAL_MENU_PERFORM", "(P)erform Calibration") + "  " + translation.get("HELP_COMMAND", "(H)elp") + "  " + translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n");
+        
+        setUIContext("calibration_menu", {
+            {"l", translation.get("CAL_MENU_LOAD", "(L)oad Calibration Profile"), false},
+            {"p", translation.get("CAL_MENU_PERFORM", "(P)erform Calibration"), false},
+            {"h", translation.get("HELP_COMMAND", "(H)elp"), false}
+        });
+        
         print(getPromptWithDepth("CAL_MENU_PROMPT", 2) + " ");
         int ch = 0;
         bool hasInput = false;
@@ -986,16 +1048,18 @@ void ConsoleUI::calibrationMenu(NanoVNAProtocol* proto) {
             print(translation.get("ERROR_UNKNOWN_COMMAND", "Unknown command.") + "\n");
         }
     }
+    clearScreen();
 }
 
 void ConsoleUI::loadCalibrationProfile(NanoVNAProtocol* proto) {
+    clearScreen();
     if (!serial || !serial->isOpen()) {
         print(translation.get("ERROR_NO_PORT", "Error: No COM port selected. Use (P)ort to select a port first.") + "\n");
         if (logger) logger->log("CAL", "Attempted to load calibration without port");
         return;
     }
     
-    print("\n=== " + translation.get("CAL_LOAD_TITLE", "Load Calibration Profile") + " ===\n");
+    print(formatHeading(translation.get("CAL_LOAD_TITLE", "Load Calibration Profile")));
     print(translation.get("CAL_LOAD_PROMPT", "Enter bank number (0-4 recommended, 0 is auto-loaded on device startup): > "));
     
     std::string bankStr;
@@ -1026,13 +1090,14 @@ void ConsoleUI::loadCalibrationProfile(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::performCalibrationWizard(NanoVNAProtocol* proto) {
+    clearScreen();
     if (!serial || !serial->isOpen()) {
         print(translation.get("ERROR_NO_PORT", "Error: No COM port selected. Use (P)ort to select a port first.") + "\n");
         if (logger) logger->log("CAL", "Attempted to perform calibration without port");
         return;
     }
     
-    print("\n=== " + translation.get("CAL_WIZARD_TITLE", "Calibration Wizard") + " ===\n");
+    print(formatHeading(translation.get("CAL_WIZARD_TITLE", "Calibration Wizard")));
     std::string err;
     std::string s;
     
@@ -1132,6 +1197,7 @@ void ConsoleUI::performCalibrationWizard(NanoVNAProtocol* proto) {
 
 bool ConsoleUI::interactiveSelectPort(NanoVNAProtocol* proto) {
     (void)proto;
+    clearScreen();
     if (!serial) {
         print(translation.get("ERROR_SERIAL_NOT_AVAILABLE", "Internal error: SerialComm not available.") + "\n");
         if (logger) logger->log("UI", "SerialComm missing");
@@ -1166,19 +1232,17 @@ bool ConsoleUI::interactiveSelectPort(NanoVNAProtocol* proto) {
         print("\nCurrently selected port (not detected): " + cfg.serial_port + "\n");
     }
     
-    print(translation.get("PORT_CHOOSE_PROMPT", "Choose port number (or press Enter to cancel):") + " > ");
-    std::string s;
-    if (!readLine(s)) {
-        print(translation.get("CANCELLED", "Canceled.") + "\n");
+    print(getPromptWithDepth("PORT_CHOOSE_PROMPT", 2) + " ");
+    // Use raw mode input with Escape support (Phase 4)
+    auto result = readRawLineInput("");
+    if (result.cancelled || result.value.empty()) {
+        // readRawLineInput already prints "CANCELLED" when ESC is pressed, so don't print it again
         return false;
     }
-    if (s.empty()) {
-        print(translation.get("CANCELLED", "Canceled.") + "\n");
-        return false;
-    }
-    int idx = atoi(s.c_str());
+    int idx = atoi(result.value.c_str());
     if (idx <= 0 || (size_t)idx > ports.size()) {
-        print(translation.get("CANCELLED", "Canceled.") + "\n");
+        // Invalid number - don't say cancelled, just invalid
+        print(translation.get("ERROR_INVALID_PORT", "Invalid port number.") + "\n");
         return false;
     }
 
@@ -1219,35 +1283,97 @@ std::vector<MeasurementPoint> ConsoleUI::interactiveRangeAndScan(NanoVNAProtocol
         return {};
     }
     
-    std::string s;
-    print(translation.get("RANGE_ENTER_START", "Enter start frequency in Hz (e.g. 144000000 or 144M): >") + " ");
-    if (!readLine(s)) return {};
+    // Phase 3: Sequential input with backtracking (3 steps: start → end → step)
+    // Escape in step N returns to step N-1
     uint64_t start = 0;
-    if (!parseFrequencyString(s, start)) {
-        print(translation.get("RANGE_INVALID_START", "Invalid start") + "\n");
-        return {};
-    }
-
-    print(translation.get("RANGE_ENTER_END", "Enter end frequency in Hz (e.g. 146000000 or 146M): >") + " ");
-    if (!readLine(s)) return {};
     uint64_t end = 0;
-    if (!parseFrequencyString(s, end)) {
-        print(translation.get("RANGE_INVALID_END", "Invalid end") + "\n");
-        return {};
-    }
-
-    print(translation.get("RANGE_ENTER_STEP", "Enter step in Hz (e.g. 1000 or 1K): >") + " ");
-    if (!readLine(s)) return {};
     uint64_t step = 0;
-    if (!parseFrequencyString(s, step)) {
-        print(translation.get("RANGE_INVALID_STEP", "Invalid step") + "\n");
-        return {};
+    std::string startStr;
+    std::string endStr;
+    std::string stepStr;
+    
+    // Sequential input loop - allows backtracking through all 3 steps
+    while (true) {
+        // Step 1: Get start frequency
+        print(translation.get("RANGE_ENTER_START", "Enter start frequency in Hz (e.g. 144000000 or 144M): >") + " ");
+        auto startResult = readRawLineInput("", startStr);  // Show previous value if returning from step 2
+        
+        if (startResult.cancelled || startResult.value.empty()) {
+            // Escape in step 1 - cancel entire operation
+            return {};
+        }
+        
+        startStr = startResult.value;
+        
+        if (!parseFrequencyString(startStr, start)) {
+            print(translation.get("RANGE_INVALID_START", "Invalid start") + "\n");
+            continue;  // Ask again
+        }
+        
+        // Step 2: Get end frequency (with backtracking support)
+        while (true) {
+            print(translation.get("RANGE_ENTER_END", "Enter end frequency in Hz (e.g. 146000000 or 146M): >") + " ");
+            auto endResult = readRawLineInput("", endStr, true);  // silentCancel = true, we handle the message
+            
+            if (endResult.cancelled || endResult.value.empty()) {
+                // Escape in step 2 - return to step 1
+                print(translation.get("GOING_BACK", "[Going back to previous step]") + "\n");
+                break;  // Break inner loop, continue outer loop
+            }
+            
+            endStr = endResult.value;
+            
+            if (!parseFrequencyString(endStr, end)) {
+                print(translation.get("RANGE_INVALID_END", "Invalid end") + "\n");
+                continue;  // Ask again
+            }
+            
+            if (start >= end) {
+                print(translation.get("RANGE_INVALID_RANGE", "Invalid range: start must be less than end") + "\n");
+                continue;  // Ask again
+            }
+            
+            // Step 3: Get step size (with backtracking support)
+            while (true) {
+                print(translation.get("RANGE_ENTER_STEP", "Enter step in Hz (e.g. 1000 or 1K): >") + " ");
+                auto stepResult = readRawLineInput("", stepStr, true);  // silentCancel = true, we handle the message
+                
+                if (stepResult.cancelled || stepResult.value.empty()) {
+                    // Escape in step 3 - return to step 2
+                    print(translation.get("GOING_BACK", "[Going back to previous step]") + "\n");
+                    break;  // Break innermost loop, return to step 2
+                }
+                
+                stepStr = stepResult.value;
+                
+                if (!parseFrequencyString(stepStr, step)) {
+                    print(translation.get("RANGE_INVALID_STEP", "Invalid step") + "\n");
+                    continue;  // Ask again
+                }
+                
+                if (step == 0) {
+                    print(translation.get("RANGE_INVALID_STEP_ZERO", "Invalid step: must be greater than zero") + "\n");
+                    continue;  // Ask again
+                }
+                
+                if (step > (end - start)) {
+                    print(translation.get("RANGE_INVALID_STEP_LARGE", "Invalid step: step is larger than the range") + "\n");
+                    continue;  // Ask again
+                }
+                
+                // All 3 steps complete successfully
+                cfg.start_freq = start;
+                cfg.end_freq = end;
+                cfg.step = step;
+                saveSettings();
+                goto range_scan_complete;  // Exit all loops
+            }
+            // If we get here, user pressed Escape in step 3, continue to step 2 loop
+        }
+        // If we get here, user pressed Escape in step 2, loop back to step 1
     }
-
-    cfg.start_freq = start;
-    cfg.end_freq = end;
-    cfg.step = step;
-    saveSettings();
+    
+    range_scan_complete:
 
     if (logger) logger->log("UI", "User set range");
 
@@ -1284,6 +1410,7 @@ void ConsoleUI::saveSettings() {
 }
 
 std::vector<MeasurementPoint> ConsoleUI::autostartMeasurement(NanoVNAProtocol* proto) {
+    clearScreen();
     std::string err;
     if (logger) logger->log("UI", "Autostart measurement initiated");
     if (cfg.serial_port.empty()) {
@@ -1422,6 +1549,7 @@ std::vector<MeasurementPoint> ConsoleUI::performMeasurementWithTiming(NanoVNAPro
 }
 
 void ConsoleUI::showInfo(NanoVNAProtocol* proto) {
+    clearScreen();
     std::string info;
     std::string err;
     if (!proto->getInfo(info, err)) {
@@ -1445,7 +1573,7 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
         lastPts = autostartMeasurement(proto);
     }
     while (true) {
-        print(translation.get("MAIN_MENU_PROMPT", "Main Menu") + " > ");
+        print(getPromptWithDepth("MAIN_MENU_PROMPT", 1) + " ");
         char key = '\0';
         bool fromWeb = false;
         
@@ -1458,38 +1586,30 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
                 if (!webInput.empty()) {
                     if (logger) logger->log("UI", "Web input received: [" + webInput + "]");
                     
-                    // Remove trailing newlines/whitespace
-                    size_t end = webInput.find_first_of("\r\n");
-                    if (end != std::string::npos) {
-                        webInput = webInput.substr(0, end);
+                    // Web now sends single characters immediately (matching console behavior)
+                    // Process the first character directly
+                    key = webInput[0];
+                    
+                    // If there are more characters (e.g. ANSI escape sequences), 
+                    // queue the rest for later processing
+                    if (webInput.length() > 1) {
+                        std::string remaining = webInput.substr(1);
+                        for (char c : remaining) {
+                            webServer->queueInput(std::string(1, c));
+                        }
+                        if (logger) logger->log("UI", "Queued remaining " + std::to_string(remaining.length()) + " characters back");
                     }
                     
-                    if (!webInput.empty()) {
-                        // Process ONLY the first character now
-                        // Queue the rest back for later processing
-                        key = webInput[0];
-                        
-                        // If there are more characters, add them back to the queue
-                        if (webInput.length() > 1) {
-                            std::string remaining = webInput.substr(1);
-                            // Add each remaining character as a separate input
-                            for (char c : remaining) {
-                                webServer->queueInput(std::string(1, c));
-                            }
-                            if (logger) logger->log("UI", "Queued remaining " + std::to_string(remaining.length()) + " characters back");
-                        }
-                        
-                        fromWeb = true;
-                        
-                        // Echo to web interface and console (only printable characters)
-                        if (key >= 32 && key <= 126) {
-                            std::string echo = std::string(1, key) + "\n";
-                            print(echo);
-                        }
-                        
-                        if (logger) logger->log("UI", "Processing web input as key: " + std::string(1, key));
-                        break;
+                    fromWeb = true;
+                    
+                    // Echo to web interface and console (only printable characters)
+                    if (key >= 32 && key <= 126) {
+                        std::string echo = std::string(1, key) + "\n";
+                        print(echo);
                     }
+                    
+                    if (logger) logger->log("UI", "Processing web input as key: " + std::string(1, key));
+                    break;
                 }
             }
             
@@ -1541,33 +1661,50 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
             break;
         } else if (key == keySummary[0]) {
             showSummary(lastPts);
+            printOptionsLine();
         } else if (key == keyTable[0]) {
             showTablePaginated(lastPts);
+            printOptionsLine();
         } else if (key == keyAcoustic[0]) {
             if (!cfg.audio) { 
                 print(translation.get("MSG_AUDIO_DISABLED", "Audio disabled.") + "\n"); 
                 continue; 
             }
             runAcousticAnalysis(lastPts, proto);
+            printOptionsLine();
         } else if (key == keyExport[0]) {
             exportMenu(lastPts);
+            printOptionsLine();
         } else if (key == keyLoad[0]) {
             importMenu(lastPts);
+            printOptionsLine();
         } else if (key == keyCalibrate[0]) {
             calibrationMenu(proto);
+            printOptionsLine();
         } else if (key == keyPort[0]) {
             (void)interactiveSelectPort(proto);
+            printOptionsLine();
         } else if (key == keyRange[0]) {
-            lastPts = interactiveRangeAndScan(proto);
+            auto newPts = interactiveRangeAndScan(proto);
+            if (!newPts.empty()) {
+                lastPts = std::move(newPts);
+            }
+            printOptionsLine();
         } else if (key == keyDeviceInfo[0]) {
             deviceInfoMenu(proto);
+            printOptionsLine();
         } else if (key == keyManual[0]) {
-            lastPts = autostartMeasurement(proto);
+            auto newPts = autostartMeasurement(proto);
+            if (!newPts.empty()) {
+                lastPts = std::move(newPts);
+            }
+            printOptionsLine();
         } else if (key == keySweep[0]) {
             // Toggle continuous sweep mode
             cfg.continuous_sweep_enabled = !cfg.continuous_sweep_enabled;
             saveSettings();
             
+            clearScreen();
             if (cfg.continuous_sweep_enabled) {
                 // Check if we have timing information
                 if (cfg.last_measurement_duration_seconds <= 0.0) {
@@ -1600,8 +1737,13 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
         } else if (key == keyDocs[0] || key == '?') {
             documentationMenu();
             printOptionsLine();
+        } else if (key == 27) {  // ESC key in main menu
+            // According to doc/interaktionsmodell.md section 2.2:
+            // Escape in main menu (depth 1) should be no-op or show a message
+            print(translation.get("MAIN_MENU_ESC_INFO", "[Info: Already at main menu level. Press Q to quit.]") + "\n");
         } else if (key == '\r' || key == '\n') {
-            // Enter key - show options
+            // Enter key - refresh display with clean screen
+            clearScreen();
             printOptionsLine();
         } else {
             print(translation.get("MSG_UNKNOWN_COMMAND", "Unknown command. Press H for help.") + "\n");
@@ -1619,12 +1761,14 @@ void ConsoleUI::run(NanoVNAProtocol* proto) {
 }
 
 void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, NanoVNAProtocol* proto) {
+    clearScreen();
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No measurement data available for acoustic analysis.") + "\n");
         return;
     }
     
     AcousticAnalyzer analyzer(logger, mathLogger, &translation);
+    analyzer.setOutputCallback([this](const std::string& text) { print(text); });
     analyzer.setData(pts);
     
     // Create and configure audio engine based on settings
@@ -1778,7 +1922,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         }
     }
     
-    print("\n=== " + translation.get("ACOUSTIC_TITLE", "Acoustic Analysis Mode") + " ===\n");
+    print(formatHeading(translation.get("ACOUSTIC_TITLE", "Acoustic Analysis Mode")));
     print(translation.format("ACOUSTIC_DATA_POINTS", "Data points: {0}", pts.size()) + "\n");
     
     // Show continuous sweep status
@@ -1793,7 +1937,38 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     }
     
     print(translation.get("ACOUSTIC_HELP", "Press H for help, ESC to go back.") + "\n");
-    print(translation.get("ACOUSTIC_START", "Press any key to start...") + "\n");
+    // Removed "Press any key to start" - user wants to be directly in the mode
+    
+    setUIContext("acoustic_analysis", {
+        {" ", translation.get("ACOUSTIC_PLAY_PAUSE", "Play/Pause"), false},
+        {"f", translation.get("ACOUSTIC_FREEZE", "Freeze"), false},
+        {"s", translation.get("ACOUSTIC_STOP", "Stop"), false},
+        {"t", translation.get("ACOUSTIC_TOGGLE_SMOOTH", "Toggle Smooth/Dotted"), false},
+        {"+", translation.get("ACOUSTIC_SPEED_UP", "Increase Speed"), false},
+        {"-", translation.get("ACOUSTIC_SPEED_DOWN", "Decrease Speed"), false},
+        {"l", translation.get("ACOUSTIC_LOOP_LEFT", "Set Left Loop Marker"), false},
+        {"r", translation.get("ACOUSTIC_LOOP_RIGHT", "Set Right Loop Marker"), false},
+        {"o", translation.get("ACOUSTIC_LOOP_TOGGLE", "Toggle Loop"), false},
+        {"z", translation.get("ACOUSTIC_LOOP_ZOOM", "Toggle Loop Zoom"), false},
+        {"i", translation.get("ACOUSTIC_LOOP_INVERT", "Invert Loop"), false},
+        {"c", translation.get("ACOUSTIC_CONTINUOUS", "Toggle Continuous Replay"), false},
+        {"1", translation.get("ACOUSTIC_CURVE_SWR", "SWR Curve"), false},
+        {"2", translation.get("ACOUSTIC_CURVE_RL", "Return Loss Curve"), false},
+        {"3", translation.get("ACOUSTIC_CURVE_Z", "Impedance Curve"), false},
+        {"4", translation.get("ACOUSTIC_CURVE_X", "Reactance Curve"), false},
+        {"5", translation.get("ACOUSTIC_CURVE_PHASE", "Phase Curve"), false},
+        {"a", translation.get("ACOUSTIC_AUDIO_CONFIG", "Audio Configuration"), false},
+        {"y", translation.get("ACOUSTIC_Y_RULER", "Y-Axis Ruler"), false},
+        {"x", translation.get("ACOUSTIC_X_RULER", "Toggle X-Axis Ruler"), false},
+        {"n", translation.get("ACOUSTIC_STATUS", "Toggle Status Line"), false},
+        {"v", translation.get("ACOUSTIC_SMITH", "Toggle Smith Diagram"), false},
+        {"b", translation.get("ACOUSTIC_SMITH_MODE", "Change Smith Mode"), false},
+        {"g", translation.get("ACOUSTIC_GOTO", "Go To Frequency"), false},
+        {"m", translation.get("ACOUSTIC_MEASURE", "Show Measurement"), false},
+        {"e", translation.get("ACOUSTIC_EXPORT", "Export Measurement"), false},
+        {"h", translation.get("MENU_HELP", "(H)elp"), false}
+    }, "navigation");
+    
     print(getPromptWithDepth("ACOUSTIC_PROMPT", 2) + " ");
     
     // Prepare continuous sweep if enabled
@@ -2388,7 +2563,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 std::string ohmUnit = translation.get("OHM_TEXT", "Ohm");
                                 std::string degUnit = translation.get("DEGREE_TEXT", "degree");
                                 
-                                print("\n=== " + translation.format("ACOUSTIC_MEASUREMENT_TITLE", "Measurement at position {0}", analyzer.getPosition()) + " ===\n");
+                                print(formatHeading(translation.format("ACOUSTIC_MEASUREMENT_TITLE", "Measurement at position {0}", analyzer.getPosition())));
                                 print(translation.format("ACOUSTIC_FREQUENCY", "Frequency: {0} Hz", pt->freq) + "\n");
                                 print(translation.format("ACOUSTIC_SWR", "SWR: {0}", pt->swr) + "\n");
                                 print(translation.format("ACOUSTIC_RETURN_LOSS", "Return Loss: {0} dB", pt->rl) + "\n");
@@ -2555,8 +2730,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 }
                             }
                         }
-                        print(translation.get("ACOUSTIC_CONTINUE", "[Press any key to continue...]") + "\n");
-                        consoleInput->getch();
+                        // Removed unnecessary "Press any key to continue" prompt - return directly to acoustic analysis
                         break;
                     
                     case 'g':  // Go To menu
@@ -2667,7 +2841,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                             }
                             
                             analyzer.pause();
-                            print("\n=== " + translation.get("SMITH_MODE_SELECTION", "Smith Visualization Mode Selection") + " ===\n");
+                            print(formatHeading(translation.get("SMITH_MODE_SELECTION", "Smith Visualization Mode Selection")));
                             print(translation.get("SMITH_MODE_PROMPT", "Select visualization mode:") + "\n\n");
                             print(translation.get("SMITH_MODE_1", "1 - Cartesian") + "\n");
                             print(translation.get("SMITH_MODE_2", "2 - Polar") + "\n");
@@ -2735,6 +2909,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         }
     }
     
+    clearScreen();
     print("\n" + translation.get("ACOUSTIC_EXITED", "Acoustic analysis mode exited.") + "\n");
     if (logger) logger->log("UI", "Exited acoustic analysis mode");
 }
@@ -2820,14 +2995,44 @@ static const char* getMidiInstrumentName(int instrument) {
 }
 
 // Helper function to read numeric input with ESC support
-bool ConsoleUI::readNumericInput(const std::string& prompt, int& result) {
-    print(prompt);
+bool ConsoleUI::readNumericInput(const std::string& prompt, int& result, int depth) {
+    // Add depth indicator if depth > 0
+    if (depth > 0) {
+        print(prompt + " " + getDepthIndicator(depth) + " ");
+    } else {
+        print(prompt);
+    }
     std::string input;
     bool inputting = true;
     
     while (inputting) {
-        if (consoleInput->kbhit()) {
-            int ch = consoleInput->getch();
+        int ch = 0;
+        bool hasChar = false;
+        
+        // Check for web interface input first
+        if (webServer && webServer->isRunning() && webServer->hasInput()) {
+            std::string webInput = webServer->readInput();
+            if (!webInput.empty()) {
+                if (webInput[0] == '\x1B') {
+                    ch = 27;  // ESC key
+                } else if (webInput[0] == '\r' || webInput[0] == '\n') {
+                    ch = '\r';  // Enter key
+                } else if (webInput[0] == '\x08' || webInput[0] == '\x7F') {
+                    ch = 8;  // Backspace
+                } else {
+                    ch = static_cast<unsigned char>(webInput[0]);
+                }
+                hasChar = true;
+            }
+        }
+        
+        // Check for keyboard input if no web input
+        if (!hasChar && consoleInput->kbhit()) {
+            ch = consoleInput->getch();
+            hasChar = true;
+        }
+        
+        if (hasChar) {
             if (ch == 27) {  // ESC
                 print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                 return false;  // Cancelled
@@ -2836,10 +3041,14 @@ bool ConsoleUI::readNumericInput(const std::string& prompt, int& result) {
             } else if (ch >= '0' && ch <= '9') {
                 input += static_cast<char>(ch);
                 print(std::string(1, ch));
-            } else if (ch == 8 && !input.empty()) {  // Backspace
+            } else if ((ch == 8 || ch == 127) && !input.empty()) {  // Backspace
                 input.pop_back();
                 print("\b \b");
             }
+        }
+        
+        if (inputting) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
     
@@ -2854,8 +3063,272 @@ bool ConsoleUI::readNumericInput(const std::string& prompt, int& result) {
     return false;
 }
 
+// Unified raw-mode input helper (Phase 4: Canonical mode elimination)
+// Replaces all enableCanonicalMode/getline sequences with consistent Escape support
+// Supports both keyboard and web interface input
+ConsoleUI::RawInputResult ConsoleUI::readRawLineInput(const std::string& prompt, const std::string& defaultValue, bool silentCancel) {
+    print(prompt);
+    
+    // Show default value if provided
+    std::string input = defaultValue;
+    size_t cursorPos = input.length();  // Cursor position within the input string
+    
+    if (!defaultValue.empty()) {
+        print(defaultValue);
+    }
+    
+    // Notify web interface of text editing mode (arrows = cursor movement)
+    std::string savedInputMode = currentInputMode;
+    if (webServer && webServer->isRunning()) {
+        currentInputMode = "text_edit";
+        webServer->sendContext(getContextJSON());
+    }
+    
+    // Helper to restore input mode before returning
+    auto restoreInputMode = [&]() {
+        currentInputMode = savedInputMode;
+        if (webServer && webServer->isRunning()) {
+            webServer->sendContext(getContextJSON());
+        }
+    };
+    
+    // Check if web interface is active
+    if (webServer && webServer->isRunning()) {
+        while (true) {
+            int ch = 0;
+            bool hasInput = false;
+            
+            // Check web interface first - now handles character-by-character input
+            // (matching console single-keypress behavior)
+            if (webServer->hasInput()) {
+                std::string webInput = webServer->readInput();
+                if (!webInput.empty()) {
+                    if (logger) logger->log("UI", "Web raw input received: [" + webInput + "]");
+                    
+                    // Parse web input into logical key code
+                    if (webInput[0] == '\x1B') {
+                        if (webInput.length() >= 3 && webInput[1] == '[') {
+                            // ANSI escape sequence from web client
+                            char seqChar = webInput[2];
+                            bool hasTilde = (webInput.length() >= 4 && webInput[3] == '~');
+                            switch (seqChar) {
+                                case 'A': ch = KEY_UP; break;
+                                case 'B': ch = KEY_DOWN; break;
+                                case 'C': ch = KEY_RIGHT; break;
+                                case 'D': ch = KEY_LEFT; break;
+                                case 'H': ch = KEY_HOME; break;
+                                case 'F': ch = KEY_END; break;
+                                case '3': ch = hasTilde ? KEY_DELETE : KEY_ESCAPE; break;
+                                case '5': ch = hasTilde ? KEY_PAGE_UP : KEY_ESCAPE; break;
+                                case '6': ch = hasTilde ? KEY_PAGE_DOWN : KEY_ESCAPE; break;
+                                default: ch = KEY_ESCAPE; break;
+                            }
+                        } else {
+                            ch = KEY_ESCAPE;
+                        }
+                    } else if (webInput[0] == '\r' || webInput[0] == '\n') {
+                        ch = KEY_ENTER;
+                    } else if (webInput[0] == '\x08' || webInput[0] == '\x7F') {
+                        ch = KEY_BACKSPACE;
+                    } else {
+                        ch = static_cast<unsigned char>(webInput[0]);
+                    }
+                    hasInput = true;
+                    
+                    if (logger) logger->log("UI", "Web raw input mapped to ch: " + std::to_string(ch));
+                }
+            }
+            
+            // Check keyboard input if no web input (non-blocking)
+            if (!hasInput && consoleInput->kbhit()) {
+                ch = consoleInput->getKey();
+                hasInput = true;
+            }
+            
+            // Unified character processing for both web and console input
+            if (hasInput) {
+                if (ch == KEY_ESCAPE || ch == 27) {  // ESC - Cancel input
+                    if (!silentCancel) {
+                        print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
+                    } else {
+                        print("\n");
+                    }
+                    restoreInputMode();
+                    return {input, true};
+                } 
+                else if (ch == '\r' || ch == '\n' || ch == KEY_ENTER) {  // Enter - Confirm input
+                    print("\n");
+                    // Echo to web interface
+                    if (webServer && webServer->isRunning()) {
+                        webServer->sendOutput(input + "\n");
+                    }
+                    restoreInputMode();
+                    return {input, false};
+                } 
+                else if (ch == 8 || ch == 127 || ch == KEY_BACKSPACE) {  // Backspace
+                    if (cursorPos > 0) {
+                        // Remove character before cursor
+                        input.erase(cursorPos - 1, 1);
+                        cursorPos--;
+                        
+                        // Redraw: move back, print rest of string + space, move cursor back
+                        print("\b" + input.substr(cursorPos) + " ");
+                        for (size_t i = 0; i <= input.length() - cursorPos; i++) {
+                            print("\b");
+                        }
+                    }
+                } 
+                else if (ch == KEY_DELETE || ch == 83) {  // Delete key (83 is old Windows code)
+                    if (cursorPos < input.length()) {
+                        // Remove character at cursor
+                        input.erase(cursorPos, 1);
+                        
+                        // Redraw: print rest of string + space, move cursor back
+                        print(input.substr(cursorPos) + " ");
+                        for (size_t i = 0; i <= input.length() - cursorPos; i++) {
+                            print("\b");
+                        }
+                    }
+                }
+                else if (ch == KEY_LEFT || ch == 75) {  // Left arrow (75 is old Windows code for Left)
+                    if (cursorPos > 0) {
+                        cursorPos--;
+                        print("\b");  // Move cursor left
+                    }
+                }
+                else if (ch == KEY_RIGHT || ch == 77) {  // Right arrow (77 is old Windows code for Right)
+                    if (cursorPos < input.length()) {
+                        print(std::string(1, input[cursorPos]));  // Print character and move cursor right
+                        cursorPos++;
+                    }
+                }
+                else if (ch == KEY_HOME || ch == 71) {  // Home key (71 is old Windows code for Home)
+                    // Move cursor to beginning
+                    while (cursorPos > 0) {
+                        print("\b");
+                        cursorPos--;
+                    }
+                }
+                else if (ch == KEY_END || ch == 79) {  // End key (79 is old Windows code for End)
+                    // Move cursor to end
+                    while (cursorPos < input.length()) {
+                        print(std::string(1, input[cursorPos]));
+                        cursorPos++;
+                    }
+                }
+                else if (ch >= 32 && ch < 127) {  // Printable ASCII character
+                    // Insert character at cursor position
+                    input.insert(cursorPos, 1, static_cast<char>(ch));
+                    cursorPos++;
+                    
+                    // Redraw from cursor position
+                    print(input.substr(cursorPos - 1));
+                    // Move cursor back to correct position
+                    for (size_t i = cursorPos; i < input.length(); i++) {
+                        print("\b");
+                    }
+                }
+                // Ignore other control characters and unknown keys
+            }
+            
+            // Small sleep to avoid busy-waiting
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+    }
+    
+    // Fallback for keyboard-only (no web interface)
+    while (true) {
+        if (consoleInput->kbhit()) {
+            int ch = consoleInput->getKey();  // Use getKey() to properly decode extended keys
+            
+            if (ch == KEY_ESCAPE || ch == 27) {  // ESC - Cancel input
+                if (!silentCancel) {
+                    print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
+                } else {
+                    print("\n");
+                }
+                restoreInputMode();
+                return {input, true};
+            } 
+            else if (ch == '\r' || ch == '\n' || ch == KEY_ENTER) {  // Enter - Confirm input
+                print("\n");
+                restoreInputMode();
+                return {input, false};
+            } 
+            else if (ch == 8 || ch == 127 || ch == KEY_BACKSPACE) {  // Backspace
+                if (cursorPos > 0) {
+                    // Remove character before cursor
+                    input.erase(cursorPos - 1, 1);
+                    cursorPos--;
+                    
+                    // Redraw: move back, print rest of string + space, move cursor back
+                    print("\b" + input.substr(cursorPos) + " ");
+                    for (size_t i = 0; i <= input.length() - cursorPos; i++) {
+                        print("\b");
+                    }
+                }
+            } 
+            else if (ch == KEY_DELETE || ch == 83) {  // Delete key (83 is old Windows code)
+                if (cursorPos < input.length()) {
+                    // Remove character at cursor
+                    input.erase(cursorPos, 1);
+                    
+                    // Redraw: print rest of string + space, move cursor back
+                    print(input.substr(cursorPos) + " ");
+                    for (size_t i = 0; i <= input.length() - cursorPos; i++) {
+                        print("\b");
+                    }
+                }
+            }
+            else if (ch == KEY_LEFT || ch == 75) {  // Left arrow (75 is old Windows code for Left)
+                if (cursorPos > 0) {
+                    cursorPos--;
+                    print("\b");  // Move cursor left
+                }
+            }
+            else if (ch == KEY_RIGHT || ch == 77) {  // Right arrow (77 is old Windows code for Right)
+                if (cursorPos < input.length()) {
+                    print(std::string(1, input[cursorPos]));  // Print character and move cursor right
+                    cursorPos++;
+                }
+            }
+            else if (ch == KEY_HOME || ch == 71) {  // Home key (71 is old Windows code for Home)
+                // Move cursor to beginning
+                while (cursorPos > 0) {
+                    print("\b");
+                    cursorPos--;
+                }
+            }
+            else if (ch == KEY_END || ch == 79) {  // End key (79 is old Windows code for End)
+                // Move cursor to end
+                while (cursorPos < input.length()) {
+                    print(std::string(1, input[cursorPos]));
+                    cursorPos++;
+                }
+            }
+            else if (ch >= 32 && ch < 127) {  // Printable ASCII character
+                // Insert character at cursor position
+                input.insert(cursorPos, 1, static_cast<char>(ch));
+                cursorPos++;
+                
+                // Redraw from cursor position
+                print(input.substr(cursorPos - 1));
+                // Move cursor back to correct position
+                for (size_t i = cursorPos; i < input.length(); i++) {
+                    print("\b");
+                }
+            }
+            // Ignore other control characters and unknown keys
+        }
+        
+        // Small sleep to avoid busy-waiting
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+}
+
 bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
-    print("\n=== " + translation.get("SMITH_AUDIO_CONFIG_TITLE", "Smith Diagram Audio Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("SMITH_AUDIO_CONFIG_TITLE", "Smith Diagram Audio Configuration")));
     
     // Get current settings
     auto smith = analyzer ? analyzer->getSmithVisualizer() : nullptr;
@@ -2977,8 +3450,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
             switch (key) {
                 case 'v':  // Volume configuration
                     {
-                        print("V\n\n" + translation.format("SMITH_CONFIG_ENTER_VOLUME", 
-                            "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                        print("V\n\n");
+                        std::string prompt = translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                            "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume);
+                        print(prompt + " " + getDepthIndicator(5) + " ");
                         
                         std::string volumeInput;
                         bool inputting = true;
@@ -3004,14 +3479,16 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             } else {
                                                 print("\n" + translation.get("SMITH_CONFIG_VOLUME_ERROR", 
                                                     "[Error: Volume must be between 10 and 100]") + "\n");
-                                                print(translation.format("SMITH_CONFIG_ENTER_VOLUME", 
-                                                    "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                                                std::string prompt = translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                                                    "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume);
+                                                print(prompt + " " + getDepthIndicator(5) + " ");
                                                 volumeInput.clear();
                                             }
                                         } catch (...) {
                                             print("\n" + translation.get("ERROR_INVALID_NUMBER", "[Error: Invalid number]") + "\n");
-                                            print(translation.format("SMITH_CONFIG_ENTER_VOLUME", 
-                                                "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume) + " > ");
+                                            std::string prompt = translation.format("SMITH_CONFIG_ENTER_VOLUME", 
+                                                "Enter Smith cues volume (10-100%, current: {0}%), or press ESC to cancel:", currentVolume);
+                                            print(prompt + " " + getDepthIndicator(5) + " ");
                                             volumeInput.clear();
                                         }
                                     }
@@ -3029,13 +3506,13 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'n':  // Noise type configuration
                     {
-                        print("N\n\n" + translation.get("SMITH_CONFIG_NOISE_TYPE_MENU", "=== Select Sound Type ===") + "\n");
+                        print("N\n\n" + formatSubHeading(translation.get("SMITH_CONFIG_NOISE_TYPE_MENU", "Select Sound Type")));
                         print(translation.get("SMITH_CONFIG_NOISE_TYPE_1", "  1 - Pink Noise (warm, filtered - default)") + "\n");
                         print(translation.get("SMITH_CONFIG_NOISE_TYPE_2", "  2 - White Noise (bright, full spectrum)") + "\n");
                         print(translation.get("SMITH_CONFIG_NOISE_TYPE_3", "  3 - Brown Noise (dark, low frequencies)") + "\n");
                         print(translation.get("SMITH_CONFIG_NOISE_TYPE_4", "  4 - Sine Wave (pure tone, cleaner)") + "\n");
                         print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
-                        print("> ");
+                        print(getPromptWithDepth("SMITH_CONFIG_NOISE_TYPE_PROMPT", 5) + " ");
                         
                         int typeChoice = consoleInput->getch();
                         if (typeChoice >= '1' && typeChoice <= '4') {
@@ -3074,7 +3551,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'c':  // Center pulse configuration
                     {
-                        print("C\n\n" + translation.get("SMITH_CONFIG_CENTER_PULSE_MENU", "=== Center Pulse Configuration ===") + "\n");
+                        print("C\n\n" + formatSubHeading(translation.get("SMITH_CONFIG_CENTER_PULSE_MENU", "Center Pulse Configuration")));
                         print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_STATUS", "Current status: {0}",
                             (centerPulseEnabled ? "ENABLED" : "DISABLED")) + "\n");
                         print(translation.format("SMITH_CONFIG_CENTER_PULSE_CURRENT_VOL", "Volume: {0}%", centerPulseVolume) + "\n");
@@ -3098,7 +3575,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("SMITH_CONFIG_CENTER_PULSE_INTERVAL_CMD", "  I - Set interval (0.5-2.0 seconds)") + "\n");
                         print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVEFORM_CMD", "  W - Select waveform type") + "\n");
                         print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
-                        print("> ");
+                        print(getPromptWithDepth("SMITH_CONFIG_CENTER_PULSE_PROMPT", 5) + " ");
                         
                         int cpChoice = consoleInput->getch();
                         switch (cpChoice) {
@@ -3116,8 +3593,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'v':
                             case 'V':
                                 {
-                                    print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_VOL",
-                                        "Enter center pulse volume (10-100%, current: {0}%): ", centerPulseVolume) + "> ");
+                                    std::string prompt = translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_VOL",
+                                        "Enter center pulse volume (10-100%, current: {0}%): ", centerPulseVolume);
+                                    std::string depthIndicator = getDepthIndicator(6);
+                                    print("\n" + prompt + " " + depthIndicator + " ");
                                     std::string volInput;
                                     if (readLine(volInput) && !volInput.empty()) {
                                         try {
@@ -3144,8 +3623,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'i':
                             case 'I':
                                 {
-                                    print("\n" + translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_INT",
-                                        "Enter pulse interval in seconds (0.5-2.0, current: {0}): ", centerPulseInterval) + "> ");
+                                    std::string prompt = translation.format("SMITH_CONFIG_CENTER_PULSE_ENTER_INT",
+                                        "Enter pulse interval in seconds (0.5-2.0, current: {0}): ", centerPulseInterval);
+                                    std::string depthIndicator = getDepthIndicator(6);
+                                    print("\n" + prompt + " " + depthIndicator + " ");
                                     std::string intInput;
                                     if (readLine(intInput) && !intInput.empty()) {
                                         try {
@@ -3172,14 +3653,14 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'w':
                             case 'W':
                                 {
-                                    print("\n" + translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_MENU", "=== Select Center Pulse Waveform ===") + "\n");
+                                    print("\n" + formatSubHeading(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_MENU", "Select Center Pulse Waveform")));
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_1", "  1 - Click (filtered noise - default, percussive)") + "\n");
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_2", "  2 - Sine wave (clean, musical)") + "\n");
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_3", "  3 - Square wave (bright, synthetic)") + "\n");
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_4", "  4 - Triangle wave (warm, mellow)") + "\n");
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_5", "  5 - Sawtooth wave (bright, rich)") + "\n");
                                     print(translation.get("SMITH_CONFIG_CENTER_PULSE_WAVE_6", "  6 - Pulse wave (sharp, electronic)") + "\n\n");
-                                    print("> ");
+                                    print(getPromptWithDepth("SMITH_CONFIG_WAVEFORM_PROMPT", 6) + " ");
                                     
                                     int waveChoice = consoleInput->getch();
                                     AppConfig::CenterPulseWaveform newWaveform = centerPulseWaveform;
@@ -3214,7 +3695,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'a':  // Axis events configuration
                     {
-                        print("A\n\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_MENU", "=== Axis Crossing Events Configuration ===") + "\n");
+                        print("A\n\n" + formatSubHeading(translation.get("SMITH_CONFIG_AXIS_EVENTS_MENU", "Axis Crossing Events Configuration")));
                         print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_STATUS", "Current status: {0}",
                             (axisEventsEnabled ? "ENABLED" : "DISABLED")) + "\n");
                         print(translation.format("SMITH_CONFIG_AXIS_EVENTS_CURRENT_VOL", "Volume: {0}%", axisEventsVolume) + "\n");
@@ -3240,7 +3721,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("SMITH_CONFIG_AXIS_EVENTS_PITCH_CMD", "  P - Set pitch range") + "\n");
                         print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_CMD", "  S - Select sound type") + "\n");
                         print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
-                        print("> ");
+                        print(getPromptWithDepth("SMITH_CONFIG_AXIS_EVENTS_PROMPT", 5) + " ");
                         
                         int aeChoice = consoleInput->getch();
                         switch (aeChoice) {
@@ -3258,8 +3739,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'v':
                             case 'V':
                                 {
-                                    print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_VOL",
-                                        "Enter axis events volume (10-100%, current: {0}%): ", axisEventsVolume) + "> ");
+                                    std::string prompt = translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_VOL",
+                                        "Enter axis events volume (10-100%, current: {0}%): ", axisEventsVolume);
+                                    std::string depthIndicator = getDepthIndicator(6);
+                                    print("\n" + prompt + " " + depthIndicator + " ");
                                     std::string volInput;
                                     if (readLine(volInput) && !volInput.empty()) {
                                         try {
@@ -3286,8 +3769,10 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'd':
                             case 'D':
                                 {
-                                    print("\n" + translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_DURATION",
-                                        "Enter axis events sound duration (50-500ms, current: {0}): ", axisEventsDuration) + "> ");
+                                    std::string prompt = translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_DURATION",
+                                        "Enter axis events sound duration (50-500ms, current: {0}): ", axisEventsDuration);
+                                    std::string depthIndicator = getDepthIndicator(6);
+                                    print("\n" + prompt + " " + depthIndicator + " ");
                                     std::string durInput;
                                     if (readLine(durInput) && !durInput.empty()) {
                                         try {
@@ -3315,14 +3800,18 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 'P':
                                 {
                                     print("\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_PITCH_MENU", "Set pitch range:") + "\n");
-                                    print(translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MIN",
-                                        "Enter minimum pitch (200-1000 Hz, current: {0}): ", static_cast<int>(axisPitchMin)) + "> ");
+                                    std::string prompt = translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MIN",
+                                        "Enter minimum pitch (200-1000 Hz, current: {0}): ", static_cast<int>(axisPitchMin));
+                                    std::string depthIndicator = getDepthIndicator(6);
+                                    print(prompt + " " + depthIndicator + " ");
                                     std::string minInput;
                                     if (readLine(minInput) && !minInput.empty()) {
                                         try {
                                             double pitchMin = std::stod(minInput);
-                                            print(translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MAX",
-                                                "Enter maximum pitch (400-2000 Hz, current: {0}): ", static_cast<int>(axisPitchMax)) + "> ");
+                                            std::string prompt2 = translation.format("SMITH_CONFIG_AXIS_EVENTS_ENTER_MAX",
+                                                "Enter maximum pitch (400-2000 Hz, current: {0}): ", static_cast<int>(axisPitchMax));
+                                            std::string depthIndicator2 = getDepthIndicator(6);
+                                            print(prompt2 + " " + depthIndicator2 + " ");
                                             std::string maxInput;
                                             if (readLine(maxInput) && !maxInput.empty()) {
                                                 double pitchMax = std::stod(maxInput);
@@ -3354,13 +3843,13 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                             case 's':
                             case 'S':
                                 {
-                                    print("\n" + translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_MENU", "=== Select Axis Crossing Sound ===") + "\n");
+                                    print("\n" + formatSubHeading(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_MENU", "Select Axis Crossing Sound")));
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_1", "  1 - Pluck (string-like, natural - default)") + "\n");
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_2", "  2 - Sweep (pure sine, directional)") + "\n");
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_3", "  3 - Chirp (complex, attention-grabbing)") + "\n");
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_4", "  4 - Bell (resonant, pleasant)") + "\n");
                                     print(translation.get("SMITH_CONFIG_AXIS_EVENTS_SOUND_5", "  5 - Percussion (sharp, distinctive)") + "\n\n");
-                                    print("> ");
+                                    print(getPromptWithDepth("SMITH_CONFIG_SOUND_TYPE_PROMPT", 6) + " ");
                                     
                                     int soundChoice = consoleInput->getch();
                                     AppConfig::AxisCrossingSound newSound = axisCrossingSound;
@@ -3411,7 +3900,7 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
                     break;
                 
                 case 'h':  // Help
-                    print(translation.get("SMITH_CONFIG_HELP_TITLE", "\n=== Smith Audio Configuration Help ===") + "\n");
+                    print(formatHeading(translation.get("SMITH_CONFIG_HELP_TITLE", "Smith Audio Configuration Help")));
                     print(translation.get("SMITH_CONFIG_HELP_VOLUME", "V - Set volume for Smith ambient cues (10-100%)") + "\n");
                     print(translation.get("SMITH_CONFIG_HELP_NOISE", "N - Change sound type (Pink/White/Brown/Sine)") + "\n");
                     print(translation.get("SMITH_CONFIG_HELP_PINK", "    Pink: Warm, filtered (default, recommended)") + "\n");
@@ -3440,7 +3929,8 @@ bool ConsoleUI::runSmithConfigurationScreen(AcousticAnalyzer* analyzer) {
 
 // Surround sound configuration screen
 bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
-    print("\n=== " + translation.get("SURROUND_CONFIG_TITLE", "Surround Sound Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("SURROUND_CONFIG_TITLE", "Surround Sound Configuration")));
     
     if (!smith) {
         print(translation.get("SURROUND_CONFIG_NO_SMITH", "[Error: Smith visualizer not available]") + "\n");
@@ -3627,13 +4117,13 @@ bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
                 
             case 'v':  // Fading curve
                 {
-                    print("V\n\n" + translation.get("SURROUND_CONFIG_FADING_MENU", "=== Select Fading Curve ===") + "\n");
+                    print("V\n\n" + formatSubHeading(translation.get("SURROUND_CONFIG_FADING_MENU", "Select Fading Curve")));
                     print(translation.get("SURROUND_CONFIG_FADING_1", "  1 - Linear (equal perceived movement)") + "\n");
                     print(translation.get("SURROUND_CONFIG_FADING_2", "  2 - Logarithmic (more emphasis on center)") + "\n");
                     print(translation.get("SURROUND_CONFIG_FADING_3", "  3 - Exponential (more emphasis on edges)") + "\n");
                     print(translation.get("SURROUND_CONFIG_FADING_4", "  4 - Sine (smooth, natural transition)") + "\n");
                     print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
-                    print("> ");
+                    print(getPromptWithDepth("SURROUND_CONFIG_FADING_PROMPT", 6) + " ");
                     
                     int curveChoice = consoleInput->getch();
                     if (curveChoice >= '1' && curveChoice <= '4') {
@@ -3695,7 +4185,7 @@ bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
                 
             case 'h':  // Help
                 {
-                    print("H\n\n" + translation.get("SURROUND_CONFIG_HELP_TITLE", "=== Surround Configuration Help ===") + "\n");
+                    print("H\n\n" + formatSubHeading(translation.get("SURROUND_CONFIG_HELP_TITLE", "Surround Configuration Help")));
                     print(translation.get("SURROUND_CONFIG_HELP_DESC", 
                         "Configure spatial audio parameters for optimal Smith diagram localization.") + "\n\n");
                     print(translation.get("SURROUND_CONFIG_HELP_FRONT", 
@@ -3735,11 +4225,12 @@ bool ConsoleUI::runSurroundConfigurationScreen(SmithVisualizer* smith) {
 
 // Duration configuration submenu
 bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
+    clearScreen();
     bool running = true;
     
     while (running) {
         // Display submenu
-        print("\n=== " + translation.get("DURATION_CONFIG_TITLE", "Duration Configuration") + " ===\n");
+        print(formatHeading(translation.get("DURATION_CONFIG_TITLE", "Duration Configuration")));
         print(translation.format("DURATION_CONFIG_POINT_CURRENT", "Current point duration: {0} ms", cfg.dotted_duration_ms) + "\n");
         print(translation.format("DURATION_CONFIG_PAUSE_CURRENT", "Current pause duration: {0} ms", cfg.dotted_pause_ms) + "\n");
         int total = cfg.dotted_duration_ms + cfg.dotted_pause_ms;
@@ -3783,7 +4274,7 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
             running = false;
         } else if (ch == 'p' || ch == 'P') {  // Configure point duration
             print("P\n\n");
-            print("=== " + translation.get("DURATION_POINT_TITLE", "Configure Point Duration") + " ===\n");
+            print(formatHeading(translation.get("DURATION_POINT_TITLE", "Configure Point Duration")));
             print(translation.get("DURATION_POINT_DESC", 
                 "Point duration controls how long each measurement point sounds in dotted playback mode.\n"
                 "Longer durations provide more time to hear each point clearly.\n"
@@ -3791,7 +4282,7 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
             print(translation.get("DURATION_POINT_VALID_RANGE", "Valid range: 30 - 500 ms") + "\n\n");
             
             int duration;
-            if (readNumericInput(translation.get("DURATION_POINT_PROMPT", "Enter point duration in milliseconds (30-500), or press ESC to cancel: >") + " ", duration)) {
+            if (readNumericInput(translation.get("DURATION_POINT_PROMPT", "Enter point duration in milliseconds (30-500), or press ESC to cancel:"), duration, 4)) {
                 if (duration >= 30 && duration <= 500) {
                     cfg.dotted_duration_ms = duration;
                     print("\n" + translation.format("DURATION_POINT_SET", "[Point duration set to {0} ms]", duration) + "\n");
@@ -3806,7 +4297,7 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
             }
         } else if (ch == 'u' || ch == 'U') {  // Configure pause duration
             print("U\n\n");
-            print("=== " + translation.get("DURATION_PAUSE_TITLE", "Configure Pause Duration") + " ===\n");
+            print(formatHeading(translation.get("DURATION_PAUSE_TITLE", "Configure Pause Duration")));
             print(translation.get("DURATION_PAUSE_DESC", 
                 "Pause duration controls the silence between measurement points in dotted playback mode.\n"
                 "Longer pauses provide more time to distinguish between points.\n"
@@ -3814,7 +4305,7 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
             print(translation.get("DURATION_PAUSE_VALID_RANGE", "Valid range: 10 - 500 ms") + "\n\n");
             
             int pause;
-            if (readNumericInput(translation.get("DURATION_PAUSE_PROMPT", "Enter pause duration in milliseconds (10-500), or press ESC to cancel: >") + " ", pause)) {
+            if (readNumericInput(translation.get("DURATION_PAUSE_PROMPT", "Enter pause duration in milliseconds (10-500), or press ESC to cancel:"), pause, 4)) {
                 if (pause >= 10 && pause <= 500) {
                     cfg.dotted_pause_ms = pause;
                     print("\n" + translation.format("DURATION_PAUSE_SET", "[Pause duration set to {0} ms]", pause) + "\n");
@@ -3834,7 +4325,8 @@ bool ConsoleUI::runDurationConfigurationScreen(AcousticAnalyzer* analyzer) {
 }
 
 bool ConsoleUI::runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer) {
-    print("\n=== " + translation.get("FREEZE_PAUSE_CONFIG_TITLE", "Freeze Point Pause Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("FREEZE_PAUSE_CONFIG_TITLE", "Freeze Point Pause Configuration")));
     print(translation.format("FREEZE_PAUSE_CONFIG_CURRENT", "Current freeze point pause: {0} ms", cfg.freeze_point_pause_ms) + "\n");
     print(translation.get("FREEZE_PAUSE_CONFIG_DESC", 
         "Freeze point pause controls the silence between repeated points in freeze mode with dotted playback.\n"
@@ -3843,7 +4335,7 @@ bool ConsoleUI::runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer) {
     print(translation.get("FREEZE_PAUSE_CONFIG_VALID_RANGE", "Valid range: 50 - 2000 ms") + "\n\n");
     
     int pause;
-    if (readNumericInput(translation.get("FREEZE_PAUSE_CONFIG_PROMPT", "Enter freeze point pause in milliseconds (50-2000), or press ESC to cancel: >") + " ", pause)) {
+    if (readNumericInput(translation.get("FREEZE_PAUSE_CONFIG_PROMPT", "Enter freeze point pause in milliseconds (50-2000), or press ESC to cancel:"), pause, 4)) {
         if (pause >= 50 && pause <= 2000) {
             cfg.freeze_point_pause_ms = pause;
             print("\n" + translation.format("FREEZE_PAUSE_CONFIG_SET", "[Freeze point pause set to {0} ms]", pause) + "\n");
@@ -3861,7 +4353,8 @@ bool ConsoleUI::runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer) {
 }
 
 bool ConsoleUI::runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer) {
-    print("\n=== " + translation.get("LOOP_PAUSE_CONFIG_TITLE", "Loop Pause Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("LOOP_PAUSE_CONFIG_TITLE", "Loop Pause Configuration")));
     print(translation.format("LOOP_PAUSE_CONFIG_CURRENT", "Current loop pause: {0} ms", cfg.loop_pause_ms) + "\n");
     print(translation.get("LOOP_PAUSE_CONFIG_DESC", 
         "Loop pause adds a configurable silence before the loop repeats.\n"
@@ -3870,7 +4363,7 @@ bool ConsoleUI::runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer) {
     print(translation.get("LOOP_PAUSE_CONFIG_VALID_RANGE", "Valid range: 0 - 5000 ms (0 = no pause)") + "\n\n");
     
     int pause;
-    if (readNumericInput(translation.get("LOOP_PAUSE_CONFIG_PROMPT", "Enter loop pause in milliseconds (0-5000), or press ESC to cancel: >") + " ", pause)) {
+    if (readNumericInput(translation.get("LOOP_PAUSE_CONFIG_PROMPT", "Enter loop pause in milliseconds (0-5000), or press ESC to cancel:"), pause, 4)) {
         if (pause >= 0 && pause <= 5000) {
             cfg.loop_pause_ms = pause;
             print("\n" + translation.format("LOOP_PAUSE_CONFIG_SET", "[Loop pause set to {0} ms]", pause) + "\n");
@@ -3888,7 +4381,8 @@ bool ConsoleUI::runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer) {
 }
 
 bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer) {
-    print("\n=== " + translation.get("INVERTED_LOOP_GAP_CONFIG_TITLE", "Inverted Loop Gap Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("INVERTED_LOOP_GAP_CONFIG_TITLE", "Inverted Loop Gap Configuration")));
     print(translation.format("INVERTED_LOOP_GAP_CONFIG_CURRENT", "Current inverted loop gap: {0} ms", cfg.inverted_loop_gap_ms) + "\n");
     print(translation.get("INVERTED_LOOP_GAP_CONFIG_DESC", 
         "When loop is inverted, the section inside the loop markers is skipped.\n"
@@ -3898,7 +4392,7 @@ bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer
     print(translation.get("INVERTED_LOOP_GAP_CONFIG_VALID_RANGE", "Valid range: 0 - 5000 ms (0 = instant skip)") + "\n\n");
     
     int gap;
-    if (readNumericInput(translation.get("INVERTED_LOOP_GAP_CONFIG_PROMPT", "Enter gap duration in milliseconds (0-5000), or press ESC to cancel: >") + " ", gap)) {
+    if (readNumericInput(translation.get("INVERTED_LOOP_GAP_CONFIG_PROMPT", "Enter gap duration in milliseconds (0-5000), or press ESC to cancel:"), gap, 4)) {
         if (gap >= 0 && gap <= 5000) {
             cfg.inverted_loop_gap_ms = gap;
             print("\n" + translation.format("INVERTED_LOOP_GAP_CONFIG_SET", "[Inverted loop gap set to {0} ms]", gap) + "\n");
@@ -3916,7 +4410,8 @@ bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer
 }
 
 bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
-    print("\n=== " + translation.get("AUDIO_CONFIG_TITLE", "Audio Configuration") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("AUDIO_CONFIG_TITLE", "Audio Configuration")));
     print(translation.format("AUDIO_CONFIG_ENGINE", "Current engine: {0}", (cfg.audio_engine == AudioEngineType::MIDI ? "MIDI" : "Synthesizer")) + "\n");
     
     // Show synthesizer waveforms if synthesizer engine is active
@@ -4047,7 +4542,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'r':  // Configure frequency range
                     {
-                        print(translation.get("SYNTH_RANGE_TITLE", "\n=== Configure Frequency Range for Synthesizer ===") + "\n");
+                        print(formatHeading(translation.get("SYNTH_RANGE_TITLE", "Configure Frequency Range for Synthesizer")));
                         print(translation.format("SYNTH_RANGE_CURRENT", "Current range: {0} - {1} Hz\n", cfg.synth_min_freq_hz, cfg.synth_max_freq_hz));
                         print(translation.get("SYNTH_RANGE_EXPLANATION", "The frequency range determines how measurement values are mapped to audio.") + "\n");
                         print(translation.get("SYNTH_RANGE_EXAMPLE_INTRO", "For example, for SWR:") + "\n");
@@ -4055,20 +4550,31 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         print(translation.get("SYNTH_RANGE_EXAMPLE_MAX", "  - SWR 20.0 (poor)   = maximum frequency") + "\n\n");
                         print(translation.format("SYNTH_RANGE_VALID", "Valid range: {0} - {1} Hz (human hearing range)\n", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + "\n");
                         
-                        // Use do-while(false) to allow break statements for error handling
-                        do {
-                            // Get minimum frequency
-                            print(translation.format("SYNTH_ENTER_MIN_FREQ", "Enter minimum frequency in Hz ({0}-{1}), or press ESC to cancel: >", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + " ");
-                            std::string minInput;
+                        // Phase 3: Sequential input with backtracking
+                        // Escape in step 2 returns to step 1 instead of exiting
+                        int minFreq = 0;
+                        int maxFreq = 0;
+                        std::string minInput;
+                        std::string maxInput;
+                        
+                        // Sequential input loop - allows backtracking
+                        while (true) {
+                            // Step 1: Get minimum frequency
+                            print(translation.format("SYNTH_ENTER_MIN_FREQ", "Enter minimum frequency in Hz ({0}-{1}), or press ESC to cancel:", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + " " + getDepthIndicator(4) + " ");
+                            
+                            // Use raw mode numeric input
+                            minInput.clear();
+                            bool step1Cancelled = false;
                             bool inputting = true;
                             while (inputting) {
                                 if (consoleInput->kbhit()) {
                                     int ch = consoleInput->getch();
                                     if (ch == 27) {  // ESC
                                         print("\n[Cancelled]\n");
+                                        step1Cancelled = true;
                                         inputting = false;
-                                        break;  // Break from input loop
                                     } else if (ch == '\r' || ch == '\n') {  // Enter
+                                        print("\n");
                                         inputting = false;
                                     } else if (ch >= '0' && ch <= '9') {
                                         minInput += static_cast<char>(ch);
@@ -4080,90 +4586,97 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                 }
                             }
                             
-                            // Check if user cancelled
-                            if (minInput.empty()) {
-                                break;  // Break from do-while, skipping the rest
+                            if (step1Cancelled || minInput.empty()) {
+                                goto frequency_range_cancelled;  // Exit to parent menu
                             }
                             
-                            int minFreq = 0;
                             try {
                                 minFreq = std::stoi(minInput);
                             } catch (...) {
                                 print(translation.get("SYNTH_ERROR_INVALID_NUMBER", "\n[Error: Invalid number]") + "\n");
-                                break;
+                                continue;  // Ask again
                             }
                             
                             if (minFreq < SYNTH_MIN_FREQ_HZ_LIMIT || minFreq > SYNTH_MAX_FREQ_HZ_LIMIT) {
                                 print(translation.format("SYNTH_ERROR_MIN_FREQ_RANGE", "\n[Error: Minimum frequency must be between {0} and {1} Hz]", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + "\n");
-                                break;
+                                continue;  // Ask again
                             }
                             
-                            // Get maximum frequency
-                            print(translation.format("SYNTH_ENTER_MAX_FREQ", "\nEnter maximum frequency in Hz ({0}-{1}), or press ESC to cancel: >", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + " ");
-                            std::string maxInput;
-                            inputting = true;
-                            while (inputting) {
-                                if (consoleInput->kbhit()) {
-                                    int ch = consoleInput->getch();
-                                    if (ch == 27) {  // ESC
-                                        print("\n[Cancelled]\n");
-                                        inputting = false;
-                                        break;  // Break from input loop
-                                    } else if (ch == '\r' || ch == '\n') {  // Enter
-                                        inputting = false;
-                                    } else if (ch >= '0' && ch <= '9') {
-                                        maxInput += static_cast<char>(ch);
-                                        print(std::string(1, ch));
-                                    } else if (ch == 8 && !maxInput.empty()) {  // Backspace
-                                        maxInput.pop_back();
-                                        print("\b \b");
+                            // Step 2: Get maximum frequency (with backtracking support)
+                            while (true) {
+                                print(translation.format("SYNTH_ENTER_MAX_FREQ", "\nEnter maximum frequency in Hz ({0}-{1}), or press ESC to go back:", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + " " + getDepthIndicator(4) + " ");
+                                
+                                maxInput.clear();
+                                bool step2Cancelled = false;
+                                inputting = true;
+                                while (inputting) {
+                                    if (consoleInput->kbhit()) {
+                                        int ch = consoleInput->getch();
+                                        if (ch == 27) {  // ESC
+                                            print("\n" + translation.get("GOING_BACK", "[Going back to previous step]") + "\n");
+                                            step2Cancelled = true;
+                                            inputting = false;
+                                        } else if (ch == '\r' || ch == '\n') {  // Enter
+                                            print("\n");
+                                            inputting = false;
+                                        } else if (ch >= '0' && ch <= '9') {
+                                            maxInput += static_cast<char>(ch);
+                                            print(std::string(1, ch));
+                                        } else if (ch == 8 && !maxInput.empty()) {  // Backspace
+                                            maxInput.pop_back();
+                                            print("\b \b");
+                                        }
                                     }
                                 }
-                            }
-                            
-                            // Check if user cancelled
-                            if (maxInput.empty()) {
-                                break;  // Break from do-while, skipping the rest
-                            }
-                            
-                            int maxFreq = 0;
-                            try {
-                                maxFreq = std::stoi(maxInput);
-                            } catch (...) {
-                                print(translation.get("SYNTH_ERROR_INVALID_NUMBER", "\n[Error: Invalid number]") + "\n");
-                                break;
-                            }
-                            
-                            if (maxFreq < SYNTH_MIN_FREQ_HZ_LIMIT || maxFreq > SYNTH_MAX_FREQ_HZ_LIMIT) {
-                                print(translation.format("SYNTH_ERROR_MAX_FREQ_RANGE", "\n[Error: Maximum frequency must be between {0} and {1} Hz]", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + "\n");
-                                break;
-                            }
-                            
-                            if (minFreq >= maxFreq) {
-                                print(translation.get("SYNTH_ERROR_MAX_LESS_MIN", "\n[Error: Maximum frequency must be greater than minimum frequency]") + "\n");
-                                break;
-                            }
-                            
-                            // Apply settings
-                            cfg.synth_min_freq_hz = minFreq;
-                            cfg.synth_max_freq_hz = maxFreq;
-                            print(translation.format("SYNTH_FREQ_RANGE_SET", "\n[Frequency range set to {0} - {1} Hz]", minFreq, maxFreq) + "\n");
-                            print(translation.get("SYNTH_CHANGES_IMMEDIATE", "[Changes will take effect immediately in the synthesizer]") + "\n");
-                            saveSettings();
-                            // Apply the change immediately to the analyzer
-                            if (analyzer) {
-                                analyzer->setFrequencyRange(minFreq, maxFreq);
-                                // Also update MIDI engine if it's active
-                                auto engine = analyzer->getAudioEngine();
-                                if (engine && std::string(engine->getName()) == "MIDI") {
-                                    auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(engine);
-                                    if (midiEngine) {
-                                        midiEngine->setSynthFrequencyRange(minFreq, maxFreq);
+                                
+                                if (step2Cancelled || maxInput.empty()) {
+                                    break;  // Go back to step 1
+                                }
+                                
+                                try {
+                                    maxFreq = std::stoi(maxInput);
+                                } catch (...) {
+                                    print(translation.get("SYNTH_ERROR_INVALID_NUMBER", "\n[Error: Invalid number]") + "\n");
+                                    continue;  // Ask again
+                                }
+                                
+                                if (maxFreq < SYNTH_MIN_FREQ_HZ_LIMIT || maxFreq > SYNTH_MAX_FREQ_HZ_LIMIT) {
+                                    print(translation.format("SYNTH_ERROR_MAX_FREQ_RANGE", "\n[Error: Maximum frequency must be between {0} and {1} Hz]", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + "\n");
+                                    continue;  // Ask again
+                                }
+                                
+                                if (minFreq >= maxFreq) {
+                                    print(translation.get("SYNTH_ERROR_MAX_LESS_MIN", "\n[Error: Maximum frequency must be greater than minimum frequency]") + "\n");
+                                    continue;  // Ask again
+                                }
+                                
+                                // Both steps complete successfully
+                                cfg.synth_min_freq_hz = minFreq;
+                                cfg.synth_max_freq_hz = maxFreq;
+                                print(translation.format("SYNTH_FREQ_RANGE_SET", "\n[Frequency range set to {0} - {1} Hz]", minFreq, maxFreq) + "\n");
+                                print(translation.get("SYNTH_CHANGES_IMMEDIATE", "[Changes will take effect immediately in the synthesizer]") + "\n");
+                                saveSettings();
+                                // Apply the change immediately to the analyzer
+                                if (analyzer) {
+                                    analyzer->setFrequencyRange(minFreq, maxFreq);
+                                    // Also update MIDI engine if it's active
+                                    auto engine = analyzer->getAudioEngine();
+                                    if (engine && std::string(engine->getName()) == "MIDI") {
+                                        auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(engine);
+                                        if (midiEngine) {
+                                            midiEngine->setSynthFrequencyRange(minFreq, maxFreq);
+                                        }
                                     }
                                 }
+                                freqRangeChanged = true;
+                                goto frequency_range_complete;  // Exit both loops
                             }
-                            freqRangeChanged = true;
-                        } while (false);
+                            // If we get here, user pressed Escape in step 2, loop back to step 1
+                        }
+                        
+                        frequency_range_complete:  // Successful completion
+                        frequency_range_cancelled:  // User cancelled
+                        (void)0;  // Empty statement for label
                     }
                     break;
                 
@@ -4199,7 +4712,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                         // Context-sensitive: Waveform for Synthesizer, Instrument for MIDI
                         if (cfg.audio_engine == AudioEngineType::SYNTHESIZER) {
                             // Configure waveform for Synthesizer mode
-                            print(translation.format("WAVEFORM_CONFIG_TITLE", "\n=== Configure {0} Waveform ===", curveNames[curveIndex]) + "\n");
+                            print(formatHeading(translation.format("WAVEFORM_CONFIG_TITLE", "Configure {0} Waveform", curveNames[curveIndex])));
                             print(translation.format("WAVEFORM_CONFIG_CURRENT", "Current: {0}\n", getWaveformName(cfg.synth_waveforms[curveIndex])) + "\n");
                             print(translation.get("WAVEFORM_CONFIG_AVAILABLE", "Available waveforms:") + "\n");
                             print(translation.get("WAVEFORM_SINE", "  0 = Sine (smooth, pure tone)") + "\n");
@@ -4208,7 +4721,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             print(translation.get("WAVEFORM_SAWTOOTH", "  3 = Sawtooth (bright, rising harmonics)") + "\n");
                             print(translation.get("WAVEFORM_SAWTOOTH_INV", "  4 = Sawtooth Inv (bright, falling harmonics)") + "\n");
                             print(translation.get("WAVEFORM_PULSE", "  5 = Pulse (narrow, percussive)") + "\n");
-                            print(translation.get("SYNTH_ENTER_WAVEFORM", "\nEnter waveform number (0-5), or press ESC to cancel: >") + " ");
+                            print(translation.get("SYNTH_ENTER_WAVEFORM", "\nEnter waveform number (0-5), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                             
                             std::string input;
                             bool inputting = true;
@@ -4263,15 +4776,15 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             std::array<int, 5>& activePreset = (cfg.midi_playback_mode == MIDIPlaybackMode::GLIDING) 
                                 ? cfg.midi_instruments_gliding : cfg.midi_instruments_dotted;
                             
-                            print("\n=== " + translation.format("MIDI_CONFIG_TITLE", 
-                                "Configure {0} MIDI Instrument ({1} mode)", curveNames[curveIndex], modeText) + " ===\n");
+                            print(formatHeading(translation.format("MIDI_CONFIG_TITLE", 
+                                "Configure {0} MIDI Instrument ({1} mode)", curveNames[curveIndex], modeText)));
                             print(translation.format("MIDI_CONFIG_CURRENT", "Current: {0} ({1})", 
                                 MIDI_INSTRUMENT_NAMES[activePreset[curveIndex]], activePreset[curveIndex]) + "\n");
                             print(translation.get("MIDI_CONFIG_COMMANDS", "Commands:") + "\n");
                             print(translation.get("MIDI_CONFIG_ENTER_NUMBER", "  Enter instrument number (0-127)") + "\n");
                             print(translation.get("MIDI_CONFIG_SHOW_LIST", "  L - Show list of available MIDI instruments") + "\n");
                             print(translation.get("BACK_ESC", "  ESC - Cancel") + "\n");
-                            print(translation.get("MIDI_CONFIG_PROMPT", "> "));
+                            print(getPromptWithDepth("MIDI_CONFIG_PROMPT", 4) + " ");
                         
                             std::string input;
                             bool inputting = true;
@@ -4287,8 +4800,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                         }
                                         inputting = false;
                                     } else if (ch == 'l' || ch == 'L') {  // Show instrument list
-                                        print("L\n\n=== " + translation.get("MIDI_CONFIG_LIST_TITLE", 
-                                            "MIDI Instrument List (General MIDI)") + " ===\n");
+                                        print("L\n\n" + formatSubHeading(translation.get("MIDI_CONFIG_LIST_TITLE", 
+                                            "MIDI Instrument List (General MIDI)")));
                                         // Display instruments in groups for better readability
                                         print(translation.get("MIDI_CONFIG_PIANO", "Piano (0-7):") + "\n");
                                         for (int i = 0; i <= 7; i++) {
@@ -4355,7 +4868,9 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             print("  " + std::to_string(i) + " - " + MIDI_INSTRUMENT_NAMES[i] + "\n");
                                         }
                                         print("\n" + translation.get("MIDI_CONFIG_ENTER_AGAIN", 
-                                            "Enter instrument number (0-127), L to see list again, or ESC to cancel:") + " > ");
+                                            "Enter instrument number (0-127), L to see list again, or ESC to cancel:") + " ");
+                                        std::string depthIndicator = getDepthIndicator(4);
+                                        print(depthIndicator + " ");
                                         input.clear();  // Clear any partial input
                                     } else if (ch == '\r' || ch == '\n') {  // Enter
                                         if (!input.empty()) {
@@ -4381,16 +4896,20 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 } else {
                                                     print("\n" + translation.get("MIDI_CONFIG_ERROR_RANGE", 
                                                         "[Error: Number must be 0-127]") + "\n");
-                                                    print(translation.get("MIDI_CONFIG_ENTER_AGAIN", 
-                                                        "Enter instrument number (0-127), L to see list, or ESC to cancel:") + " > ");
+                                                    std::string prompt = translation.get("MIDI_CONFIG_ENTER_AGAIN", 
+                                                        "Enter instrument number (0-127), L to see list, or ESC to cancel:");
+                                                    std::string depthIndicator = getDepthIndicator(4);
+                                                    print(prompt + " " + depthIndicator + " ");
                                                     input.clear();
                                                     if (logger) logger->log("MIDI", "Invalid instrument number (out of range 0-127)");
                                                 }
                                             } catch (...) {
                                                 print("\n" + translation.get("MIDI_CONFIG_ERROR_INVALID", 
                                                     "[Error: Invalid number]") + "\n");
-                                                print(translation.get("MIDI_CONFIG_ENTER_AGAIN", 
-                                                    "Enter instrument number (0-127), L to see list, or ESC to cancel:") + " > ");
+                                                std::string prompt = translation.get("MIDI_CONFIG_ENTER_AGAIN", 
+                                                    "Enter instrument number (0-127), L to see list, or ESC to cancel:");
+                                                std::string depthIndicator = getDepthIndicator(4);
+                                                print(prompt + " " + depthIndicator + " ");
                                                 input.clear();
                                                 if (logger) logger->log("MIDI", "Invalid instrument number (parse error)");
                                             }
@@ -4480,7 +4999,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'v':  // Volume configuration
                     {
-                        print("\n=== " + translation.get("VOLUME_CONFIG_TITLE", "Configure Curve Volume") + " ===\n");
+                        print(formatHeading(translation.get("VOLUME_CONFIG_TITLE", "Configure Curve Volume")));
                         const char* curveNames[] = {"SWR", "Return Loss", "Impedance |Z|", "Reactance X", "Phase"};
                         
                         // Display current audio engine mode
@@ -4496,7 +5015,9 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                 ? cfg.curve_volume_synth[i] : cfg.curve_volume_midi[i];
                             print("  " + std::to_string(i+1) + ". " + curveNames[i] + ": " + std::to_string(volume) + "%\n");
                         }
-                        print("\n" + translation.get("VOLUME_CONFIG_ENTER_CURVE", "Enter curve number (1-5), M for Master volume, R for Ruler volume, X for X-axis ruler volume, or press ESC to cancel:") + " > ");
+                        print("\n" + translation.get("VOLUME_CONFIG_ENTER_CURVE", "Enter curve number (1-5), M for Master volume, R for Ruler volume, X for X-axis ruler volume, or press ESC to cancel:") + " ");
+                        std::string depthIndicator = getDepthIndicator(4);
+                        print(depthIndicator + " ");
                         
                         std::string curveInput;
                         bool inputting = true;
@@ -4507,8 +5028,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     print("\n" + translation.get("CANCELLED", "[Cancelled]") + "\n");
                                     inputting = false;
                                 } else if (ch == 'm' || ch == 'M') {  // Master volume
-                                    print("M\n\n" + translation.get("VOLUME_CONFIG_ENTER_MASTER", 
-                                        "Enter master volume (0-100%), or press ESC to cancel:") + " > ");
+                                    print("M\n\n");
+                                    std::string prompt = translation.get("VOLUME_CONFIG_ENTER_MASTER", 
+                                        "Enter master volume (0-100%), or press ESC to cancel:");
+                                    std::string depthIndicator = getDepthIndicator(5);
+                                    print(prompt + " " + depthIndicator + " ");
                                     
                                     std::string volumeInput;
                                     bool volumeInputting = true;
@@ -4544,15 +5068,19 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                         } else {
                                                             print("\n" + translation.get("VOLUME_CONFIG_ERROR_VOLUME", 
                                                                 "[Error: Volume must be between 0 and 100]") + "\n");
-                                                            print(translation.get("VOLUME_CONFIG_ENTER_MASTER", 
-                                                                "Enter master volume (0-100%), or press ESC to cancel:") + " > ");
+                                                            std::string prompt = translation.get("VOLUME_CONFIG_ENTER_MASTER", 
+                                                                "Enter master volume (0-100%), or press ESC to cancel:");
+                                                            std::string depthIndicator = getDepthIndicator(5);
+                                                            print(prompt + " " + depthIndicator + " ");
                                                             volumeInput.clear();
                                                         }
                                                     } catch (...) {
                                                         print("\n" + translation.get("ERROR_INVALID_SELECTION", 
                                                             "[Error: Invalid number]") + "\n");
-                                                        print(translation.get("VOLUME_CONFIG_ENTER_MASTER", 
-                                                            "Enter master volume (0-100%), or press ESC to cancel:") + " > ");
+                                                        std::string prompt = translation.get("VOLUME_CONFIG_ENTER_MASTER", 
+                                                            "Enter master volume (0-100%), or press ESC to cancel:");
+                                                        std::string depthIndicator = getDepthIndicator(5);
+                                                        print(prompt + " " + depthIndicator + " ");
                                                         volumeInput.clear();
                                                     }
                                                 }
@@ -4566,8 +5094,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                         }
                                     }
                                 } else if (ch == 'r' || ch == 'R') {  // Ruler volume
-                                    print("R\n\n" + translation.get("VOLUME_CONFIG_ENTER_RULER", 
-                                        "Enter ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                    print("R\n\n");
+                                    std::string prompt = translation.get("VOLUME_CONFIG_ENTER_RULER", 
+                                        "Enter ruler volume (0-100%), or press ESC to cancel:");
+                                    std::string depthIndicator = getDepthIndicator(5);
+                                    print(prompt + " " + depthIndicator + " ");
                                     
                                     std::string volumeInput;
                                     bool volumeInputting = true;
@@ -4603,15 +5134,19 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                         } else {
                                                             print("\n" + translation.get("VOLUME_CONFIG_ERROR_VOLUME", 
                                                                 "[Error: Volume must be between 0 and 100]") + "\n");
-                                                            print(translation.get("VOLUME_CONFIG_ENTER_RULER", 
-                                                                "Enter ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                                            std::string prompt = translation.get("VOLUME_CONFIG_ENTER_RULER", 
+                                                                "Enter ruler volume (0-100%), or press ESC to cancel:");
+                                                            std::string depthIndicator = getDepthIndicator(5);
+                                                            print(prompt + " " + depthIndicator + " ");
                                                             volumeInput.clear();
                                                         }
                                                     } catch (...) {
                                                         print("\n" + translation.get("ERROR_INVALID_SELECTION", 
                                                             "[Error: Invalid number]") + "\n");
-                                                        print(translation.get("VOLUME_CONFIG_ENTER_RULER", 
-                                                            "Enter ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                                        std::string prompt = translation.get("VOLUME_CONFIG_ENTER_RULER", 
+                                                            "Enter ruler volume (0-100%), or press ESC to cancel:");
+                                                        std::string depthIndicator = getDepthIndicator(5);
+                                                        print(prompt + " " + depthIndicator + " ");
                                                         volumeInput.clear();
                                                     }
                                                 }
@@ -4625,8 +5160,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                         }
                                     }
                                 } else if (ch == 'x' || ch == 'X') {  // X-axis ruler volume
-                                    print("X\n\n" + translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
-                                        "Enter X-axis ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                    print("X\n\n");
+                                    std::string prompt = translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
+                                        "Enter X-axis ruler volume (0-100%), or press ESC to cancel:");
+                                    std::string depthIndicator = getDepthIndicator(5);
+                                    print(prompt + " " + depthIndicator + " ");
                                     
                                     std::string volumeInput;
                                     bool volumeInputting = true;
@@ -4662,15 +5200,19 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                         } else {
                                                             print("\n" + translation.get("VOLUME_CONFIG_ERROR_VOLUME", 
                                                                 "[Error: Volume must be between 0 and 100]") + "\n");
-                                                            print(translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
-                                                                "Enter X-axis ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                                            std::string prompt = translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
+                                                                "Enter X-axis ruler volume (0-100%), or press ESC to cancel:");
+                                                            std::string depthIndicator = getDepthIndicator(5);
+                                                            print(prompt + " " + depthIndicator + " ");
                                                             volumeInput.clear();
                                                         }
                                                     } catch (...) {
                                                         print("\n" + translation.get("ERROR_INVALID_SELECTION", 
                                                             "[Error: Invalid number]") + "\n");
-                                                        print(translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
-                                                            "Enter X-axis ruler volume (0-100%), or press ESC to cancel:") + " > ");
+                                                        std::string prompt = translation.get("VOLUME_CONFIG_ENTER_X_RULER", 
+                                                            "Enter X-axis ruler volume (0-100%), or press ESC to cancel:");
+                                                        std::string depthIndicator = getDepthIndicator(5);
+                                                        print(prompt + " " + depthIndicator + " ");
                                                         volumeInput.clear();
                                                     }
                                                 }
@@ -4689,8 +5231,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             int curveNum = std::stoi(curveInput);
                                             if (curveNum >= 1 && curveNum <= 5) {
                                                 int curveIndex = curveNum - 1;
-                                                print("\n\n" + translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
-                                                    "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]) + " > ");
+                                                std::string prompt = translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
+                                                    "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]);
+                                                std::string depthIndicator = getDepthIndicator(5);
+                                                print("\n\n" + prompt + " " + depthIndicator + " ");
                                                 
                                                 std::string volumeInput;
                                                 bool volumeInputting = true;
@@ -4733,15 +5277,19 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                                     } else {
                                                                         print("\n" + translation.get("VOLUME_CONFIG_ERROR_VOLUME", 
                                                                             "[Error: Volume must be between 0 and 100]") + "\n");
-                                                                        print(translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
-                                                                            "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]) + " > ");
+                                                                        std::string prompt = translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
+                                                                            "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]);
+                                                                        std::string depthIndicator = getDepthIndicator(5);
+                                                                        print(prompt + " " + depthIndicator + " ");
                                                                         volumeInput.clear();
                                                                     }
                                                                 } catch (...) {
                                                                     print("\n" + translation.get("ERROR_INVALID_SELECTION", 
                                                                         "[Error: Invalid number]") + "\n");
-                                                                    print(translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
-                                                                        "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]) + " > ");
+                                                                    std::string prompt = translation.format("VOLUME_CONFIG_ENTER_VOLUME", 
+                                                                        "Enter volume for {0} (0-100%), or press ESC to cancel:", curveNames[curveIndex]);
+                                                                    std::string depthIndicator = getDepthIndicator(5);
+                                                                    print(prompt + " " + depthIndicator + " ");
                                                                     volumeInput.clear();
                                                                 }
                                                             }
@@ -4799,7 +5347,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'a':  // Ruler configuration
                     {
-                        print("\n=== " + translation.get("RULER_CONFIG_TITLE", "Y-Axis Ruler Configuration") + " ===\n");
+                        print(formatHeading(translation.get("RULER_CONFIG_TITLE", "Y-Axis Ruler Configuration")));
                         
                         // Display current settings
                         std::string soundMode = (cfg.ruler_sound_mode == AppConfig::RulerSoundMode::FOLLOW_LAST_CURVE) 
@@ -4874,12 +5422,12 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'c':  // Configure custom sound
                                         {
-                                            print("C\n\n=== " + translation.get("RULER_CUSTOM_TITLE", "Configure Ruler Custom Sound") + " ===\n");
+                                            print("C\n\n" + formatSubHeading(translation.get("RULER_CUSTOM_TITLE", "Configure Ruler Custom Sound")));
                                             
                                             if (cfg.audio_engine == AudioEngineType::SYNTHESIZER) {
                                                 // Synth mode - select waveform
                                                 print(translation.get("RULER_CUSTOM_SYNTH_PROMPT", 
-                                                    "Select waveform (0-5): 0=Sine, 1=Square, 2=Triangle, 3=Sawtooth, 4=Sawtooth Inv, 5=Pulse\nEnter number (0-5), or press ESC to cancel:") + " > ");
+                                                    "Select waveform (0-5): 0=Sine, 1=Square, 2=Triangle, 3=Sawtooth, 4=Sawtooth Inv, 5=Pulse\nEnter number (0-5), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                                 
                                                 std::string input;
                                                 if (!readLine(input)) break;
@@ -4907,7 +5455,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 // MIDI mode - select instrument based on playback mode
                                                 if (cfg.midi_playback_mode == MIDIPlaybackMode::GLIDING) {
                                                     print(translation.get("RULER_CUSTOM_MIDI_GLIDING_PROMPT", 
-                                                        "Select MIDI instrument for Gliding mode (0-127), or press ESC to cancel:") + " > ");
+                                                        "Select MIDI instrument for Gliding mode (0-127), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                                     
                                                     std::string input;
                                                     if (!readLine(input)) break;
@@ -4938,7 +5486,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                     }
                                                 } else {  // DOTTED mode
                                                     print(translation.get("RULER_CUSTOM_MIDI_DOTTED_PROMPT", 
-                                                        "Select MIDI instrument for Dotted mode (0-127), or press ESC to cancel:") + " > ");
+                                                        "Select MIDI instrument for Dotted mode (0-127), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                                     
                                                     std::string input;
                                                     if (!readLine(input)) break;
@@ -4975,10 +5523,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'd':  // Configure blip duration
                                         {
-                                            print("D\n\n=== " + translation.get("RULER_DURATION_TITLE", "Configure Ruler Blip Duration") + " ===\n");
+                                            print("D\n\n" + formatSubHeading(translation.get("RULER_DURATION_TITLE", "Configure Ruler Blip Duration")));
                                             print(translation.get("RULER_DURATION_DESC", 
                                                 "Blip duration controls the length of the shortest blips (half integers) in the ruler.\nLonger blips are calculated relative to this base duration.") + "\n\n");
-                                            print(translation.get("RULER_DURATION_PROMPT", "Enter blip duration in milliseconds (30-500), or press ESC to cancel:") + " > ");
+                                            print(translation.get("RULER_DURATION_PROMPT", "Enter blip duration in milliseconds (30-500), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                             
                                             std::string input;
                                             if (!readLine(input)) break;
@@ -5007,10 +5555,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'l':  // Configure lengthening factor
                                         {
-                                            print("L\n\n=== " + translation.get("RULER_LENGTHENING_TITLE", "Configure Ruler Lengthening Factor") + " ===\n");
+                                            print("L\n\n" + formatSubHeading(translation.get("RULER_LENGTHENING_TITLE", "Configure Ruler Lengthening Factor")));
                                             print(translation.get("RULER_LENGTHENING_DESC", 
                                                 "Lengthening factor controls how much longer the tones at full integers, 5, 10, and 15 are compared to half integers.\nHigher values create more distinction between different tone types.") + "\n\n");
-                                            print(translation.get("RULER_LENGTHENING_PROMPT", "Enter lengthening factor in percent (100-500%), or press ESC to cancel:") + " > ");
+                                            print(translation.get("RULER_LENGTHENING_PROMPT", "Enter lengthening factor in percent (100-500%), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                             
                                             std::string input;
                                             if (!readLine(input)) break;
@@ -5046,7 +5594,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'x':  // X-Axis Ruler configuration
                     {
-                        print("\n=== " + translation.get("X_RULER_CONFIG_TITLE", "X-Axis Ruler Configuration") + " ===\n");
+                        print(formatHeading(translation.get("X_RULER_CONFIG_TITLE", "X-Axis Ruler Configuration")));
                         
                         // Display current settings
                         const char* noiseTypeNames[] = {"White Noise", "Pink Noise", "Click"};
@@ -5094,10 +5642,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'd':  // Configure blip duration
                                         {
-                                            print("D\n\n=== " + translation.get("X_RULER_DURATION_TITLE", "Configure X-Axis Ruler Blip Duration") + " ===\n");
+                                            print("D\n\n" + formatSubHeading(translation.get("X_RULER_DURATION_TITLE", "Configure X-Axis Ruler Blip Duration")));
                                             print(translation.get("X_RULER_DURATION_DESC", 
                                                 "Blip duration controls the length of the noise bursts at each measurement point.") + "\n\n");
-                                            print(translation.get("X_RULER_DURATION_PROMPT", "Enter blip duration in milliseconds (30-200), or press ESC to cancel:") + " > ");
+                                            print(translation.get("X_RULER_DURATION_PROMPT", "Enter blip duration in milliseconds (30-200), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                             
                                             std::string input;
                                             if (!readLine(input)) break;
@@ -5126,10 +5674,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'n':  // Configure noise type (synthesizer mode only)
                                         if (cfg.audio_engine == AudioEngineType::SYNTHESIZER) {
-                                            print("N\n\n=== " + translation.get("X_RULER_NOISE_TITLE", "Configure X-Axis Ruler Noise Type") + " ===\n");
+                                            print("N\n\n" + formatSubHeading(translation.get("X_RULER_NOISE_TITLE", "Configure X-Axis Ruler Noise Type")));
                                             print(translation.get("X_RULER_NOISE_DESC", 
                                                 "Select the type of noise used for X-axis ruler blips:\n  0 = White Noise (bright, full spectrum)\n  1 = Pink Noise (warmer, filtered)\n  2 = Click (short impulse)") + "\n\n");
-                                            print(translation.get("X_RULER_NOISE_PROMPT", "Enter noise type (0-2), or press ESC to cancel:") + " > ");
+                                            print(translation.get("X_RULER_NOISE_PROMPT", "Enter noise type (0-2), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                             
                                             std::string input;
                                             if (!readLine(input)) break;
@@ -5163,10 +5711,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                     
                                     case 'm':  // Configure MIDI drum (MIDI mode only)
                                         if (cfg.audio_engine == AudioEngineType::MIDI) {
-                                            print("M\n\n=== " + translation.get("X_RULER_DRUM_TITLE", "Configure X-Axis Ruler MIDI Drum") + " ===\n");
+                                            print("M\n\n" + formatSubHeading(translation.get("X_RULER_DRUM_TITLE", "Configure X-Axis Ruler MIDI Drum")));
                                             print(translation.get("X_RULER_DRUM_DESC", 
                                                 "Select the MIDI drum note for X-axis ruler blips.\nCommon drums: 35=Acoustic Bass Drum, 36=Bass Drum 1, 38=Acoustic Snare, 42=Closed Hi-Hat, 46=Open Hi-Hat") + "\n\n");
-                                            print(translation.get("X_RULER_DRUM_PROMPT", "Enter MIDI drum note (35-81), or press ESC to cancel:") + " > ");
+                                            print(translation.get("X_RULER_DRUM_PROMPT", "Enter MIDI drum note (35-81), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                             
                                             std::string input;
                                             if (!readLine(input)) break;
@@ -5207,32 +5755,37 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 
                 case 'n':  // Status Line configuration
                     {
-                        print("\n=== " + translation.get("STATUS_LINE_CONFIG_TITLE", "Status Line Configuration") + " ===\n");
-                        print(translation.get("STATUS_LINE_CONFIG_DESC", "Select which parameters to display in the status line:") + "\n\n");
-                        
-                        print(translation.format("STATUS_LINE_CONFIG_POSITION", "  P - Position: {0}", 
-                            cfg.status_line_show_position ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_FREQUENCY", "  F - Frequency: {0}", 
-                            cfg.status_line_show_frequency ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_SWR", "  S - SWR: {0}", 
-                            cfg.status_line_show_swr ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_RL", "  R - Return Loss: {0}", 
-                            cfg.status_line_show_rl ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_IMPEDANCE", "  Z - Impedance |Z|: {0}", 
-                            cfg.status_line_show_impedance ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_REACTANCE", "  X - Reactance: {0}", 
-                            cfg.status_line_show_reactance ? "ON" : "OFF") + "\n");
-                        print(translation.format("STATUS_LINE_CONFIG_PHASE", "  H - Phase: {0}", 
-                            cfg.status_line_show_phase ? "ON" : "OFF") + "\n\n");
-                        
-                        print(translation.get("STATUS_LINE_CONFIG_COMMANDS", "Commands:") + "\n");
-                        print(translation.get("STATUS_LINE_CONFIG_TOGGLE", "  P/F/S/R/Z/X/H - Toggle respective parameter") + "\n");
-                        print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
-                        
                         bool statusLineRunning = true;
-                        print(getPromptWithDepth("STATUS_LINE_CONFIG", 4) + " ");
+                        bool shouldDisplayMenu = true;  // Flag to control menu display
                         
                         while (statusLineRunning) {
+                            // Display menu only when needed (initial display or after a toggle)
+                            if (shouldDisplayMenu) {
+                                print(formatHeading(translation.get("STATUS_LINE_CONFIG_TITLE", "Status Line Configuration")));
+                                print(translation.get("STATUS_LINE_CONFIG_DESC", "Select which parameters to display in the status line:") + "\n\n");
+                                
+                                print(translation.format("STATUS_LINE_CONFIG_POSITION", "  P - Position: {0}", 
+                                    cfg.status_line_show_position ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_FREQUENCY", "  F - Frequency: {0}", 
+                                    cfg.status_line_show_frequency ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_SWR", "  S - SWR: {0}", 
+                                    cfg.status_line_show_swr ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_RL", "  R - Return Loss: {0}", 
+                                    cfg.status_line_show_rl ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_IMPEDANCE", "  Z - Impedance |Z|: {0}", 
+                                    cfg.status_line_show_impedance ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_REACTANCE", "  X - Reactance: {0}", 
+                                    cfg.status_line_show_reactance ? "ON" : "OFF") + "\n");
+                                print(translation.format("STATUS_LINE_CONFIG_PHASE", "  H - Phase: {0}", 
+                                    cfg.status_line_show_phase ? "ON" : "OFF") + "\n\n");
+                                
+                                print(translation.get("STATUS_LINE_CONFIG_COMMANDS", "Commands:") + "\n");
+                                print(translation.get("STATUS_LINE_CONFIG_TOGGLE", "  P/F/S/R/Z/X/H - Toggle respective parameter") + "\n");
+                                print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+                                print(getPromptWithDepth("STATUS_LINE_CONFIG", 4) + " ");
+                                shouldDisplayMenu = false;  // Don't display again until a toggle occurs
+                            }
+                            
                             if (consoleInput->kbhit()) {
                                 int sch = consoleInput->getch();
                                 
@@ -5259,7 +5812,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_position ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowPosition(cfg.status_line_show_position);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 'f':  // Toggle frequency
@@ -5268,7 +5821,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_frequency ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowFrequency(cfg.status_line_show_frequency);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 's':  // Toggle SWR
@@ -5277,7 +5830,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_swr ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowSWR(cfg.status_line_show_swr);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 'r':  // Toggle Return Loss
@@ -5286,7 +5839,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_rl ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowRL(cfg.status_line_show_rl);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 'z':  // Toggle Impedance
@@ -5295,7 +5848,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_impedance ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowImpedance(cfg.status_line_show_impedance);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 'x':  // Toggle Reactance
@@ -5304,7 +5857,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_reactance ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowReactance(cfg.status_line_show_reactance);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                     
                                     case 'h':  // Toggle Phase
@@ -5313,7 +5866,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                             cfg.status_line_show_phase ? "ON" : "OFF") + "\n");
                                         saveSettings();
                                         analyzer->setStatusLineShowPhase(cfg.status_line_show_phase);
-                                        statusLineRunning = false;
+                                        shouldDisplayMenu = true;  // Redisplay menu after toggle
                                         break;
                                 }
                             }
@@ -5359,8 +5912,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 case 't':  // Set MIDI interpolation strength
                     {
                         if (cfg.audio_engine == AudioEngineType::MIDI) {
-                            print("T\n\n" + translation.get("MIDI_INTERP_STRENGTH_TITLE", 
-                                "=== Configure MIDI Interpolation Strength ===") + "\n");
+                            print("T\n\n" + formatSubHeading(translation.get("MIDI_INTERP_STRENGTH_TITLE", 
+                                "Configure MIDI Interpolation Strength")));
                             print(translation.format("MIDI_INTERP_STRENGTH_CURRENT", 
                                 "Current strength: {0}", cfg.midi_interpolation_strength) + "\n");
                             print(translation.get("MIDI_INTERP_STRENGTH_DESC", 
@@ -5370,7 +5923,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             print(translation.get("MIDI_INTERP_STRENGTH_RECOMMEND", 
                                 "Recommended: 0.2-0.4 for subtle effect, 0.5-0.8 for pronounced effect") + "\n\n");
                             print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
-                                "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                                "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                             
                             std::string input;
                             bool inputting = true;
@@ -5413,8 +5966,8 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 } else {
                                                     print("\n" + translation.get("MIDI_INTERP_STRENGTH_ERROR", 
                                                         "[Error: Strength must be between 0.0 and 1.0]") + "\n");
-                                                    print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
-                                                        "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                                                        print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
+                                                        "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                                     input.clear();
                                                     continue;
                                                 }
@@ -5422,7 +5975,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 print("\n" + translation.get("ERROR_INVALID_NUMBER", 
                                                     "[Error: Invalid number]") + "\n");
                                                 print(translation.get("MIDI_INTERP_STRENGTH_PROMPT", 
-                                                    "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " > ");
+                                                    "Enter interpolation strength (0.0-1.0), or press ESC to cancel:") + " " + getDepthIndicator(4) + " ");
                                                 input.clear();
                                                 continue;
                                             }
@@ -5445,7 +5998,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     break;
                 
                 case 'h':  // Help
-                    print(translation.get("AUDIO_HELP_TITLE", "\n=== Audio Configuration Help ===") + "\n");
+                    print(formatHeading(translation.get("AUDIO_HELP_TITLE", "Audio Configuration Help")));
                     print(translation.get("AUDIO_HELP_ENGINE", "E - Toggle between Synthesizer and MIDI audio engines") + "\n");
                     print(translation.format("AUDIO_HELP_RANGE", "R - Configure frequency Range for Synthesizer ({0}-{1} Hz)", SYNTH_MIN_FREQ_HZ_LIMIT, SYNTH_MAX_FREQ_HZ_LIMIT) + "\n");
                     print(translation.get("AUDIO_HELP_RANGE_DESC", "    Determines how measurement values map to audio frequencies") + "\n");
@@ -5487,6 +6040,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     print("\n[Returning to acoustic analysis...]\n");
                     break;
             }
+            
+            // Print prompt after handling each command to ensure it's displayed when returning from submenus
+            if (running) {
+                print(getPromptWithDepth("AUDIO_CONFIG_PROMPT", 3) + " ");
+            }
         }  // End of if (hasInput)
         
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -5508,14 +6066,22 @@ std::string ConsoleUI::formatDegree() const {
 void ConsoleUI::optionsMenu() {
     if (logger) logger->log("UI", "Entered options menu");
     
-    print("\n=== " + translation.get("OPTIONS_TITLE", "Options") + " ===\n");
-    print(translation.get("OPTIONS_LANGUAGE", "(L)anguage") + "\n");
-    print(translation.get("OPTIONS_BANDPLAN", "(B)andplan") + "\n");
-    print(translation.get("OPTIONS_BRAILLE", "(R) Braille Printer") + "\n");
-    print(translation.get("HELP_COMMAND", "(H)elp") + "\n");
-    print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
-    
     while (true) {
+        clearScreen();  // Clear screen at the start of each loop iteration
+        print(formatHeading(translation.get("OPTIONS_TITLE", "Options")));
+        print(translation.get("OPTIONS_LANGUAGE", "(L)anguage") + "\n");
+        print(translation.get("OPTIONS_BANDPLAN", "(B)andplan") + "\n");
+        print(translation.get("OPTIONS_BRAILLE", "(R) Braille Printer") + "\n");
+        print(translation.get("HELP_COMMAND", "(H)elp") + "\n");
+        print(translation.get("MSG_PRESS_ESC_BACK", "Press ESC to go back") + "\n\n");
+        
+        setUIContext("options_menu", {
+            {"l", translation.get("OPTIONS_LANGUAGE", "(L)anguage"), false},
+            {"b", translation.get("OPTIONS_BANDPLAN", "(B)andplan"), false},
+            {"r", translation.get("OPTIONS_BRAILLE", "(R) Braille Printer"), false},
+            {"h", translation.get("HELP_COMMAND", "(H)elp"), false}
+        });
+        
         print(getPromptWithDepth("OPTIONS_PROMPT", 2) + " ");
         int ch = 0;
         bool hasInput = false;
@@ -5565,12 +6131,14 @@ void ConsoleUI::optionsMenu() {
             print(translation.get("ERROR_UNKNOWN_COMMAND", "Unknown command.") + "\n");
         }
     }
+    clearScreen();
     
     if (logger) logger->log("UI", "Exited options menu");
 }
 
 void ConsoleUI::languageSelectionMenu() {
-    print("\n=== " + translation.get("LANG_TITLE", "Language Selection") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("LANG_TITLE", "Language Selection")));
     
     std::string err;
     auto languages = TranslationManager::getAvailableLanguages(err);
@@ -5633,7 +6201,8 @@ void ConsoleUI::languageSelectionMenu() {
 }
 
 void ConsoleUI::bandplanSelectionMenu() {
-    print("\n=== " + translation.get("BANDPLAN_TITLE", "Band Plan Selection") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("BANDPLAN_TITLE", "Band Plan Selection")));
     
     std::string err;
     auto bandplans = getAvailableBandPlans(err);
@@ -5699,63 +6268,64 @@ void ConsoleUI::bandplanSelectionMenu() {
 }
 
 void ConsoleUI::braillePrinterSettingsMenu() {
-    print("\n=== Braille Printer Settings ===\n");
-    
-    // Show current settings
-    std::string protocolName = (cfg.braille_protocol == AppConfig::BrailleProtocol::INDEX_V5) ? "Index V5 (Floating Dot Area)" : "Index V4 (Raster Graphics)";
-    std::string paperName;
-    switch (cfg.braille_paper_size) {
-        case AppConfig::BraillePaperSize::A4: paperName = "A4 (210x297mm)"; break;
-        case AppConfig::BraillePaperSize::LETTER: paperName = "US Letter (216x279mm)"; break;
-        case AppConfig::BraillePaperSize::A3: paperName = "A3 (297x420mm)"; break;
-        case AppConfig::BraillePaperSize::LEGAL: paperName = "US Legal (216x356mm)"; break;
-        case AppConfig::BraillePaperSize::BLISTA_260x305: paperName = "Blista (260x305mm)"; break;
-        case AppConfig::BraillePaperSize::BLISTA_270x340: paperName = "Blista (270x340mm)"; break;
-        case AppConfig::BraillePaperSize::BLISTA_297x304: paperName = "Blista (297x304mm)"; break;
-    }
-    std::string orientationName = (cfg.braille_orientation == AppConfig::BrailleOrientation::PORTRAIT) ? "Portrait" : "Landscape";
-    std::string gridName;
-    switch (cfg.braille_coordinate_grid) {
-        case AppConfig::BrailleCoordinateGrid::NONE: gridName = "None"; break;
-        case AppConfig::BrailleCoordinateGrid::DOTS: gridName = "Dots at integers"; break;
-        case AppConfig::BrailleCoordinateGrid::GRID_LINES: gridName = "Grid lines"; break;
-    }
-    
-    print("\nCurrent Settings:\n");
-    print("  Protocol: " + protocolName + "\n");
-    print("  Paper Size: " + paperName + "\n");
-    print("  Orientation: " + orientationName + "\n");
-    print("  Coordinate Grid: " + gridName + "\n");
-    
-    // Show DPI setting
-    std::ostringstream dpiStr;
-    dpiStr << std::fixed << std::setprecision(1) << cfg.braille_dpi;
-    double spacingMm = 25.4 / cfg.braille_dpi;
-    std::ostringstream spacingStr;
-    spacingStr << std::fixed << std::setprecision(2) << spacingMm;
-    print("  DPI: " + dpiStr.str() + " DPI (min spacing: " + spacingStr.str() + "mm)\n");
-    
-    // Show phase discontinuity mode
-    std::string phaseDiscontinuityName = (cfg.braille_phase_discontinuity == AppConfig::BraillePhaseDiscontinuityMode::ARROWS) 
-        ? "Arrows (compact indicators)" 
-        : "Vertical line (with pattern)";
-    print("  Phase Discontinuity: " + phaseDiscontinuityName + "\n");
-    
-    print("  Note: X and Y axes are always shown\n\n");
-    
-    print("(P) Select Protocol\n");
-    print("(S) Select Paper Size\n");
-    print("(O) Select Orientation\n");
-    print("(G) Select Coordinate Grid\n");
-    print("(D) Set DPI (Dot Density)\n");
-    print("(J) Phase Jump Display Mode\n");
-    print("(C) Configure Curve Patterns\n");
-    print("(A) Advanced Parameters (margins, spacing, layout)\n");
-    print("(L) Load Profile\n");
-    print("(V) Save Current as Profile\n");
-    print("Press ESC to go back\n\n");
-    
     while (true) {
+        clearScreen();  // Clear screen at the start of each loop iteration
+        print(formatHeading("Braille Printer Settings"));
+        
+        // Show current settings
+        std::string protocolName = (cfg.braille_protocol == AppConfig::BrailleProtocol::INDEX_V5) ? "Index V5 (Floating Dot Area)" : "Index V4 (Raster Graphics)";
+        std::string paperName;
+        switch (cfg.braille_paper_size) {
+            case AppConfig::BraillePaperSize::A4: paperName = "A4 (210x297mm)"; break;
+            case AppConfig::BraillePaperSize::LETTER: paperName = "US Letter (216x279mm)"; break;
+            case AppConfig::BraillePaperSize::A3: paperName = "A3 (297x420mm)"; break;
+            case AppConfig::BraillePaperSize::LEGAL: paperName = "US Legal (216x356mm)"; break;
+            case AppConfig::BraillePaperSize::BLISTA_260x305: paperName = "Blista (260x305mm)"; break;
+            case AppConfig::BraillePaperSize::BLISTA_270x340: paperName = "Blista (270x340mm)"; break;
+            case AppConfig::BraillePaperSize::BLISTA_297x304: paperName = "Blista (297x304mm)"; break;
+        }
+        std::string orientationName = (cfg.braille_orientation == AppConfig::BrailleOrientation::PORTRAIT) ? "Portrait" : "Landscape";
+        std::string gridName;
+        switch (cfg.braille_coordinate_grid) {
+            case AppConfig::BrailleCoordinateGrid::NONE: gridName = "None"; break;
+            case AppConfig::BrailleCoordinateGrid::DOTS: gridName = "Dots at integers"; break;
+            case AppConfig::BrailleCoordinateGrid::GRID_LINES: gridName = "Grid lines"; break;
+        }
+        
+        print("\nCurrent Settings:\n");
+        print("  Protocol: " + protocolName + "\n");
+        print("  Paper Size: " + paperName + "\n");
+        print("  Orientation: " + orientationName + "\n");
+        print("  Coordinate Grid: " + gridName + "\n");
+        
+        // Show DPI setting
+        std::ostringstream dpiStr;
+        dpiStr << std::fixed << std::setprecision(1) << cfg.braille_dpi;
+        double spacingMm = 25.4 / cfg.braille_dpi;
+        std::ostringstream spacingStr;
+        spacingStr << std::fixed << std::setprecision(2) << spacingMm;
+        print("  DPI: " + dpiStr.str() + " DPI (min spacing: " + spacingStr.str() + "mm)\n");
+        
+        // Show phase discontinuity mode
+        std::string phaseDiscontinuityName = (cfg.braille_phase_discontinuity == AppConfig::BraillePhaseDiscontinuityMode::ARROWS) 
+            ? "Arrows (compact indicators)" 
+            : "Vertical line (with pattern)";
+        print("  Phase Discontinuity: " + phaseDiscontinuityName + "\n");
+        
+        print("  Note: X and Y axes are always shown\n\n");
+        
+        print("(P) Select Protocol\n");
+        print("(S) Select Paper Size\n");
+        print("(O) Select Orientation\n");
+        print("(G) Select Coordinate Grid\n");
+        print("(D) Set DPI (Dot Density)\n");
+        print("(J) Phase Jump Display Mode\n");
+        print("(C) Configure Curve Patterns\n");
+        print("(A) Advanced Parameters (margins, spacing, layout)\n");
+        print("(L) Load Profile\n");
+        print("(V) Save Current as Profile\n");
+        print("Press ESC to go back\n\n");
+        
         print(getPromptWithDepth("BRAILLE_SETTINGS_PROMPT", 3) + " ");
         int ch = 0;
         bool hasInput = false;
@@ -5791,7 +6361,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
         }
         
         if (key == 'p') {
-            print("\n=== Select Protocol ===\n");
+            print(formatHeading("Select Protocol"));
             print("1) Index V4 (Raster Graphics - legacy)\n");
             print("2) Index V5 (Floating Dot Area - recommended)\n");
             print("\nEnter choice (1-2): ");
@@ -5811,7 +6381,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid selection.\n");
             }
         } else if (key == 's') {
-            print("\n=== Select Paper Size ===\n");
+            print(formatHeading("Select Paper Size"));
             print("1) A4 (210x297mm)\n");
             print("2) US Letter (216x279mm)\n");
             print("3) A3 (297x420mm)\n");
@@ -5856,7 +6426,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid selection.\n");
             }
         } else if (key == 'o') {
-            print("\n=== Select Orientation ===\n");
+            print(formatHeading("Select Orientation"));
             print("1) Portrait (paper is vertical)\n");
             print("2) Landscape (paper is horizontal)\n");
             print("\nNote: Paper is always loaded portrait in printer,\n");
@@ -5878,7 +6448,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid selection.\n");
             }
         } else if (key == 'g') {
-            print("\n=== Select Coordinate Grid ===\n");
+            print(formatHeading("Select Coordinate Grid"));
             print("1) None\n");
             print("2) Dots at integer coordinates\n");
             print("3) Full grid lines\n");
@@ -5903,7 +6473,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid selection.\n");
             }
         } else if (key == 'd') {
-            print("\n=== Set DPI (Dot Density) ===\n");
+            print(formatHeading("Set DPI (Dot Density)"));
             print("DPI controls the minimum spacing between dots.\n");
             print("Higher DPI = smaller spacing = more dense dots\n");
             print("Lower DPI = larger spacing = less dense dots\n\n");
@@ -5940,7 +6510,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid input. Please enter a number.\n");
             }
         } else if (key == 'j') {
-            print("\n=== Phase Jump Display Mode ===\n");
+            print(formatHeading("Phase Jump Display Mode"));
             print("Choose how phase discontinuities (jumps at ±180°) are displayed:\n\n");
             print("1) Arrows (compact indicators)\n");
             print("   - Small directional arrows (4mm) show where curve continues\n");
@@ -5970,7 +6540,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
                 print("Invalid selection.\n");
             }
         } else if (key == 'c') {
-            print("\n=== Configure Curve Patterns ===\n");
+            print(formatHeading("Configure Curve Patterns"));
             print("Define tactile patterns for each curve:\n");
             print("Pattern alternates: draw-pause-draw-pause...\n");
             print("Examples: '0' or empty = solid line (all dots)\n");
@@ -5991,7 +6561,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
             saveSettings();
         } else if (key == 'a') {
             // Advanced parameters submenu
-            print("\n=== Advanced Braille Parameters ===\n");
+            print(formatHeading("Advanced Braille Parameters"));
             print("These parameters control fine details of the print layout.\n");
             print("Adjust carefully to maximize paper usage.\n\n");
             
@@ -6226,7 +6796,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
             }
         } else if (key == 'l') {
             // Load braille profile
-            print("\n=== Load Braille Profile ===\n");
+            print(formatHeading("Load Braille Profile"));
             std::vector<std::string> profiles = listBrailleProfiles();
             
             if (profiles.empty()) {
@@ -6275,7 +6845,7 @@ void ConsoleUI::braillePrinterSettingsMenu() {
             }
         } else if (key == 'v') {
             // Save current settings as profile
-            print("\n=== Save Current Settings as Profile ===\n");
+            print(formatHeading("Save Current Settings as Profile"));
             print("Enter profile name (without .ini extension): ");
             
             std::string profileName;
@@ -6309,9 +6879,10 @@ void ConsoleUI::braillePrinterSettingsMenu() {
 }
 
 void ConsoleUI::webInterfaceMenu() {
+    clearScreen();
     if (logger) logger->log("UI", "Entered web interface menu");
     
-    print("\n=== " + translation.get("WEB_INTERFACE_TITLE", "Web Interface") + " ===\n");
+    print(formatHeading(translation.get("WEB_INTERFACE_TITLE", "Web Interface")));
     
     if (webServer && webServer->isRunning()) {
         // Server is running - show status and stop option
@@ -6333,6 +6904,10 @@ void ConsoleUI::webInterfaceMenu() {
             "Use this URL on your smartphone or tablet to control the device remotely.\n") + "\n");
         
         print(translation.get("WEB_INTERFACE_STOP_PROMPT", "Press 'S' to stop the web interface, or ESC to go back: "));
+        
+        setUIContext("web_interface", {
+            {"s", translation.get("WEB_INTERFACE_STOP", "Stop"), false}
+        });
         
         char key = static_cast<char>(consoleInput->getch());
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
@@ -6360,6 +6935,10 @@ void ConsoleUI::webInterfaceMenu() {
             "Security note: HTTP only, local network only, no authentication.\n") + "\n");
         
         print(translation.get("WEB_INTERFACE_START_PROMPT", "Press 'S' to start the web interface, or ESC to go back: "));
+        
+        setUIContext("web_interface", {
+            {"s", translation.get("WEB_INTERFACE_START", "Start"), false}
+        });
         
         char key = static_cast<char>(consoleInput->getch());
         if (key >= 'A' && key <= 'Z') key = key - 'A' + 'a';
@@ -6400,11 +6979,13 @@ void ConsoleUI::webInterfaceMenu() {
         }
     }
     
+    clearScreen();
     if (logger) logger->log("UI", "Exited web interface menu");
 }
 
 void ConsoleUI::runFirstStartWizard() {
-    print("\n=== " + translation.get("FIRST_START_WELCOME", "Welcome to NanoVNA CLI Accessible!") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("FIRST_START_WELCOME", "Welcome to NanoVNA CLI Accessible!")));
     print(translation.get("FIRST_START_SETUP", "This appears to be your first time running the program. Let's configure some basic settings.") + "\n\n");
     
     // Detect system language
@@ -6496,7 +7077,7 @@ void ConsoleUI::runFirstStartWizard() {
             print(std::to_string(i + 1) + ") " + languages[i].second + " (" + languages[i].first + ")" + marker + "\n");
         }
         
-        print("\n" + translation.get("FIRST_START_ENTER_NUMBER", "Enter number: ") + "> ");
+        print("\n" + translation.get("FIRST_START_ENTER_NUMBER", "Enter number: ") + getDepthIndicator(1) + " ");
         std::string input;
         if (readLine(input)) {
             if (!input.empty()) {
@@ -6537,7 +7118,7 @@ void ConsoleUI::runFirstStartWizard() {
             print("\n");
         }
         
-        print("\n" + translation.get("FIRST_START_ENTER_NUMBER", "Enter number: ") + "> ");
+        print("\n" + translation.get("FIRST_START_ENTER_NUMBER", "Enter number: ") + getDepthIndicator(1) + " ");
         std::string input;
         if (readLine(input)) {
             if (!input.empty()) {
@@ -6565,12 +7146,13 @@ void ConsoleUI::runFirstStartWizard() {
 }
 
 void ConsoleUI::goToMenu(std::vector<MeasurementPoint>& pts, size_t& currentPage, size_t rowsPerPage) {
+    clearScreen();
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No data") + "\n");
         return;
     }
     
-    print("\n=== " + translation.get("GOTO_TITLE", "Go To") + " ===\n");
+    print(formatHeading(translation.get("GOTO_TITLE", "Go To")));
     print(translation.get("GOTO_POINT", "(P)oint") + "\n");
     print(translation.get("GOTO_FREQUENCY", "(F)requency") + "\n");
     print(translation.get("GOTO_MINIMUM", "(M)inimum") + "\n");
@@ -6746,9 +7328,6 @@ void ConsoleUI::goToMenu(std::vector<MeasurementPoint>& pts, size_t& currentPage
     } else if (key == 'h') {
         // Help
         print(HelpModule::getGoToMenuHelp(translation));
-        // Wait for user to read the help
-        print(translation.get("PRESS_ENTER", "Press Enter to continue..."));
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     } else if (key == 27) {
         // ESC - back
         return;
@@ -6758,12 +7337,13 @@ void ConsoleUI::goToMenu(std::vector<MeasurementPoint>& pts, size_t& currentPage
 }
 
 void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<MeasurementPoint>& pts) {
+    clearScreen();
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No measurement data available for acoustic analysis.") + "\n");
         return;
     }
     
-    print("\n=== " + translation.get("GOTO_TITLE", "Go To") + " ===\n");
+    print(formatHeading(translation.get("GOTO_TITLE", "Go To")));
     print(translation.get("GOTO_POINT", "(P)oint") + "\n");
     print(translation.get("GOTO_FREQUENCY", "(F)requency") + "\n");
     print(translation.get("GOTO_MINIMUM", "(M)inimum") + "\n");
@@ -6940,7 +7520,7 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
         
     } else if (key == 'c') {
         // Go to cross point
-        print("\n=== " + translation.get("GOTO_CROSSPOINT_TITLE", "Find Cross Points") + " ===\n");
+        print(formatHeading(translation.get("GOTO_CROSSPOINT_TITLE", "Find Cross Points")));
         print(translation.get("GOTO_CROSSPOINT_SELECT", "Select curves to check for intersections:") + "\n");
         print("(1) SWR  (2) Return Loss  (3) |Z|  (4) Reactance X  (5) Phase\n");
         print(translation.get("GOTO_CROSSPOINT_PROMPT", "Enter curve numbers separated by spaces (e.g., '1 3'): ") + " ");
@@ -7121,9 +7701,6 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
     } else if (key == 'h') {
         // Help
         print(HelpModule::getGoToMenuAcousticHelp(translation));
-        // Wait for user to read the help
-        print(translation.get("PRESS_ENTER", "Press Enter to continue..."));
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     } else if (key == 27) {
         // ESC - back
         return;
@@ -7143,7 +7720,7 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
 
 // Helper function for Braille curve selection UI
 bool ConsoleUI::selectBrailleCurves(bool curveFlags[5]) {
-    print("\n=== Braille Export - Curve Selection ===\n");
+    print(formatHeading("Braille Export - Curve Selection"));
     print(translation.get("BRAILLE_SELECT_CURVES", "Select curves to include in Braille graphics:") + "\n");
     print("  1. SWR (Standing Wave Ratio)\n");
     print("  2. Return Loss\n");
@@ -7212,95 +7789,233 @@ bool ConsoleUI::selectBrailleCurves(bool curveFlags[5]) {
     return true;
 }
 
+void ConsoleUI::clearScreen(bool preserve) {
+    // Do not clear screen if debug flag is set
+    // This allows users to copy complete error situations from the screen
+    if (cfg.debug) {
+        if (logger) logger->log("UI", "Screen clear skipped (debug mode)");
+        return;
+    }
+    
+    // When preserve is true, skip clearing to keep existing content visible
+    // This is used e.g. at startup to preserve the version info display
+    if (preserve) {
+        if (logger) logger->log("UI", "Screen clear skipped (preserve mode)");
+        return;
+    }
+    
+#if defined(_WIN32)
+    // On Windows, use cls command for reliable clearing
+    // ANSI codes are enabled in main.cpp but cls is more reliable across Windows versions
+    std::system("cls");
+    // Also send ANSI clear to web interface if running (works in browsers)
+    if (webServer && webServer->isRunning()) {
+        webServer->sendOutput("\033[2J\033[H");
+    }
+#else
+    // On Linux and macOS, use ANSI escape codes
+    // Route through print() to ensure web interface also receives the clear
+    print("\033[2J\033[H");
+#endif
+    
+    if (logger) logger->log("UI", "Screen cleared");
+}
+
+std::string ConsoleUI::formatHeading(const std::string& title) const {
+    // Use ANSI bold + cyan for headings - visible for sighted users,
+    // no decorative characters that create noise for screenreaders
+    return "\n\033[1;36m" + title + "\033[0m\n";
+}
+
+std::string ConsoleUI::formatSubHeading(const std::string& title) const {
+    // Use ANSI bold + white for subheadings
+    return "\n\033[1;37m" + title + "\033[0m\n";
+}
+
+std::string ConsoleUI::processTextForDisplay(const std::string& text) {
+    // Post-process text to replace decorative separators with ANSI colors.
+    // This handles translation strings that contain embedded === or ═══ patterns.
+    // Processing is line-by-line for correctness.
+    std::string result;
+    std::istringstream stream(text);
+    std::string line;
+    bool firstLine = true;
+    
+    while (std::getline(stream, line)) {
+        if (!firstLine) {
+            result += '\n';
+        }
+        firstLine = false;
+        
+        // Check for ═══ separator lines (box-drawing characters) - remove entirely
+        // These lines consist only of ═ characters (possibly with whitespace)
+        {
+            std::string trimmed = line;
+            // Trim whitespace
+            size_t start = trimmed.find_first_not_of(" \t");
+            if (start != std::string::npos) {
+                trimmed = trimmed.substr(start);
+            }
+            // Check if line consists entirely of ═ (UTF-8: 0xE2 0x95 0x90)
+            bool allBoxDraw = !trimmed.empty();
+            for (size_t i = 0; i < trimmed.size(); ) {
+                if (i + 2 < trimmed.size() &&
+                    static_cast<unsigned char>(trimmed[i]) == 0xE2 &&
+                    static_cast<unsigned char>(trimmed[i+1]) == 0x95 &&
+                    static_cast<unsigned char>(trimmed[i+2]) == 0x90) {
+                    i += 3;  // Skip ═ (3-byte UTF-8)
+                } else {
+                    allBoxDraw = false;
+                    break;
+                }
+            }
+            if (allBoxDraw) {
+                // Skip this line entirely (replace with empty line)
+                continue;
+            }
+        }
+        
+        // Check for === Title === pattern (also handles ==== variants)
+        {
+            std::string trimmed = line;
+            size_t start = trimmed.find_first_not_of(" \t\n\r");
+            if (start != std::string::npos) {
+                trimmed = trimmed.substr(start);
+            }
+            // Skip leading = characters to find the title
+            size_t eqStart = 0;
+            while (eqStart < trimmed.size() && trimmed[eqStart] == '=') eqStart++;
+            // Need at least 3 leading = and a space after them
+            if (eqStart >= 3 && eqStart < trimmed.size() && trimmed[eqStart] == ' ') {
+                // Find the closing === (at least 3 = at end, preceded by space)
+                size_t endPos = trimmed.rfind(" ===");
+                if (endPos != std::string::npos && endPos > eqStart) {
+                    std::string title = trimmed.substr(eqStart + 1, endPos - eqStart - 1);
+                    // Remove any trailing = characters from title
+                    while (!title.empty() && title.back() == '=') {
+                        title.pop_back();
+                    }
+                    while (!title.empty() && title.back() == ' ') {
+                        title.pop_back();
+                    }
+                    if (!title.empty()) {
+                        result += "\033[1;36m" + title + "\033[0m";
+                        continue;
+                    }
+                }
+            }
+        }
+        
+        // Check for --- Title --- pattern  
+        {
+            std::string trimmed = line;
+            size_t start = trimmed.find_first_not_of(" \t\n\r");
+            if (start != std::string::npos) {
+                trimmed = trimmed.substr(start);
+            }
+            if (trimmed.size() > 8 && trimmed.substr(0, 4) == "--- ") {
+                size_t endPos = trimmed.rfind(" ---");
+                if (endPos != std::string::npos && endPos > 4) {
+                    std::string title = trimmed.substr(4, endPos - 4);
+                    result += "\033[1;37m" + title + "\033[0m";
+                    continue;
+                }
+            }
+        }
+        
+        // No pattern matched - keep line as-is
+        result += line;
+    }
+    
+    // If original text ended with newline, preserve it
+    if (!text.empty() && text.back() == '\n') {
+        result += '\n';
+    }
+    
+    return result;
+}
+
+void ConsoleUI::setUIContext(const std::string& context, const std::vector<UIAction>& actions, const std::string& inputMode) {
+    currentContext = context;
+    currentActions = actions;
+    currentInputMode = inputMode;
+    
+    // Send context update to web interface if running
+    if (webServer && webServer->isRunning()) {
+        webServer->sendContext(getContextJSON());
+    }
+}
+
+std::string ConsoleUI::getContextJSON() const {
+    // Helper lambda to escape strings for JSON output
+    auto jsonEscape = [](const std::string& s) -> std::string {
+        std::string result;
+        result.reserve(s.size() + 10);
+        for (char c : s) {
+            switch (c) {
+                case '"': result += "\\\""; break;
+                case '\\': result += "\\\\"; break;
+                case '\n': result += "\\n"; break;
+                case '\r': result += "\\r"; break;
+                case '\t': result += "\\t"; break;
+                default:
+                    if (static_cast<unsigned char>(c) < 0x20) {
+                        // Control character - skip
+                    } else {
+                        result += c;
+                    }
+                    break;
+            }
+        }
+        return result;
+    };
+    
+    std::string json = "{\"context\":\"" + jsonEscape(currentContext) + "\",\"inputMode\":\"" + jsonEscape(currentInputMode.empty() ? "menu" : currentInputMode) + "\",\"actions\":[";
+    for (size_t i = 0; i < currentActions.size(); ++i) {
+        if (i > 0) json += ",";
+        json += "{\"key\":\"" + jsonEscape(currentActions[i].key) + "\",";
+        json += "\"label\":\"" + jsonEscape(currentActions[i].label) + "\",";
+        json += "\"needsEnter\":" + std::string(currentActions[i].needsEnter ? "true" : "false") + "}";
+    }
+    json += "]}";
+    return json;
+}
+
 void ConsoleUI::print(const std::string& text) {
+    // Post-process text to replace decorative separators with ANSI colors
+    // This transparently handles translation strings containing === or ═══ patterns
+    std::string processed = processTextForDisplay(text);
+    
     // Output to console
-    std::cout << text;
+    std::cout << processed;
     std::cout.flush();
     
     // Also send to web interface if running
     if (webServer && webServer->isRunning()) {
-        webServer->sendOutput(text);
+        webServer->sendOutput(processed);
     }
+}
+
+void ConsoleUI::output(const std::string& text) {
+    print(text);
 }
 
 bool ConsoleUI::readLine(std::string& result) {
-    // This function handles line-based input from both keyboard and web interface
-    // It waits for a complete line (terminated with Enter/newline)
+    // Phase 4: Replaced canonical mode implementation with raw mode
+    // Now uses readRawLineInput() internally for consistent Escape support
+    auto inputResult = readRawLineInput("");
     
-    // Check if web interface is active
-    if (webServer && webServer->isRunning()) {
-        std::string line;
-        bool hasInput = false;
-        
-        // Wait for input from either web interface or keyboard
-        while (!hasInput) {
-            // Check web interface first
-            if (webServer->hasInput()) {
-                std::string webInput = webServer->readInput();
-                if (!webInput.empty()) {
-                    if (logger) logger->log("UI", "Web line input received: [" + webInput + "]");
-                    
-                    // Remove trailing newlines/carriage returns
-                    while (!webInput.empty() && (webInput.back() == '\n' || webInput.back() == '\r')) {
-                        webInput.pop_back();
-                    }
-                    
-                    // Echo the input to both interfaces
-                    print(webInput + "\n");
-                    
-                    result = webInput;
-                    return true;
-                }
-            }
-            
-            // Check keyboard input (non-blocking check)
-            if (consoleInput->kbhit()) {
-                // Switch to canonical mode for line input with echo and backspace support
-                if (!consoleInput->enableCanonicalMode()) {
-                    if (logger) logger->log("UI", "Warning: Failed to enable canonical mode for input");
-                }
-                
-                // Use standard getline for keyboard input
-                bool success = std::getline(std::cin, result).good();
-                
-                // Switch back to raw mode for kbhit() to work
-                if (!consoleInput->enableRawMode()) {
-                    if (logger) logger->log("UI", "Warning: Failed to restore raw mode after input");
-                }
-                
-                if (!success) {
-                    return false;
-                }
-                // Echo to web interface
-                if (webServer && webServer->isRunning()) {
-                    webServer->sendOutput(result + "\n");
-                }
-                return true;
-            }
-            
-            // Small sleep to avoid busy-waiting
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        }
+    if (inputResult.cancelled) {
+        return false;  // User pressed Escape
     }
     
-    // Fallback to standard getline (no web interface)
-    // Switch to canonical mode for line input with echo and backspace support
-    if (!consoleInput->enableCanonicalMode()) {
-        if (logger) logger->log("UI", "Warning: Failed to enable canonical mode for input");
-    }
-    
-    bool success = std::getline(std::cin, result).good();
-    
-    // Switch back to raw mode for kbhit() to work
-    if (!consoleInput->enableRawMode()) {
-        if (logger) logger->log("UI", "Warning: Failed to restore raw mode after input");
-    }
-    
-    return success;
+    result = inputResult.value;
+    return true;
 }
 
 void ConsoleUI::documentationMenu() {
-    print("\n=== " + translation.get("DOCS_MENU_TITLE", "Manuals and Training") + " ===\n");
+    clearScreen();
+    print(formatHeading(translation.get("DOCS_MENU_TITLE", "Manuals and Training")));
     print(translation.get("DOCS_MENU_MANUAL", "1. Open User Manual") + "\n");
     print(translation.get("DOCS_MENU_TRAINING", "2. Open Training Suite") + "\n");
     print(translation.get("DOCS_MENU_BETA", "3. Open Beta Test Instructions") + "\n");
@@ -7316,30 +8031,31 @@ void ConsoleUI::documentationMenu() {
             
             if (key == 27) {  // ESC
                 print("\n");
-                return;
+                break;
             } else if (key == '1') {
                 print("1\n");
                 std::string docPath = translation.get("DOC_PATH_MANUAL", "doc/manuals/USER_MANUAL_EN.html");
                 openDocumentation(docPath);
-                return;
+                break;
             } else if (key == '2') {
                 print("2\n");
                 std::string docPath = translation.get("DOC_PATH_TRAINING", "doc/training/en/Training_Index.html");
                 openDocumentation(docPath);
-                return;
+                break;
             } else if (key == '3') {
                 print("3\n");
                 std::string docPath = translation.get("DOC_PATH_BETA", "doc/beta-testing/BETA_TESTING_EN.html");
                 openDocumentation(docPath);
-                return;
+                break;
             } else if (key == '4') {
                 print("4\n");
                 feedbackToDeveloper();
-                return;
+                break;
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
+    clearScreen();
 }
 
 void ConsoleUI::openDocumentation(const std::string& docPath) {
@@ -7379,7 +8095,7 @@ void ConsoleUI::openDocumentation(const std::string& docPath) {
 }
 
 void ConsoleUI::feedbackToDeveloper() {
-    print("\n=== " + translation.get("FEEDBACK_MENU_TITLE", "Feedback to Developer") + " ===\n");
+    print(formatHeading(translation.get("FEEDBACK_MENU_TITLE", "Feedback to Developer")));
     print(translation.get("FEEDBACK_ATTACH_QUESTION", "Would you like to attach logs and configuration files? (y/n):") + " ");
     
     bool attachFiles = false;

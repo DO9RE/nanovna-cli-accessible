@@ -137,6 +137,7 @@ static void playPreviewSound(double volume, Waveform wf, int durationMs = 500, d
 }
 
 bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
+    clearScreen();
     if (!analyzer) {
         print(translation.get("ERROR_NO_ANALYZER", "[Error: No audio analyzer available]") + "\n");
         return false;
@@ -158,9 +159,8 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     cfg.spatial_calibration.surround_available = hasSurround;
     
     print("\n");
-    print("═══════════════════════════════════════════════════════════\n");
-    print(translation.get("SPATIAL_WIZARD_TITLE", "    Spatial Audio Calibration Wizard") + "\n");
-    print("═══════════════════════════════════════════════════════════\n\n");
+    print(formatHeading(translation.get("SPATIAL_WIZARD_TITLE", "Spatial Audio Calibration Wizard")));
+    print("\n");
     
     // Display detected hardware
     const char* capabilityName = "Unknown";
@@ -781,9 +781,8 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     
     // ===== Completion =====
     print("\n\n");
-    print("═══════════════════════════════════════════════════════════\n");
-    print(translation.get("SPATIAL_WIZARD_COMPLETE", "    Calibration Complete!") + "\n");
-    print("═══════════════════════════════════════════════════════════\n\n");
+    print(formatHeading(translation.get("SPATIAL_WIZARD_COMPLETE", "Calibration Complete!")));
+    print("\n");
     
     // Display calibration summary
     print(translation.get("SPATIAL_WIZARD_SUMMARY", "Your spatial audio profile:") + "\n\n");

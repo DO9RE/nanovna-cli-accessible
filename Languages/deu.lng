@@ -37,11 +37,13 @@ ERROR_NO_PORT_SELECTED=Fehler: Kein COM-Port ausgewählt. Verwenden Sie (P)ort, 
 ERROR_NO_PORT_CONFIGURED=Kein serieller Port konfiguriert. Verwenden Sie (P)ort zum Auswählen.
 ERROR_NO_RANGE_CONFIGURED=Kein Frequenzbereich konfiguriert. Bitte zuerst den Bereich einstellen.
 PROMPT_USE_RANGE_COMMAND=Verwenden Sie (R)ange um den Frequenzbereich zu konfigurieren.
-MSG_PRESS_ESC_BACK=ESC drücken zum zurück
+MSG_PRESS_ESC_BACK=ESC zum Zurückgehen
+GOING_BACK=[Zurück zum vorherigen Schritt]
 ERROR_UNKNOWN_COMMAND=Unbekannter Befehl.
+ERROR_INVALID_PORT=Ungültige Portnummer.
 HELP_COMMAND_ESC_BACK=  ESC - Zurück      Zurück zum Hauptmenü
 PORT_SCANNING=Scanne COM-Ports...
-PORT_CHOOSE_PROMPT=Portnummer wählen (oder Enter drücken zum Abbrechen):
+PORT_CHOOSE_PROMPT=Portnummer wählen (oder ESC zum Abbrechen):
 DEVICE_INFO_PROMPT=Geräteinformationen
 
 # Hauptmenue Tasten (kleinbuchstaben)
@@ -53,6 +55,8 @@ DEVICE_INFO_PROMPT=Geräteinformationen
 YES_KEY=j
 NO_KEY=n
 YES_NO_PROMPT=(j/n)
+YES_LABEL=Ja
+NO_LABEL=Nein
 
 # Hauptmenü
 MAIN_MENU_PROMPT=Hauptmenü
@@ -134,7 +138,7 @@ IMPORT_TITLE=Messdaten importieren
 IMPORT_ERROR=Fehler: {0}
 IMPORT_NO_FILES=Keine Export Dateien im Export/ Verzeichnis gefunden.
 IMPORT_AVAILABLE=Verfügbare Dateien:
-IMPORT_PROMPT=Dateinummer zum Importieren eingeben (oder Enter zum abbrechen): >
+IMPORT_PROMPT=Dateinummer zum Importieren eingeben (oder ESC zum Abbrechen): >
 IMPORT_INVALID=Ungültige Eingabe.
 IMPORT_CANCELED=Abgebrochen.
 IMPORT_SUCCESS=Erfolgreich {0} Messpunkte aus {1} importiert
@@ -410,7 +414,7 @@ HELP_DEVICE_SHELL_DESC=Debug Shell:\n  Öffnet eine direkte Kommunikationsshell 
 MENU_COMFORT=(U) Komfortfunktionen
 
 # U-Menu Hauptbildschirm
-UMENU_TITLE=== Komfortfunktionen Menü ===
+UMENU_TITLE=Komfortfunktionen Menü
 UMENU_SUBTITLE=Praktische Messwerkzeuge für Antennen- und Kabelanalyse
 UMENU_PROMPT=Komfort Menü
 UMENU_HELP=H drücken für Hilfe
@@ -448,7 +452,7 @@ CF_NEED_S21=Diese Funktion benötigt S21-Messdaten. Bitte im Through-Modus messe
 CF_PRESS_ENTER=Enter drücken zum Fortfahren...
 
 # Bandtauglichkeit prüfen
-BAND_SUIT_TITLE=== Bandtauglichkeit prüfen ===
+BAND_SUIT_TITLE=Bandtauglichkeit prüfen
 BAND_SUIT_SELECT=Band auswählen:
 BAND_SUIT_ALL=A. Alle Bänder prüfen
 BAND_SUIT_RESULT_TITLE=Band: {0}
@@ -465,7 +469,7 @@ BAND_SUIT_SKIPPED=  Band {0} übersprungen
 BAND_SUIT_MEASURE_FAILED=  Messung für Band {0} fehlgeschlagen
 
 # Resonanzfinder
-RESON_TITLE=== Resonanzfinder ===
+RESON_TITLE=Resonanzfinder
 RESON_ANALYZING=Analysiere aktuellen Sweep auf Resonanzen...
 RESON_FOUND={0} Resonanzpunkt(e) gefunden:
 RESON_POINT=Resonanz {0}:
@@ -476,7 +480,7 @@ RESON_NONE=Keine deutlichen Resonanzpunkte im aktuellen Sweep gefunden.
 RESON_HINT=Hinweis: Resonanzen sind lokale Minima im SWR.
 
 # SWR-Bandbreite
-SWR_BW_TITLE=== SWR-Bandbreite berechnen ===
+SWR_BW_TITLE=SWR-Bandbreite berechnen
 SWR_BW_PROMPT=SWR Auswahl
 SWR_BW_SELECT=Ziel-SWR auswählen:
 SWR_BW_1_5=1. SWR <= 1.5:1
@@ -493,7 +497,7 @@ SWR_BW_NONE=Kein Frequenzbereich mit SWR <= {0} gefunden
 SWR_BW_HINT=Dies deutet darauf hin, dass die Antenne Abstimmung oder Impedanzanpassung benötigt.
 
 # Speisepunkt-Impedanz Bericht
-FP_IMP_TITLE=== Speisepunkt-Impedanz Bericht ===
+FP_IMP_TITLE=Speisepunkt-Impedanz Bericht
 FP_IMP_PROMPT=Frequenzauswahl
 FP_IMP_SELECT=Frequenz auswählen:
 FP_IMP_MANUAL=F. Manuelle Frequenzeingabe
@@ -513,7 +517,7 @@ FP_IMP_HINT_HIGH=  Impedanz-Hinweis: Zu hoch im Vergleich zu 50 Ohm
 FP_IMP_HINT_GOOD=  Impedanz-Hinweis: Nahe 50 Ohm
 
 # Anpassungs-Hinweise
-MATCH_TITLE=== Anpassungs-Hinweise ===
+MATCH_TITLE=Anpassungs-Hinweise
 MATCH_USING_DATA=Verwende Impedanzdaten bei {0} Hz
 MATCH_R_X=  Impedanz: {0} + j{1} Ohm
 MATCH_HINT_TITLE=Anpassungs-Vorschläge (grobe Orientierung):
@@ -526,7 +530,7 @@ MATCH_R_GOOD=  Widerstand nahe 50 Ohm: Gute Anpassung
 MATCH_DISCLAIMER=Hinweis: Dies sind grobe Richtlinien, keine präzisen Bauteilwerte.\nKonsultieren Sie Antennen-Anpassungs-Referenzen für detailliertes Netzwerk-Design.
 
 # Kabellänge messen
-CABLE_LEN_TITLE=== Kabellänge messen ===
+CABLE_LEN_TITLE=Kabellänge messen
 CABLE_LEN_INST1=Diese Funktion schätzt die Kabellänge aus der elektrischen Länge.
 CABLE_LEN_INST2=Kabel an Port 1 anschliessen. Fernes Ende offen lassen oder kurzschliessen.
 CABLE_LEN_INST3=Sweep sollte breiten Frequenzbereich abdecken für beste Genauigkeit.
@@ -555,7 +559,7 @@ CABLE_LEN_VF_INVALID=Berechneter VF außerhalb des gültigen Bereichs. Messungen
 CABLE_LEN_HINT=Hinweis: Für beste Ergebnisse mindestens 50-100 MHz Bereich sweepen.
 
 # Kabelfehler-Erkennung
-CABLE_FAULT_TITLE=== Kabelfehler-Erkennung ===
+CABLE_FAULT_TITLE=Kabelfehler-Erkennung
 CABLE_FAULT_INST1=Diese Funktion prüft auf Kabelfehler (Kurzschlüsse, Unterbrechungen, Schäden).
 CABLE_FAULT_INST2=Kabel an Port 1 anschliessen.
 CABLE_FAULT_TERM=Kabel-Abschluss am fernen Ende:
@@ -579,7 +583,7 @@ CABLE_FAULT_WATER=Hohe Variation mit Frequenz deutet auf Wassereintritt hin
 CABLE_FAULT_DISCLAIMER=Hinweis: Dies ist eine grobe Analyse. Für definitive Fehlerlokalisierung TDR verwenden.
 
 # Kabeldämpfung
-CABLE_ATT_TITLE=== Kabeldämpfung Messung (S21) ===
+CABLE_ATT_TITLE=Kabeldämpfung Messung (S21)
 CABLE_ATT_INST1=Aufbau: Kabel zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
 CABLE_ATT_INST2=S21-Messung (Through-Modus) über Frequenzbereich durchführen
 CABLE_ATT_LEN=Kabellänge in Metern eingeben: >
@@ -592,7 +596,7 @@ CABLE_ATT_PER_M=  Dämpfung pro Meter: {0} dB/m
 CABLE_ATT_PER_100FT=  Dämpfung pro 100ft: {0} dB/100ft
 
 # Filter-Schnellcheck
-FILTER_TITLE=== Filter-Schnellcheck (S21) ===
+FILTER_TITLE=Filter-Schnellcheck (S21)
 FILTER_INST1=Aufbau: Filter zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
 FILTER_INST2=S21-Messung über geeigneten Frequenzbereich durchführen
 FILTER_TYPE_SELECT=Filter-Typ auswählen:
@@ -615,7 +619,7 @@ FILTER_3DB_HIGH=  Obere: {0} Hz ({1} MHz)
 FILTER_BW=  Bandbreite: {0} kHz
 
 # Vorher/Nachher Vergleich
-COMPARE_TITLE=== Vorher/Nachher Vergleich ===
+COMPARE_TITLE=Vorher/Nachher Vergleich
 COMPARE_INST=Diese Funktion vergleicht zwei Messungen (z.B. vor/nach Abstimmung)
 COMPARE_MENU=1. Snapshot A speichern\n2. Snapshot B speichern\n3. A vs B vergleichen\n4. Snapshots löschen
 COMPARE_SAVED_A=Snapshot A gespeichert ({0} Punkte)
@@ -632,7 +636,7 @@ COMPARE_SIMILAR=Aehnlich
 COMPARE_CLEARED=Snapshots gelöscht
 
 # Auto-Marker Platzierung
-MARKER_TITLE=== Auto-Marker Platzierung ===
+MARKER_TITLE=Auto-Marker Platzierung
 MARKER_INST=Marker automatisch an wichtigen Punkten platzieren
 MARKER_ANALYZING=Analysiere Messdaten...
 MARKER_MIN_SWR=Marker 1: Minimum SWR bei {0} Hz - SWR {1}
@@ -644,7 +648,7 @@ MARKER_PLACED=Marker erfolgreich platziert
 MARKER_NO_S21=Hinweis: S21-Marker nicht verfügbar (keine S21-Daten)
 
 # Konfiguration
-CONFIG_TITLE=== Komfortfunktionen Konfiguration ===
+CONFIG_TITLE=Komfortfunktionen Konfiguration
 CONFIG_MENU=1. Velocity Factor einstellen\n2. SWR-Schwellwert einstellen\n3. Kabelverlust einstellen\n4. Konfiguration speichern\n5. Konfiguration laden
 CONFIG_VF_CURRENT=Aktueller Velocity Factor: {0}
 CONFIG_VF_ENTER=Neuen Velocity Factor eingeben (0.6-0.95): >
@@ -691,7 +695,7 @@ NO_DATA_AVAILABLE=Keine Messdaten verfügbar.
 CONFIG_BEFORE_MEASURE=Möchten Sie Messeinstellungen vor der Messung konfigurieren?
 
 # Messeinstellungen konfigurieren Menü
-CONFIG_MEASURE_TITLE=== Messeinstellungen konfigurieren ===
+CONFIG_MEASURE_TITLE=Messeinstellungen konfigurieren
 CONFIG_MEASURE_PROMPT=Konfig
 CONFIG_MEASURE_SELECT=Messbereich auswählen:
 CONFIG_MEASURE_BAND=B. Aus Amateurfunkbändern auswählen
@@ -831,7 +835,7 @@ COMFORT_INVALID_BAND=Ungültige Bandnummer
 COMFORT_INVALID_INPUT=Ungültige Eingabe
 
 # Synth-Frequenzbereichs-Konfiguration
-SYNTH_RANGE_TITLE=\n=== Frequenzbereich für Synthesizer konfigurieren ===
+SYNTH_RANGE_TITLE=Frequenzbereich für Synthesizer konfigurieren
 SYNTH_RANGE_CURRENT=Aktueller Bereich: {0} - {1} Hz\n
 SYNTH_RANGE_EXPLANATION=Der Frequenzbereich bestimmt, wie Messwerte auf Audio abgebildet werden.
 SYNTH_RANGE_EXAMPLE_INTRO=Zum Beispiel für SWR:
@@ -840,7 +844,7 @@ SYNTH_RANGE_EXAMPLE_MAX=  - SWR 20.0 (schlecht) = maximale Frequenz
 SYNTH_RANGE_VALID=Gültiger Bereich: {0} - {1} Hz (menschlicher Hörbereich)\n
 
 # Audio-Konfigurationshilfe
-AUDIO_HELP_TITLE=\n=== Audio-Konfigurationshilfe ===
+AUDIO_HELP_TITLE=Audio-Konfigurationshilfe
 AUDIO_HELP_ENGINE=E - Zwischen Synthesizer und MIDI Audio-Engines umschalten
 AUDIO_HELP_RANGE=R - Frequenzbereich für Synthesizer konfigurieren ({0}-{1} Hz)
 AUDIO_HELP_RANGE_DESC=    Bestimmt, wie Messwerte auf Audiofrequenzen abgebildet werden
@@ -851,7 +855,7 @@ SYNTH_FREQ_RANGE_SET=\n[Frequenzbereich eingestellt auf {0} - {1} Hz]
 SYNTH_CHANGES_IMMEDIATE=[Änderungen werden sofort im Synthesizer wirksam]
 ENGINE_SWITCHED_SYNTH=[Engine umgeschaltet auf: Synthesizer]
 ENGINE_SWITCHED_MIDI=[Engine umgeschaltet auf: MIDI]
-WAVEFORM_CONFIG_TITLE=\n=== {0} Wellenform konfigurieren ===
+WAVEFORM_CONFIG_TITLE={0} Wellenform konfigurieren
 WAVEFORM_CONFIG_CURRENT=Aktuell: {0}\n
 WAVEFORM_CONFIG_AVAILABLE=Verfügbare Wellenformen:
 WAVEFORM_SINE=  0 = Sinus (weich, reiner Ton)
@@ -960,8 +964,8 @@ ACOUSTIC_LOOP_NORMAL=[Loop NORMAL: Wiedergabe INNERHALB der Loop-Markierungen]
 HELP_ACOUSTIC_LOOP_INVERT=  I           Loop invertieren (außerhalb Loop-Markierungen abspielen)
 
 # Braille Export und Drucker-Einstellungen
-BRAILLE_EXPORT_TITLE=\n=== Export nach Braille ===
-BRAILLE_PRINT_TITLE=\n=== Drucken auf Braille-Drucker ===
+BRAILLE_EXPORT_TITLE=Export nach Braille
+BRAILLE_PRINT_TITLE=Drucken auf Braille-Drucker
 BRAILLE_SETTINGS_INFO=Verwendete Brailledrucker-Einstellungen:
 BRAILLE_PROTOCOL_LABEL=  Protokoll:
 BRAILLE_PROTOCOL_INDEX_V5=Index V5
@@ -1030,7 +1034,7 @@ AUDIO_CONFIG_MIDI_INTERP_PAN_CMD=  I - MIDI interpoliertes Panning umschalten
 AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD=  T - MIDI Interpolationsstärke einstellen
 MIDI_INTERP_PAN_TOGGLED=[MIDI interpoliertes Panning: {0}]
 MIDI_INTERP_PAN_MIDI_ONLY=[Fehler: Interpoliertes Panning ist nur im MIDI-Modus verfügbar]
-MIDI_INTERP_STRENGTH_TITLE==== MIDI Interpolationsstärke konfigurieren ===
+MIDI_INTERP_STRENGTH_TITLE=MIDI Interpolationsstärke konfigurieren
 MIDI_INTERP_STRENGTH_CURRENT=Aktuelle Stärke: {0}
 MIDI_INTERP_STRENGTH_DESC=Die Stärke bestimmt, wie stark die Lautstärkemodulation die wahrgenommene Pan-Position beeinflusst.
 MIDI_INTERP_STRENGTH_RANGE=Bereich: 0.0 (kein Effekt) bis 1.0 (maximaler Effekt)
@@ -1063,7 +1067,7 @@ SMITH_MARKERS_ENABLED=[Smith-Marker AKTIVIERT]
 SMITH_MARKERS_DISABLED=[Smith-Marker DEAKTIVIERT]
 SMITH_CUES_VOLUME=Smith-Hinweise Lautstärke: {0}%
 SMITH_MODE_SWITCHED=[Smith-Modus gewechselt zu: {0}]
-SMITH_HELP_TITLE==== Smith Diagramm Visualisierung Hilfe ====
+SMITH_HELP_TITLE=Smith Diagramm Visualisierung Hilfe
 SMITH_HELP_INTRO=Smith Diagramm zeigt Impedanzanpassung akustisch.
 SMITH_HELP_CENTER=Zentrum = Perfekte Anpassung (50Ω, SWR 1.0)
 SMITH_HELP_EDGE=Rand = Schlechte Anpassung (hohes SWR)
@@ -1091,7 +1095,7 @@ SMITH_CONFIG_PROMPT=Smith-Konfig
 SMITH_CONFIG_ENTER_VOLUME=Smith-Hinweise Lautstärke eingeben (10-100%, aktuell: {0}%), oder ESC zum Abbrechen:
 SMITH_CONFIG_VOLUME_SET=[Smith-Hinweise Lautstärke gesetzt auf: {0}%]
 SMITH_CONFIG_VOLUME_ERROR=[Fehler: Lautstärke muss zwischen 10 und 100 liegen]
-SMITH_CONFIG_NOISE_TYPE_MENU=== Soundtyp auswählen ===
+SMITH_CONFIG_NOISE_TYPE_MENU=Soundtyp auswählen
 SMITH_CONFIG_NOISE_TYPE_1=  1 - Rosa Rauschen (warm, gefiltert - Standard)
 SMITH_CONFIG_NOISE_TYPE_2=  2 - Weißes Rauschen (hell, volles Spektrum)
 SMITH_CONFIG_NOISE_TYPE_3=  3 - Braunes Rauschen (dunkel, tiefe Frequenzen)
@@ -1099,8 +1103,7 @@ SMITH_CONFIG_NOISE_TYPE_4=  4 - Sinuswelle (reiner Ton, sauberer)
 SMITH_CONFIG_NOISE_TYPE_SET=[Soundtyp geändert zu: {0}]
 SMITH_CONFIG_PREVIEW_MSG=[Vorschau wird abgespielt... Beliebige Taste zum Stoppen]
 SMITH_CONFIG_PREVIEW_TODO=[Vorschau noch nicht in diesem Bildschirm implementiert]
-SMITH_CONFIG_HELP_TITLE=
-=== Smith Audio-Konfiguration Hilfe ===
+SMITH_CONFIG_HELP_TITLE=Smith Audio-Konfiguration Hilfe
 SMITH_CONFIG_HELP_VOLUME=V - Lautstärke für Smith-Umgebungshinweise setzen (10-100%)
 SMITH_CONFIG_HELP_NOISE=N - Soundtyp ändern (Rosa/Weiß/Braun/Sinus)
 SMITH_CONFIG_HELP_PINK=    Rosa: Warm, gefiltert (Standard, empfohlen)
@@ -1111,7 +1114,7 @@ SMITH_CONFIG_HELP_PREVIEW=P - Aktuelle Einstellungen vorhören
 
 # Konsolidierte Hilfe-Einträge (Mehrzeiliges Format)
 HELP_MAIN_MENU_FULL="
-=== Hauptmenü Hilfe ===
+Hauptmenü Hilfe
 
 Verfügbare Befehle:
   S - Zusammenfassung       Messübersicht anzeigen (min/max/durchschn. SWR)
@@ -1136,7 +1139,7 @@ Tipps:
 "
 
 HELP_ACOUSTIC_FULL="
-=== Akustische Analyse Hilfe ===
+Akustische Analyse Hilfe
 
 Wiedergabesteuerung:
   LEERTASTE   Abspielen / Pause (harte Pause - Stille)
@@ -1206,7 +1209,7 @@ Praktische Tipps:
 "
 
 HELP_DEVICE_FULL="
-=== Geräteinfo Hilfe ===
+Geräteinfo Hilfe
 
 Verfügbare Befehle:
   I - Info          Geräteinformationen anzeigen
@@ -1227,7 +1230,7 @@ Tipps:
 "
 
 HELP_TABLE_FULL="
-=== Tabellenansicht Hilfe ===
+Tabellenansicht Hilfe
 
 Navigationsbefehle:
   LEERTASTE   Nächste Seite
@@ -1255,7 +1258,7 @@ Tipps:
 "
 
 HELP_CAL_FULL="
-=== Kalibrierungsmenü Hilfe ===
+Kalibrierungsmenü Hilfe
 
 Verfügbare Befehle:
   L - Laden         Kalibrierung aus Gerätespeicherbank laden
@@ -1273,7 +1276,7 @@ Kalibrierung:
 "
 
 HELP_OPT_FULL="
-=== Optionsmenü Hilfe ===
+Optionsmenü Hilfe
 
 Verfügbare Befehle:
   L - Sprache       Anzeigesprache auswählen
@@ -1288,7 +1291,7 @@ Tipps:
 "
 
 HELP_GOTO_FULL="
-=== Gehe zu Menü Hilfe ===
+Gehe zu Menü Hilfe
 
 Verfügbare Befehle:
   P - Punkt         Zu bestimmtem Punkt-Index springen
@@ -1305,7 +1308,7 @@ Tipps:
 "
 
 HELP_GOTO_ACOUSTIC_FULL="
-=== Gehe zu Menü (Akustisch) Hilfe ===
+Gehe zu Menü (Akustisch) Hilfe
 
 Verfügbare Befehle:
   P - Punkt         Zu bestimmtem Punkt-Index springen
@@ -1323,7 +1326,7 @@ Tipps:
 "
 
 HELP_COMFORT_FULL="
-=== Komfortfunktionen Menü Hilfe ===
+Komfortfunktionen Menü Hilfe
 
 Komfortfunktionen bieten praktische Werkzeuge für Antennen- und Kabelanalyse.
 
@@ -1351,7 +1354,7 @@ Tipps:
 "
 
 HELP_CUSTOM_FULL="
-=== Spalten anpassen Hilfe ===
+Spalten anpassen Hilfe
 
 Anpassen, welche Spalten in der Tabellenansicht angezeigt werden.
 
@@ -1372,7 +1375,7 @@ Verwendung:
 "
 
 HELP_SMITH_FULL="
-=== Smith-Diagramm Visualisierung Hilfe ===
+Smith-Diagramm Visualisierung Hilfe
 
 Smith-Diagramm zeigt Impedanzanpassung akustisch mit Raumklang.
 

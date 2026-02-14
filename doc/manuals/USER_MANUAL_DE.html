@@ -288,7 +288,7 @@
     <main id="main-content" role="main">
         <article>
 <h1>NanoVNA CLI Accessible - Benutzerhandbuch</h1>
-<p><strong>Version:</strong> Beta <strong>Datum:</strong> Januar 2026 <strong>Sprache:</strong> Deutsch</p>
+<p><strong>Version:</strong> 0.5.0-beta <strong>Datum:</strong> 2026-02-13 12:25:53 <strong>Sprache:</strong> Deutsch</p>
 <hr>
 <h2>Inhaltsverzeichnis</h2>
 <ol>
@@ -321,59 +321,137 @@
 <h2>2. Systemanforderungen</h2>
 <h3>Hardware:</h3>
 <ul>
-<li><strong>Betriebssystem:</strong> Windows 7 oder neuer (64-Bit empfohlen)</li>
 <li><strong>NanoVNA-Gerät:</strong> NanoVNA-H4</li>
-<li><strong>Verbindung:</strong> USB-Kabel (erscheint als COM-Port)</li>
+<li><strong>Verbindung:</strong> USB-Kabel (erscheint als serieller Port)</li>
 <li><strong>Soundkarte:</strong> Für akustischen Analysemodus</li>
 <li><strong>Optional:</strong> Index-Brailledrucker für taktile Grafiken</li>
 </ul>
-<h3>Software:</h3>
+<h3>Betriebssystem:</h3>
 <ul>
-<li>Die Anwendung ist vollständig eigenständig</li>
-<li>Keine zusätzliche Softwareinstallation erforderlich</li>
-<li>Alle Abhängigkeiten sind statisch eingebunden</li>
+<li><strong>Windows:</strong> Windows 7 oder neuer (64-Bit empfohlen)
+  <ul>
+  <li>Eigenständige ausführbare Datei (alle Abhängigkeiten statisch eingebunden)</li>
+  <li>Keine zusätzliche Software erforderlich</li>
+  </ul>
+</li>
+<li><strong>macOS:</strong> macOS 10.13 (High Sierra) oder neuer
+  <ul>
+  <li>Benötigt PortAudio: <code>brew install portaudio</code></li>
+  <li>Kompilierung erforderlich (siehe Build-Anleitung)</li>
+  </ul>
+</li>
+<li><strong>Linux:</strong> Moderne Distribution (getestet auf Ubuntu 20.04+, Fedora 35+)
+  <ul>
+  <li>Benötigt PortAudio: <code>apt-get install portaudio19-dev</code> oder <code>dnf install portaudio-devel</code></li>
+  <li>Optional für MIDI: ALSA-Entwicklungsbibliotheken (<code>libasound2-dev</code> oder <code>alsa-lib-devel</code>)</li>
+  <li>Kompilierung erforderlich (siehe Build-Anleitung)</li>
+  </ul>
+</li>
 </ul>
 <hr>
 <h2>3. Installation</h2>
+
+<h3>Windows: Vorkompilierte Distribution</h3>
 <p>Die Beta-Version wird als fertiges Build-Verzeichnis ausgeliefert. <strong>Keine Kompilierung erforderlich.</strong></p>
-<h3>Installationsschritte:</h3>
+
+<h4>Installationsschritte:</h4>
 <ol>
 <li><strong>ZIP-Datei entpacken</strong> an einen Ort Ihrer Wahl (z.B. <code>C:\NanoVNA-CLI</code>)</li>
-</ol>
-<ol>
-<li><strong>Verzeichnisstruktur überprüfen:</strong></li>
-</ol>
+<li><strong>Verzeichnisstruktur überprüfen:</strong>
 <pre><code>   nanovna-cli.exe         (Hauptprogramm)
    Languages/              (Sprachdateien)
    config/                 (Konfigurationsdateien)
    bandplans/              (Amateurfunk-Banddefinitionen)
    logs/                   (Protokolldateien werden hier gespeichert)
    Export/                 (Exportierte Daten werden hier gespeichert)</code></pre>
-<ol>
+</li>
 <li><strong>NanoVNA-H4 anschließen</strong> an einen USB-Port</li>
-</ol>
-<ol>
 <li><strong>Fertig!</strong> Sie können die Anwendung jetzt starten.</li>
 </ol>
+
+<h3>macOS: Aus Quellcode kompilieren</h3>
+<p>macOS wird vollständig unterstützt, erfordert jedoch Kompilierung.</p>
+
+<h4>Voraussetzungen:</h4>
+<pre><code>brew install cmake portaudio</code></pre>
+
+<h4>Build-Schritte:</h4>
+<pre><code># Mit Build-Skript (empfohlen)
+./build-macos.sh
+
+# Oder manuell:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(sysctl -n hw.ncpu)</code></pre>
+
+<p>Die ausführbare Datei befindet sich im <code>build/</code>-Verzeichnis.</p>
+
+<h3>Linux: Aus Quellcode kompilieren</h3>
+<p>Linux wird vollständig unterstützt, erfordert jedoch Kompilierung.</p>
+
+<h4>Voraussetzungen:</h4>
+<pre><code># Debian/Ubuntu
+sudo apt-get install build-essential cmake portaudio19-dev libasound2-dev
+
+# Fedora/RHEL
+sudo dnf install cmake portaudio-devel alsa-lib-devel</code></pre>
+
+<p><strong>Hinweis:</strong> ALSA-Entwicklungsbibliotheken sind für MIDI-Unterstützung erforderlich. Falls nicht verfügbar, wird die Anwendung kompiliert und läuft mit einer Fallback-Meldung für MIDI-Funktionalität.</p>
+
+<h4>Build-Schritte:</h4>
+<pre><code>./build.sh
+
+# Oder manuell:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)</code></pre>
+
+<p>Die ausführbare Datei befindet sich im <code>build/</code>-Verzeichnis.</p>
 <hr>
 <h2>4. Erste Schritte</h2>
 <h3>Anwendung starten:</h3>
-<p><strong>Option 1: Einfacher Start</strong></p>
+<p><strong>Windows - Option 1: Einfacher Start</strong></p>
 <ul>
 <li>Doppelklick auf <code>nanovna-cli.exe</code></li>
 <li>Oder über Kommandozeile: <code>nanovna-cli.exe</code></li>
 </ul>
-<p><strong>Option 2: Mit Debug-Protokollierung (empfohlen für Beta-Tests)</strong></p>
+<p><strong>Windows - Option 2: Mit Debug-Protokollierung (empfohlen für Beta-Tests)</strong></p>
 <ul>
 <li>Eingabeaufforderung oder PowerShell öffnen</li>
 <li>Zum Anwendungsverzeichnis navigieren</li>
 <li>Ausführen: <code>nanovna-cli.exe -d</code></li>
 </ul>
+<p><strong>macOS/Linux - Terminal</strong></p>
+<ul>
+<li>Terminal öffnen</li>
+<li>Zum Build-Verzeichnis navigieren: <code>cd build</code></li>
+<li>Ausführen: <code>./nanovna-cli</code></li>
+<li>Mit Debug-Protokollierung: <code>./nanovna-cli -d</code></li>
+</ul>
+<h3>Bildschirm-Leerung:</h3>
+<p>Die Anwendung leert automatisch den Bildschirm beim Betreten neuer Kontexte (Menüs, Funktionsbildschirme, etc.), um die Übersichtlichkeit zu erhöhen.</p>
+<p><strong>Wichtig:</strong> Im Debug-Modus (<code>-d</code> Flag) wird der Bildschirm nicht geleert. Dies ermöglicht es Ihnen, Fehlersituationen vollständig vom Bildschirm zu kopieren, einschließlich aller vorherigen Ausgaben. Dies ist besonders nützlich für:</p>
+<ul>
+<li>Fehlersuche und Problemanalyse</li>
+<li>Beta-Tests und Fehlermeldungen</li>
+<li>Vollständige Dokumentation von Programmabläufen</li>
+</ul>
+<p><strong>Beispiel:</strong></p>
+<ul>
+<li><strong>Normaler Modus:</strong> <code>nanovna-cli.exe</code> → Bildschirm wird bei Kontextwechseln geleert</li>
+<li><strong>Debug-Modus:</strong> <code>nanovna-cli.exe -d</code> → Bildschirm bleibt vollständig erhalten</li>
+</ul>
 <h3>Ersteinrichtung:</h3>
 <ol>
-<li><strong>COM-Port auswählen:</strong></li>
+<li><strong>Seriellen Port auswählen:</strong></li>
 </ol>
-<p>- Taste <strong>P</strong> im Hauptmenü drücken - Die Anwendung scannt verfügbare COM-Ports - Portnummer auswählen, an dem Ihr NanoVNA angeschlossen ist - Bei Unsicherheit: Jeden Port ausprobieren - die Geräteerkennung wird angezeigt</p>
+<p>- Taste <strong>P</strong> im Hauptmenü drücken - Die Anwendung scannt verfügbare serielle Ports - Port auswählen, an dem Ihr NanoVNA angeschlossen ist:
+  <ul>
+  <li><strong>Windows:</strong> COM-Ports (z.B. COM4, COM5)</li>
+  <li><strong>macOS:</strong> /dev/cu.* oder /dev/tty.* (z.B. /dev/cu.usbmodem14201)</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB* oder /dev/ttyACM* (z.B. /dev/ttyUSB0)</li>
+  </ul>
+- Bei Unsicherheit: Jeden Port ausprobieren - die Geräteerkennung wird angezeigt</p></p>
 <ol>
 <li><strong>Frequenzbereich einstellen:</strong></li>
 </ol>
@@ -401,11 +479,11 @@
   E - Export              Messungen in Datei speichern
   L - Laden               Zuvor gespeicherte Messungen laden
   K - Kalibrierung        Kalibrierungsassistent
-  P - Port                COM-Port auswählen
+  P - Port                Seriellen Port auswählen
   G - Gerät               Batteriespannung und Geräteinformationen
   I - Web-Interface       Web-Interface für Fernzugriff starten/stoppen
   W - Wiederholen         Automatische Messungen umschalten
-  C - Spalten             Tabellenanzeige konfigurieren
+  ? - Handbücher/Training Zugriff auf Benutzerhandbuch, Trainingsanleitungen, Beta-Test-Anweisungen
   O - Optionen            Einstellungen und Konfiguration
   H - Hilfe               Kontextabhängige Hilfe
   Q - Beenden             Anwendung verlassen</code></pre>
@@ -432,7 +510,7 @@
 <ul>
 <li>Zeigt alle Datenpunkte in paginierter Tabellenform</li>
 <li><strong>Bild auf/ab</strong> zum Navigieren</li>
-<li><strong>C</strong> drücken zum Anpassen der angezeigten Spalten</li>
+<li><strong>C</strong> drücken zum Anpassen der angezeigten Spalten (verfügbar innerhalb der Tabellenansicht)</li>
 <li>Spalten: Frequenz, SWR, Rückflussdämpfung, |Z|, R, X, Phase</li>
 </ul>
 <h4>Zusammenfassung (<strong>Z</strong>):</h4>
@@ -679,8 +757,8 @@
 <li>Taste <strong>V</strong> drücken zum Ein-/Ausschalten der Smith-Visualisierung</li>
 <li>Taste <strong>B</strong> drücken zum Auswählen des Visualisierungsmodus (1-6)</li>
 <li>Taste <strong>H</strong> drücken für Smith-spezifische Hilfe</li>
-<li><strong>C</strong> → <strong>Smith Audio</strong> drücken zum Konfigurieren der Surround-Parameter</li>
-<li><strong>NEU: C</strong> → <strong>W</strong> drücken für den Räumlichen Audio-Kalibrierungs-Assistenten!</li>
+<li>Taste <strong>A</strong> drücken zum Öffnen der Audio-Konfiguration, dann <strong>S</strong> für Surround-Parameter</li>
+<li><strong>NEU:</strong> Taste <strong>A</strong> drücken zum Öffnen der Audio-Konfiguration, dann <strong>W</strong> für den Räumlichen Audio-Kalibrierungs-Assistenten!</li>
 </ol>
 <p><strong>═══════════════════════════════════════════════════════════</strong> <strong>NEU: Räumlicher Audio-Kalibrierungs-Assistent (Taste W)</strong> <strong>═══════════════════════════════════════════════════════════</strong></p>
 <p>Der interaktive Kalibrierungs-Assistent optimiert räumliches Audio für Ihr Gehör!</p>
@@ -706,7 +784,7 @@
 <li>Lautsprecher-Entfernungs-Kalibrierung</li>
 <li>Kanalbalance-Optimierung</li>
 </ul>
-<p><strong>Dauer:</strong> 10-15 Minuten <strong>Empfohlen:</strong> Führen Sie dies einmal durch für optimale Ergebnisse! <strong>Zugriff:</strong> Audio-Konfiguration (A → C → W)</p>
+<p><strong>Dauer:</strong> 10-15 Minuten <strong>Empfohlen:</strong> Führen Sie dies einmal durch für optimale Ergebnisse! <strong>Zugriff:</strong> Akustischer Modus → Audio-Konfiguration (Taste A) → Assistent (Taste W)</p>
 <p>Die Einstellungen werden persistent gespeichert und auf alle räumlichen Audio-Funktionen angewendet.</p>
 <p><strong>═══════════════════════════════════════════════════════════</strong> <strong>Sechs Visualisierungsmodi (Alle vollständig implementiert!):</strong> <strong>═══════════════════════════════════════════════════════════</strong></p>
 <p><strong>1. KARTESISCH (Am einfachsten - Empfohlen für Anfänger)</strong> - Position im rechteckigen 3D-Raum - Re(Γ) → Links/Rechts-Achse - Im(Γ) → Vorne/Hinten-Achse - Sie stehen im Zentrum, Sound bewegt sich im Rechteckmuster - <strong>Am besten für:</strong> Smith-Diagramm-Grundlagen lernen</p>
@@ -869,9 +947,19 @@
 <h3>Web-Interface verwenden:</h3>
 <ul>
 <li>Das Web-Interface spiegelt das Terminal-Interface wider</li>
-<li>Alle Tastaturbefehle funktionieren gleich</li>
+<li>Alle Tastaturbefehle funktionieren gleich – Sie können direkt über die Tastatur tippen</li>
 <li>Screenreader lesen den Inhalt normal vor</li>
 <li>Audioausgabe vom akustischen Modus wird auf dem Server-Computer abgespielt (noch nicht im Browser)</li>
+</ul>
+<h3>Interaktive Aktions-Buttons:</h3>
+<p>Das Web-Interface zeigt neben der Terminalausgabe ein Bedienfeld mit kontextabhängigen Aktions-Buttons an. Diese Buttons ermöglichen die vollständige Bedienung per Mausklick oder Touch – zusätzlich zur Tastatureingabe.</p>
+<ul>
+<li><strong>Kontextabhängig:</strong> Die angezeigten Buttons passen sich automatisch dem aktuellen Bildschirmkontext an. Im Hauptmenü sehen Sie die Hauptmenü-Optionen, in einem Untermenü die dort verfügbaren Aktionen.</li>
+<li><strong>Vollständige Abdeckung:</strong> Alle Menüs, Untermenüs, Ja/Nein-Abfragen und Auswahloptionen (z.B. in den Komfortfunktionen) sind als Buttons verfügbar.</li>
+<li><strong>Barrierefreiheit:</strong> Die Buttons sind als echte HTML-Buttons mit ARIA-Labels implementiert und können von Screenreadern korrekt erfasst werden.</li>
+<li><strong>Taste und Aktion:</strong> Jeder Button zeigt die zugehörige Taste in eckigen Klammern und die Beschreibung an, z.B. <code>[S] Zusammenfassung</code>. Ein Klick sendet exakt die gleiche Eingabe wie die entsprechende Taste.</li>
+<li><strong>ESC-Button:</strong> In jedem Unterkontext wird automatisch ein ESC-Button angezeigt, um zum vorherigen Menü zurückzukehren.</li>
+<li><strong>Mehrziffrige Eingaben:</strong> Bei Menüs mit mehr als 9 Optionen (z.B. Bandauswahl) senden die Buttons automatisch die Nummer gefolgt von Enter.</li>
 </ul>
 <h3>Web-Interface stoppen:</h3>
 <ol>
@@ -952,14 +1040,27 @@
 </ul>
 <hr>
 <h2>12. Fehlerbehebung</h2>
-<h3>COM-Port-Probleme:</h3>
-<p><strong>Problem:</strong> NanoVNA auf COM-Port nicht gefunden</p>
+<h3>Serielle Port-Probleme:</h3>
+<p><strong>Problem:</strong> NanoVNA auf seriellem Port nicht gefunden</p>
 <ul>
 <li><strong>Lösung 1:</strong> USB-Verbindung überprüfen</li>
-<li><strong>Lösung 2:</strong> Verschiedene COM-Ports ausprobieren (<strong>P</strong>-Menü zeigt alle Ports)</li>
-<li><strong>Lösung 3:</strong> Windows-Geräte-Manager auf COM-Port-Nummer überprüfen</li>
+<li><strong>Lösung 2:</strong> Verschiedene Ports ausprobieren (<strong>P</strong>-Menü zeigt alle verfügbaren Ports):
+  <ul>
+  <li><strong>Windows:</strong> COM4, COM5, usw.</li>
+  <li><strong>macOS:</strong> /dev/cu.usbmodem*, /dev/tty.usbmodem*</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB*, /dev/ttyACM*</li>
+  </ul>
+</li>
+<li><strong>Lösung 3:</strong> Gerätemanager auf Port-Zuweisung überprüfen:
+  <ul>
+  <li><strong>Windows:</strong> Geräte-Manager → Anschlüsse (COM & LPT)</li>
+  <li><strong>macOS:</strong> <code>ls /dev/cu.*</code> oder <code>ls /dev/tty.*</code></li>
+  <li><strong>Linux:</strong> <code>ls /dev/ttyUSB*</code> oder <code>ls /dev/ttyACM*</code></li>
+  </ul>
+</li>
 <li><strong>Lösung 4:</strong> Überprüfen, ob NanoVNA eingeschaltet ist (Display leuchtet)</li>
 <li><strong>Lösung 5:</strong> Anderes USB-Kabel versuchen</li>
+<li><strong>Nur Linux:</strong> Benutzerberechtigungen überprüfen: <code>sudo usermod -a -G dialout $USER</code> (dann ab- und wieder anmelden)</li>
 </ul>
 <p><strong>Problem:</strong> "Fehler beim Öffnen des seriellen Ports"</p>
 <ul>
@@ -984,11 +1085,18 @@
 <h3>Audio-Probleme:</h3>
 <p><strong>Problem:</strong> Kein Ton im akustischen Modus</p>
 <ul>
-<li><strong>Lösung 1:</strong> Windows-Lautstärkeeinstellungen überprüfen</li>
-<li><strong>Lösung 2:</strong> Überprüfen, ob Soundkarte funktioniert (Testton in Windows abspielen)</li>
+<li><strong>Lösung 1:</strong> System-Lautstärkeeinstellungen überprüfen</li>
+<li><strong>Lösung 2:</strong> Überprüfen, ob Soundkarte funktioniert:
+  <ul>
+  <li><strong>Windows:</strong> Testton in Windows-Soundeinstellungen abspielen</li>
+  <li><strong>macOS:</strong> Systemeinstellungen → Ton überprüfen</li>
+  <li><strong>Linux:</strong> Mit <code>speaker-test</code> oder Audioeinstellungen prüfen</li>
+  </ul>
+</li>
 <li><strong>Lösung 3:</strong> Kurven ein-/ausschalten (Tasten 1-5)</li>
 <li><strong>Lösung 4:</strong> Kurvenlautstärken erhöhen (Umschalt+1 bis Umschalt+5)</li>
 <li><strong>Lösung 5:</strong> Andere Audio-Engine versuchen (Taste <strong>Y</strong>)</li>
+<li><strong>macOS/Linux:</strong> Überprüfen, ob PortAudio korrekt installiert ist</li>
 </ul>
 <p><strong>Problem:</strong> Audio verzerrt oder knistert</p>
 <ul>
@@ -997,10 +1105,12 @@
 <li><strong>Lösung 3:</strong> Wiedergabezeit anpassen (+ / - Tasten für längere/kürzere Dauer)</li>
 </ul>
 <h3>Braille-Druck-Probleme:</h3>
+<p><strong>Hinweis:</strong> Direkter Braille-Druck wird derzeit nur unter Windows unterstützt.</p>
 <p><strong>Problem:</strong> "Keine Drucker gefunden"</p>
 <ul>
 <li><strong>Lösung:</strong> Mindestens einen Drucker in Windows installieren</li>
 <li><strong>Lösung:</strong> Windows Geräte und Drucker überprüfen</li>
+<li><strong>macOS/Linux:</strong> Dateiexport (Option 3) verwenden und .brl-Datei für Druck zu Windows übertragen</li>
 </ul>
 <p><strong>Problem:</strong> "Fehler beim Öffnen des Druckers"</p>
 <ul>
@@ -1037,7 +1147,12 @@
 <h3>Hilfe erhalten:</h3>
 <p>Wenn Probleme bestehen bleiben:</p>
 <ol>
-<li>Debug-Protokollierung aktivieren: <code>nanovna-cli.exe -d</code></li>
+<li>Debug-Protokollierung aktivieren:
+  <ul>
+  <li><strong>Windows:</strong> <code>nanovna-cli.exe -d</code></li>
+  <li><strong>macOS/Linux:</strong> <code>./nanovna-cli -d</code></li>
+  </ul>
+</li>
 <li>Problem reproduzieren</li>
 <li>Protokolldateien im <code>logs/</code>-Verzeichnis überprüfen:</li>
 </ol>

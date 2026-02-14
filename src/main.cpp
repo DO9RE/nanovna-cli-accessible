@@ -10,6 +10,11 @@
 // Include winsock2.h before windows.h to avoid conflicts
 #include <winsock2.h>
 #include <windows.h>  // For SetConsoleOutputCP
+
+// Define ENABLE_VIRTUAL_TERMINAL_PROCESSING if not available (older Windows SDKs)
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
 #endif
 
 #include "config.h"
@@ -22,6 +27,7 @@
 #include "help.h"
 #include "translation.h"
 #include "frequency_utils.h"
+#include "version.h"
 
 int main(int argc, char** argv) {
 #if defined(_WIN32)
@@ -35,6 +41,19 @@ int main(int argc, char** argv) {
     if (!SetConsoleCP(CP_UTF8)) {
         std::cerr << "Warning: Failed to set console input to UTF-8.\n";
     }
+    
+    // Enable ANSI escape sequences on Windows 10+ for screen clearing
+    // This allows \033[2J\033[H to work for clearing the screen
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut != INVALID_HANDLE_VALUE) {
+        DWORD dwMode = 0;
+        if (GetConsoleMode(hOut, &dwMode)) {
+            dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+            if (!SetConsoleMode(hOut, dwMode)) {
+                std::cerr << "Warning: Failed to enable ANSI escape sequences. Screen clearing may not work.\n";
+            }
+        }
+    }
 #endif
 
     AppConfig cfg;
@@ -43,6 +62,11 @@ int main(int argc, char** argv) {
         std::string a = argv[i];
         if (a == "-h" || a == "--help") {
             std::cout << HelpModule::getCommandLineHelp() << std::endl;
+            return 0;
+        }
+        else if (a == "-v" || a == "--version") {
+            std::cout << APP_NAME << " " << APP_VERSION_FULL << std::endl;
+            std::cout << "Build: " << APP_BUILD_TIMESTAMP << std::endl;
             return 0;
         }
         else if (a == "-d") cfg.debug = true;
@@ -76,6 +100,10 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories("Export");
     std::filesystem::create_directories("config");
     std::filesystem::create_directories("Languages");
+
+    // Display version at startup
+    std::cout << "\n" << APP_NAME << " " << APP_VERSION_FULL << std::endl;
+    std::cout << "Build: " << APP_BUILD_TIMESTAMP << "\n" << std::endl;
 
     Logger logger;
     MathLogger mathLogger;
@@ -186,8 +214,8 @@ int main(int argc, char** argv) {
     logger.close();
     
     // Farewell message with delay for GUI users
-    std::cout << mainTranslation.get("MAIN_FAREWELL", "\nNanoVNA-CLI-Accessible QRT, 73 DE DO9RE") << "\n";
-    std::cout << mainTranslation.get("MAIN_CLOSING", "Program will close in 3 seconds...") << "\n" << std::endl;
+    ui.output(mainTranslation.get("MAIN_FAREWELL", "\nNanoVNA-CLI-Accessible QRT, 73 DE DO9RE") + "\n");
+    ui.output(mainTranslation.get("MAIN_CLOSING", "Program will close in 3 seconds...") + "\n\n");
     
     // Wait 3 seconds so users launching from GUI can read the message
     std::this_thread::sleep_for(std::chrono::seconds(3));

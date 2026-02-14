@@ -103,6 +103,10 @@ AcousticAnalyzer::~AcousticAnalyzer() noexcept {
     }
 }
 
+void AcousticAnalyzer::setOutputCallback(std::function<void(const std::string&)> callback) {
+    outputCallback = std::move(callback);
+}
+
 void AcousticAnalyzer::setData(const std::vector<MeasurementPoint>& data) {
     stop();
     measurementData = data;
@@ -451,12 +455,14 @@ void AcousticAnalyzer::toggleLoop() {
             double bandwidth = endFreq - startFreq;
             
             // Display loop information
-            std::cout << "\n" << translation->get("LOOP_INFO_ACTIVATED", "Loop activated:") << "\n";
-            std::cout << translation->format("LOOP_INFO_POINTS", "- {0} measurement points", numPoints) << "\n";
-            std::cout << translation->format("LOOP_INFO_FREQ_RANGE", "- Frequency range: {0} Hz - {1} Hz", 
-                                           static_cast<long long>(startFreq), static_cast<long long>(endFreq)) << "\n";
-            std::cout << translation->format("LOOP_INFO_BANDWIDTH", "- Bandwidth: {0} Hz", 
-                                           static_cast<long long>(bandwidth)) << "\n\n";
+            if (outputCallback) {
+                outputCallback("\n" + translation->get("LOOP_INFO_ACTIVATED", "Loop activated:") + "\n");
+                outputCallback(translation->format("LOOP_INFO_POINTS", "- {0} measurement points", numPoints) + "\n");
+                outputCallback(translation->format("LOOP_INFO_FREQ_RANGE", "- Frequency range: {0} Hz - {1} Hz", 
+                                               static_cast<long long>(startFreq), static_cast<long long>(endFreq)) + "\n");
+                outputCallback(translation->format("LOOP_INFO_BANDWIDTH", "- Bandwidth: {0} Hz", 
+                                               static_cast<long long>(bandwidth)) + "\n\n");
+            }
         }
     }
 }

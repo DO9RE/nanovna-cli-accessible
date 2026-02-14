@@ -10,6 +10,7 @@ Usage: nanovna-cli.exe [OPTIONS]
 
 Command Line Options:
   -h, --help              Show this help message
+  -v, --version           Show version information
   -d                      Enable debug logging (logs to logs/ directory)
   -p, --port PORT         Specify serial port (e.g., COM4)
   --baud RATE             Set baud rate (default: 9600)
@@ -46,6 +47,7 @@ Usage: nanovna-cli.exe [OPTIONS]
 
 Command Line Options:
   -h, --help              Show this help message
+  -v, --version           Show version information
   -d                      Enable debug logging (logs to logs/ directory)
   -p, --port PORT         Specify serial port (e.g., COM4)
   --baud RATE             Set baud rate (default: 9600)
@@ -77,7 +79,7 @@ Main Menu Commands:
 std::string HelpModule::getMainMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_MAIN_MENU_FULL",
 R"(
-=== Main Menu Help ===
+Main Menu Help
 
 Available Commands:
   S - Summary       Display measurement summary (min/max/avg SWR)
@@ -105,7 +107,7 @@ Tips:
 std::string HelpModule::getAcousticAnalysisHelp(const TranslationManager& tm) {
     return tm.get("HELP_ACOUSTIC_FULL",
 R"(
-=== Acoustic Analysis Help ===
+Acoustic Analysis Help
 
 Playback Control:
   SPACE       Play / Pause (hard pause - silence)
@@ -178,7 +180,7 @@ Practical Tips:
 std::string HelpModule::getDeviceInfoHelp(const TranslationManager& tm) {
     return tm.get("HELP_DEVICE_FULL",
 R"(
-=== Device Info Help ===
+Device Info Help
 
 Available Commands:
   I - Info          Display device information
@@ -202,7 +204,7 @@ Tips:
 std::string HelpModule::getTableViewHelp(const TranslationManager& tm) {
     return tm.get("HELP_TABLE_FULL",
 R"(
-=== Table View Help ===
+Table View Help
 
 Navigation Commands:
   SPACE       Next page
@@ -233,7 +235,7 @@ Tips:
 std::string HelpModule::getCalibrationMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_CAL_FULL",
 R"(
-=== Calibration Menu Help ===
+Calibration Menu Help
 
 Available Commands:
   L - Load          Load calibration from device memory bank
@@ -254,7 +256,7 @@ Calibration:
 std::string HelpModule::getOptionsMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_OPT_FULL",
 R"(
-=== Options Menu Help ===
+Options Menu Help
 
 Available Commands:
   L - Language      Select display language
@@ -272,7 +274,7 @@ Tips:
 std::string HelpModule::getGoToMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_GOTO_FULL",
 R"(
-=== Go To Menu Help ===
+Go To Menu Help
 
 Available Commands:
   P - Point         Jump to specific point index
@@ -292,7 +294,7 @@ Tips:
 std::string HelpModule::getGoToMenuAcousticHelp(const TranslationManager& tm) {
     return tm.get("HELP_GOTO_ACOUSTIC_FULL",
 R"(
-=== Go To Menu (Acoustic) Help ===
+Go To Menu (Acoustic) Help
 
 Available Commands:
   P - Point         Jump to specific point index
@@ -313,7 +315,7 @@ Tips:
 std::string HelpModule::getComfortFunctionsMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_COMFORT_FULL", 
 R"(
-=== Comfort Functions Menu Help ===
+Comfort Functions Menu Help
 
 Comfort Functions provide convenient tools for antenna and cable analysis.
 
@@ -344,7 +346,7 @@ Tips:
 std::string HelpModule::getCustomizeMenuHelp(const TranslationManager& tm) {
     return tm.get("HELP_CUSTOM_FULL",
 R"(
-=== Customize Columns Help ===
+Customize Columns Help
 
 Customize which columns are displayed in the table view.
 
@@ -368,7 +370,7 @@ Usage:
 std::string HelpModule::getSmithVisualizationHelp(const TranslationManager& tm) {
     return tm.get("HELP_SMITH_FULL",
 R"(
-=== Smith Diagram Visualization Help ===
+Smith Diagram Visualization Help
 
 Smith Diagram shows impedance matching acoustically using spatial audio.
 YOU are positioned at the center of the Smith chart (perfect 50Ω match).
@@ -382,9 +384,7 @@ Key Concepts:
     Front = Inductive (antenna too short)
     Back  = Capacitive (antenna too long)
 
-═══════════════════════════════════════════════════════════
 Visualization Modes (All 6 Modes Fully Implemented):
-═══════════════════════════════════════════════════════════
 
 1 - CARTESIAN (Easiest - Recommended for Beginners)
     Position in rectangular 3D space
@@ -429,34 +429,26 @@ Visualization Modes (All 6 Modes Fully Implemented):
     • Combines best of all modes
     • Best for: Experienced users, complex analysis
 
-═══════════════════════════════════════════════════════════
 Controls:
-═══════════════════════════════════════════════════════════
   V - Toggle Smith visualization on/off
   B - Change visualization mode (1-6)
   C - Configure Smith Audio settings (volumes, surround, etc.)
   H - Show this Smith help
 
-═══════════════════════════════════════════════════════════
 Audio Representation:
-═══════════════════════════════════════════════════════════
   • Spatial position shows impedance location in Smith chart
   • Subtle ambient noise indicates position
   • Axis crossing events mark important transitions
   • Center pulse (optional) provides reference signal
   • Default volume: 30% (configurable in Audio Config → Smith → C)
 
-═══════════════════════════════════════════════════════════
 Hardware Recommendations:
-═══════════════════════════════════════════════════════════
   • Stereo Headphones: Psychoacoustic processing simulates 3D
   • 5.1/7.1 Surround: Full 360° spatial positioning
   • Calibration: Run Spatial Audio Wizard (Audio Config → W)
     for personalized optimization!
 
-═══════════════════════════════════════════════════════════
 Tips:
-═══════════════════════════════════════════════════════════
   • Start with mode 1 (Cartesian) or 3 (Impedance Direct)
   • Use headphones for best spatial audio experience
   • Smith cues work best with smooth playback mode
@@ -464,9 +456,7 @@ Tips:
   • Front/back position indicates inductive/capacitive
   • Run the Spatial Calibration Wizard (W key) for optimal results!
 
-═══════════════════════════════════════════════════════════
 Example Interpretations:
-═══════════════════════════════════════════════════════════
   Center sound = Perfect 50Ω match (YOU are here!)
   Sound moves to center = Approaching resonance
   Sound in front = Inductive reactance (antenna too short)

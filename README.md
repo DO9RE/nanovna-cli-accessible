@@ -1,14 +1,16 @@
 # nanoVNA-cli-accessible
 
+<!-- BUILD_VERSION --> **Build Version:** 0.5.3-beta (2026-02-14 01:24:25)
+
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
 > **📋 PLATFORM SUPPORT STATUS**  
-> - **Windows**: ✅ Fully supported (native build, MIDI available)
-> - **macOS**: ✅ MIDI support added! Audio & console ports in progress (see [macOS Setup Guide](doc/MACOS_SETUP.md))
-> - **Linux**: ⚠️ Planned (MIDI stub in place, needs testing)
+> - **Windows**: ✅ Fully supported (native build, static linking, no external dependencies)
+> - **macOS**: ✅ Fully supported (requires PortAudio via Homebrew)
+> - **Linux**: ✅ Fully supported (requires PortAudio, ALSA development libraries for MIDI)
 >
-> **Note**: MIDI audio synthesis is now cross-platform! The macOS MIDI implementation provides high-quality
-> audio synthesis using Apple's DLS Synth. See [MIDI Documentation](doc/midi/README.md) for details.
+> **Note**: All platforms feature complete audio (PortAudio/waveOut), MIDI (ALSA Sequencer/CoreMIDI/WinMM), 
+> and console input (termios/conio.h) implementations. No stubs remain.
 
 ## Overview
 
@@ -153,14 +155,14 @@ cmake -G "MinGW Makefiles" ..
 mingw32-make -j4
 ```
 
-### macOS Installation (Phase 2 - Partial Support)
-See [doc/MACOS_SETUP.md](doc/MACOS_SETUP.md) for detailed instructions and current status.
+### macOS Installation
+macOS is fully supported. Requires PortAudio as an external dependency.
 
 ```bash
 # Install dependencies
 brew install cmake portaudio
 
-# Build using the macOS build script
+# Build using the macOS build script (recommended - can optionally bundle PortAudio)
 ./build-macos.sh
 
 # Or manually:
@@ -169,7 +171,28 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(sysctl -n hw.ncpu)
 ```
 
-**Note**: macOS build will compile but has limited functionality. Console input, audio, and serial communication require additional integration work. See macOS Setup Guide for details.
+**Note**: The `build-macos.sh` script can optionally bundle PortAudio for distribution. For development, system-installed PortAudio via Homebrew is sufficient.
+
+### Linux Installation
+Linux is fully supported. Requires PortAudio and optionally ALSA development libraries for MIDI support.
+
+```bash
+# Install dependencies (Debian/Ubuntu)
+sudo apt-get install build-essential cmake portaudio19-dev libasound2-dev
+
+# Install dependencies (Fedora/RHEL)
+sudo dnf install cmake portaudio-devel alsa-lib-devel
+
+# Build using the build script
+./build.sh
+
+# Or manually:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+**Note**: ALSA development libraries (`libasound2-dev`/`alsa-lib-devel`) are required for MIDI support. If not available, the application will compile and run with a fallback message for MIDI functionality.
 
 ### Usage
 
@@ -193,7 +216,10 @@ cd build
 # Windows
 nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autostart
 
-# macOS/Linux (when serial support is complete)
+# macOS
+./nanovna-cli -d -p /dev/cu.usbmodem14201 --start 144000000 --end 146000000 --step 1000 --autostart
+
+# Linux
 ./nanovna-cli -d -p /dev/ttyUSB0 --start 144000000 --end 146000000 --step 1000 --autostart
 ```
 
@@ -213,6 +239,7 @@ nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autos
 - **W** - Toggle continuous sweep
 - **I** - Web Interface (Remote access)
 - **O** - Options (Language, Bandplan, Braille)
+- **?** - Manuals and Training (submenu with User Manual, Training Suite, Beta Test Instructions)
 - **H** - Help (context-sensitive)
 - **Q** - Quit
 
@@ -285,27 +312,33 @@ nanovna-cli.exe [OPTIONS]
 ## Technical Specifications
 
 - **Target Device:** NanoVNA-H4
-- **Serial:** 9600 baud (fixed, no auto-detection)
-- **Audio:** Windows winmm API, 44.1 kHz, 16-bit stereo
-- **Platform:** Windows-only (MSYS2/MinGW-w64 or Visual Studio)
+- **Serial:** Default 9600 baud, configurable via `--baud` parameter (supported: 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600). No auto-detection.
+- **Audio:** 44.1 kHz, 16-bit stereo
+  - Windows: waveOut API (built-in, no dependencies)
+  - macOS: CoreAudio via PortAudio
+  - Linux: ALSA/PulseAudio via PortAudio
+- **MIDI:**
+  - Windows: WinMM API
+  - macOS: CoreMIDI with AudioUnit DLS Synth
+  - Linux: ALSA Sequencer API (requires ALSA development libraries)
+- **Serial Ports:**
+  - Windows: COM ports (SetupAPI enumeration)
+  - macOS: `/dev/cu.*` and `/dev/tty.*` (IOKit USB enumeration)
+  - Linux: `/dev/ttyUSB*` and `/dev/ttyACM*` (sysfs enumeration)
 
 ## Development Notes
 
-This is a Windows-native application using:
-- Windows Multimedia API (winmm) for audio synthesis
-- Windows API for system functions
-- conio.h for keyboard input
-- SetupAPI for COM port enumeration
-
-Cross-platform compilation is not supported due to these dependencies.
+This is a cross-platform application with platform-specific backends:
+- **Windows**: Static linking (self-contained executable), Windows Multimedia API (waveOut, WinMM), conio.h, SetupAPI
+- **macOS**: PortAudio (external dependency), CoreMIDI/AudioUnit, termios/POSIX, IOKit
+- **Linux**: PortAudio (external dependency), ALSA Sequencer, termios/POSIX, sysfs
 
 # Beta Version Download
 
-The current beta is available as a ZIP file directly in this repository.
+The current beta is available for multiple platforms:
 
-**[📥 nanovna-cli-accessible-beta.zip - Windows ](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta.zip)**
+## Windows Version (v0.5.3-beta)
+**[📥 nanovna-cli-accessible-beta-windows-0.5.3-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.5.3-beta.zip)**
 
-**[📥 nanovna-cli-accessible-beta-mac.zip - Mac ](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-mac.zip)**
-
-
-
+## macOS Version (v0.5.3-beta)
+**[📥 nanovna-cli-accessible-beta-macos-0.5.3-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-macos-0.5.3-beta.zip)**

@@ -288,7 +288,7 @@
     <main id="main-content" role="main">
         <article>
 <h1>NanoVNA CLI Accessible - User Manual</h1>
-<p><strong>Version:</strong> Beta <strong>Date:</strong> January 2026 <strong>Language:</strong> English</p>
+<p><strong>Version:</strong> 0.5.0-beta <strong>Date:</strong> 2026-02-13 12:25:53 <strong>Language:</strong> English</p>
 <hr>
 <h2>Table of Contents</h2>
 <ol>
@@ -321,59 +321,137 @@
 <h2>2. System Requirements</h2>
 <h3>Hardware:</h3>
 <ul>
-<li><strong>Operating System:</strong> Windows 7 or later (64-bit recommended)</li>
 <li><strong>NanoVNA Device:</strong> NanoVNA-H4</li>
-<li><strong>Connection:</strong> USB cable (appears as COM port)</li>
+<li><strong>Connection:</strong> USB cable (appears as serial port)</li>
 <li><strong>Sound Card:</strong> For acoustic analysis mode</li>
 <li><strong>Optional:</strong> Index Braille printer for tactile graphics</li>
 </ul>
-<h3>Software:</h3>
+<h3>Operating System:</h3>
 <ul>
-<li>The application is fully self-contained</li>
-<li>No additional software installation required</li>
-<li>All dependencies are statically linked</li>
+<li><strong>Windows:</strong> Windows 7 or later (64-bit recommended)
+  <ul>
+  <li>Self-contained executable (all dependencies statically linked)</li>
+  <li>No additional software required</li>
+  </ul>
+</li>
+<li><strong>macOS:</strong> macOS 10.13 (High Sierra) or later
+  <ul>
+  <li>Requires PortAudio: <code>brew install portaudio</code></li>
+  <li>Compilation required (see build instructions)</li>
+  </ul>
+</li>
+<li><strong>Linux:</strong> Modern distribution (tested on Ubuntu 20.04+, Fedora 35+)
+  <ul>
+  <li>Requires PortAudio: <code>apt-get install portaudio19-dev</code> or <code>dnf install portaudio-devel</code></li>
+  <li>Optional for MIDI: ALSA development libraries (<code>libasound2-dev</code> or <code>alsa-lib-devel</code>)</li>
+  <li>Compilation required (see build instructions)</li>
+  </ul>
+</li>
 </ul>
 <hr>
 <h2>3. Installation</h2>
+
+<h3>Windows: Pre-Built Distribution</h3>
 <p>The beta distribution comes as a ready-to-use build directory. <strong>No compilation is required.</strong></p>
-<h3>Installation Steps:</h3>
+
+<h4>Installation Steps:</h4>
 <ol>
 <li><strong>Extract the ZIP file</strong> to a location of your choice (e.g., <code>C:\NanoVNA-CLI</code>)</li>
-</ol>
-<ol>
-<li><strong>Verify the directory structure:</strong></li>
-</ol>
+<li><strong>Verify the directory structure:</strong>
 <pre><code>   nanovna-cli.exe         (Main executable)
    Languages/              (Language files)
    config/                 (Configuration files)
    bandplans/              (Amateur radio band definitions)
    logs/                   (Log files will be stored here)
    Export/                 (Exported data will be saved here)</code></pre>
-<ol>
+</li>
 <li><strong>Connect your NanoVNA-H4</strong> to a USB port</li>
-</ol>
-<ol>
 <li><strong>Done!</strong> You can now run the application.</li>
 </ol>
+
+<h3>macOS: Build from Source</h3>
+<p>macOS is fully supported but requires compilation.</p>
+
+<h4>Prerequisites:</h4>
+<pre><code>brew install cmake portaudio</code></pre>
+
+<h4>Build Steps:</h4>
+<pre><code># Using the build script (recommended)
+./build-macos.sh
+
+# Or manually:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(sysctl -n hw.ncpu)</code></pre>
+
+<p>The executable will be in the <code>build/</code> directory.</p>
+
+<h3>Linux: Build from Source</h3>
+<p>Linux is fully supported but requires compilation.</p>
+
+<h4>Prerequisites:</h4>
+<pre><code># Debian/Ubuntu
+sudo apt-get install build-essential cmake portaudio19-dev libasound2-dev
+
+# Fedora/RHEL
+sudo dnf install cmake portaudio-devel alsa-lib-devel</code></pre>
+
+<p><strong>Note:</strong> ALSA development libraries are required for MIDI support. If not available, the application will compile and run with a fallback message for MIDI functionality.</p>
+
+<h4>Build Steps:</h4>
+<pre><code>./build.sh
+
+# Or manually:
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)</code></pre>
+
+<p>The executable will be in the <code>build/</code> directory.</p>
 <hr>
 <h2>4. First Steps</h2>
 <h3>Starting the Application:</h3>
-<p><strong>Option 1: Simple start</strong></p>
+<p><strong>Windows - Option 1: Simple start</strong></p>
 <ul>
 <li>Double-click <code>nanovna-cli.exe</code></li>
 <li>Or from command line: <code>nanovna-cli.exe</code></li>
 </ul>
-<p><strong>Option 2: With debug logging (recommended for beta testing)</strong></p>
+<p><strong>Windows - Option 2: With debug logging (recommended for beta testing)</strong></p>
 <ul>
 <li>Open Command Prompt or PowerShell</li>
 <li>Navigate to the application directory</li>
 <li>Run: <code>nanovna-cli.exe -d</code></li>
 </ul>
+<p><strong>macOS/Linux - Terminal</strong></p>
+<ul>
+<li>Open Terminal</li>
+<li>Navigate to the build directory: <code>cd build</code></li>
+<li>Run: <code>./nanovna-cli</code></li>
+<li>With debug logging: <code>./nanovna-cli -d</code></li>
+</ul>
+<h3>Screen Clearing:</h3>
+<p>The application automatically clears the screen when entering new contexts (menus, function screens, etc.) to improve clarity and readability.</p>
+<p><strong>Important:</strong> In debug mode (<code>-d</code> flag), the screen is not cleared. This allows you to copy complete error situations from the screen, including all previous outputs. This is especially useful for:</p>
+<ul>
+<li>Troubleshooting and problem analysis</li>
+<li>Beta testing and bug reporting</li>
+<li>Complete documentation of program flows</li>
+</ul>
+<p><strong>Example:</strong></p>
+<ul>
+<li><strong>Normal mode:</strong> <code>nanovna-cli.exe</code> → Screen is cleared when switching contexts</li>
+<li><strong>Debug mode:</strong> <code>nanovna-cli.exe -d</code> → Screen content is fully preserved</li>
+</ul>
 <h3>First-Time Setup:</h3>
 <ol>
-<li><strong>Select COM Port:</strong></li>
+<li><strong>Select Serial Port:</strong></li>
 </ol>
-<p>- Press <strong>P</strong> in the main menu - The application scans for available COM ports - Select the port number where your NanoVNA is connected - If unsure, try each port - the device identification is shown</p>
+<p>- Press <strong>P</strong> in the main menu - The application scans for available serial ports - Select the port where your NanoVNA is connected:
+  <ul>
+  <li><strong>Windows:</strong> COM ports (e.g., COM4, COM5)</li>
+  <li><strong>macOS:</strong> /dev/cu.* or /dev/tty.* (e.g., /dev/cu.usbmodem14201)</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB* or /dev/ttyACM* (e.g., /dev/ttyUSB0)</li>
+  </ul>
+- If unsure, try each port - the device identification is shown</p></p>
 <ol>
 <li><strong>Set Frequency Range:</strong></li>
 </ol>
@@ -401,11 +479,11 @@
   E - Export              Save measurements to file
   L - Load                Load previously saved measurements
   K - Calibration         Calibration wizard
-  P - Port                Select COM port
+  P - Port                Select serial port
   D - Device Info         Battery voltage and device info
   I - Web Interface       Start/stop web interface for remote access
   W - Continuous Sweep    Toggle automatic measurements
-  C - Customize Columns   Configure table display
+  ? - Manuals & Training  Access user manual, training suite, beta test instructions
   O - Options             Settings and configuration
   H - Help                Context-sensitive help
   Q - Quit                Exit application</code></pre>
@@ -432,7 +510,7 @@
 <ul>
 <li>Shows all data points in paginated table format</li>
 <li>Press <strong>Page Up/Down</strong> to navigate</li>
-<li>Press <strong>C</strong> to customize which columns to display</li>
+<li>Press <strong>C</strong> to customize which columns to display (available within table view)</li>
 <li>Columns: Frequency, SWR, Return Loss, |Z|, R, X, Phase</li>
 </ul>
 <h4>Summary (<strong>S</strong>):</h4>
@@ -867,9 +945,19 @@
 <h3>Using the Web Interface:</h3>
 <ul>
 <li>The web interface mirrors the terminal interface</li>
-<li>All keyboard commands work the same way</li>
+<li>All keyboard commands work the same way – you can type directly via the keyboard</li>
 <li>Screen readers will read the content normally</li>
 <li>Audio output from acoustic mode plays on the server computer (not in the browser yet)</li>
+</ul>
+<h3>Interactive Action Buttons:</h3>
+<p>The web interface displays a panel with context-aware action buttons alongside the terminal output. These buttons allow full operation via mouse click or touch – in addition to keyboard input.</p>
+<ul>
+<li><strong>Context-Aware:</strong> The displayed buttons automatically adapt to the current screen context. In the main menu you see the main menu options; in a sub-menu, the actions available there.</li>
+<li><strong>Full Coverage:</strong> All menus, sub-menus, yes/no prompts, and selection options (e.g., in the comfort functions) are available as buttons.</li>
+<li><strong>Accessibility:</strong> The buttons are implemented as real HTML buttons with ARIA labels and can be correctly read by screen readers.</li>
+<li><strong>Key and Action:</strong> Each button shows the associated key in square brackets and the description, e.g., <code>[S] Summary</code>. A click sends exactly the same input as the corresponding key.</li>
+<li><strong>ESC Button:</strong> In every sub-context, an ESC button is automatically displayed to return to the previous menu.</li>
+<li><strong>Multi-Digit Inputs:</strong> For menus with more than 9 options (e.g., band selection), buttons automatically send the number followed by Enter.</li>
 </ul>
 <h3>Stopping the Web Interface:</h3>
 <ol>
@@ -950,14 +1038,27 @@
 </ul>
 <hr>
 <h2>12. Troubleshooting</h2>
-<h3>COM Port Issues:</h3>
-<p><strong>Problem:</strong> Cannot find NanoVNA on COM port</p>
+<h3>Serial Port Issues:</h3>
+<p><strong>Problem:</strong> Cannot find NanoVNA on serial port</p>
 <ul>
 <li><strong>Solution 1:</strong> Check USB connection</li>
-<li><strong>Solution 2:</strong> Try different COM ports (<strong>P</strong> menu shows all ports)</li>
-<li><strong>Solution 3:</strong> Check Windows Device Manager for COM port number</li>
+<li><strong>Solution 2:</strong> Try different ports (<strong>P</strong> menu shows all available ports):
+  <ul>
+  <li><strong>Windows:</strong> COM4, COM5, etc.</li>
+  <li><strong>macOS:</strong> /dev/cu.usbmodem*, /dev/tty.usbmodem*</li>
+  <li><strong>Linux:</strong> /dev/ttyUSB*, /dev/ttyACM*</li>
+  </ul>
+</li>
+<li><strong>Solution 3:</strong> Check device manager for port assignment:
+  <ul>
+  <li><strong>Windows:</strong> Device Manager → Ports (COM & LPT)</li>
+  <li><strong>macOS:</strong> <code>ls /dev/cu.*</code> or <code>ls /dev/tty.*</code></li>
+  <li><strong>Linux:</strong> <code>ls /dev/ttyUSB*</code> or <code>ls /dev/ttyACM*</code></li>
+  </ul>
+</li>
 <li><strong>Solution 4:</strong> Verify NanoVNA is powered on (display lit)</li>
 <li><strong>Solution 5:</strong> Try different USB cable</li>
+<li><strong>Linux only:</strong> Check user permissions: <code>sudo usermod -a -G dialout $USER</code> (then log out and back in)</li>
 </ul>
 <p><strong>Problem:</strong> "Error opening serial port"</p>
 <ul>
@@ -982,11 +1083,18 @@
 <h3>Audio Issues:</h3>
 <p><strong>Problem:</strong> No sound in acoustic mode</p>
 <ul>
-<li><strong>Solution 1:</strong> Check Windows volume settings</li>
-<li><strong>Solution 2:</strong> Verify sound card is working (play test sound in Windows)</li>
+<li><strong>Solution 1:</strong> Check system volume settings</li>
+<li><strong>Solution 2:</strong> Verify sound card is working:
+  <ul>
+  <li><strong>Windows:</strong> Play test sound in Windows Sound settings</li>
+  <li><strong>macOS:</strong> Check System Preferences → Sound</li>
+  <li><strong>Linux:</strong> Check with <code>speaker-test</code> or audio settings</li>
+  </ul>
+</li>
 <li><strong>Solution 3:</strong> Toggle curves on/off (keys 1-5)</li>
 <li><strong>Solution 4:</strong> Increase curve volumes (Shift+1 to Shift+5)</li>
 <li><strong>Solution 5:</strong> Try different audio engine (<strong>Y</strong> key)</li>
+<li><strong>macOS/Linux:</strong> Verify PortAudio is installed correctly</li>
 </ul>
 <p><strong>Problem:</strong> Audio is distorted or crackling</p>
 <ul>
@@ -995,10 +1103,12 @@
 <li><strong>Solution 3:</strong> Adjust playback time (+ / - keys for longer/shorter duration)</li>
 </ul>
 <h3>Braille Printing Issues:</h3>
+<p><strong>Note:</strong> Direct Braille printing is currently only supported on Windows.</p>
 <p><strong>Problem:</strong> "No printers found"</p>
 <ul>
 <li><strong>Solution:</strong> Install at least one printer in Windows</li>
 <li><strong>Solution:</strong> Check Windows Devices and Printers</li>
+<li><strong>macOS/Linux:</strong> Use file export (option 3) and transfer .brl file to Windows for printing</li>
 </ul>
 <p><strong>Problem:</strong> "Failed to open printer"</p>
 <ul>
@@ -1035,7 +1145,12 @@
 <h3>Getting Help:</h3>
 <p>If problems persist:</p>
 <ol>
-<li>Enable debug logging: <code>nanovna-cli.exe -d</code></li>
+<li>Enable debug logging:
+  <ul>
+  <li><strong>Windows:</strong> <code>nanovna-cli.exe -d</code></li>
+  <li><strong>macOS/Linux:</strong> <code>./nanovna-cli -d</code></li>
+  </ul>
+</li>
 <li>Reproduce the problem</li>
 <li>Check log files in <code>logs/</code> directory:</li>
 </ol>
