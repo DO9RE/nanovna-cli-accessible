@@ -1,10 +1,13 @@
 #include "midi_engine.h"
 #include "platform/midi_platform.h"
 #include "pitch_mapping.h"
+#include "reactance_effects_config.h"
+#include "config.h"
 #include <cmath>
 #include <algorithm>
 #include <chrono>
 #include <thread>
+#include <set>
 
 // Note: A4_FREQ and A4_NOTE constants moved to pitch_mapping.h
 
@@ -797,5 +800,90 @@ void MIDIEngine::setLogger(Logger* logger) {
         std::string msg = "MIDI Platform: ";
         msg += platform->getPlatformName();
         logger->log("MIDI", msg);
+    }
+}
+
+
+void MIDIEngine::applyReactanceEffects(double reactanceX, bool isSmoothMode) {
+    std::lock_guard<std::mutex> l(mtx);
+    
+    if (!opened) return;
+    
+    // Load configuration from global config
+    // This will be updated to read from the config system
+    extern AppConfig cfg;  // Access global configuration
+    
+    // Get the appropriate configuration based on mode
+    int capacitiveCC = isSmoothMode ? cfg.reactance_smooth_capacitive_cc : cfg.reactance_dotted_capacitive_cc;
+    int inductiveCC = isSmoothMode ? cfg.reactance_smooth_inductive_cc : cfg.reactance_dotted_inductive_cc;
+    bool deadzoneEnabled = isSmoothMode ? cfg.reactance_smooth_deadzone_enabled : cfg.reactance_dotted_deadzone_enabled;
+    double deadzoneSize = isSmoothMode ? cfg.reactance_smooth_deadzone_size : cfg.reactance_dotted_deadzone_size;
+    int mappingFunc = isSmoothMode ? cfg.reactance_smooth_mapping_function : cfg.reactance_dotted_mapping_function;
+    
+    // Build ModeConfig for calculation
+    ReactanceEffects::ModeConfig config;
+    config.capacitiveCC = ReactanceEffects::Config::getCCParameterFromNumber(capacitiveCC);
+    config.inductiveCC = ReactanceEffects::Config::getCCParameterFromNumber(inductiveCC);
+    config.deadzoneEnabled = deadzoneEnabled;
+    config.deadzoneSize = deadzoneSize;
+    config.mappingFunc = static_cast<ReactanceEffects::MappingFunction>(mappingFunc);
+    
+    // Determine which effect to apply based on reactance sign
+    bool isCapacitive = (reactanceX < 0.0);
+    bool isInductive = (reactanceX > 0.0);
+    
+    // Calculate CC values
+    int capacitiveCCValue = 0;
+    int inductiveCCValue = 0;
+    
+    if (isCapacitive && capacitiveCC != 0) {
+        capacitiveCCValue = ReactanceEffects::calculateCCValue(reactanceX, true, config);
+    }
+    if (isInductive && inductiveCC != 0) {
+        inductiveCCValue = ReactanceEffects::calculateCCValue(reactanceX, false, config);
+    }
+    
+    // Apply CC to Reactance channel (channel 3)
+    constexpr int REACTANCE_CHANNEL = 3;
+    uint8_t status = 0xB0 | (REACTANCE_CHANNEL & 0x0F);  // Control Change
+    
+    // Send capacitive effect
+    if (capacitiveCC != 0) {
+        sendMIDIMessage(status, static_cast<uint8_t>(capacitiveCC), static_cast<uint8_t>(capacitiveCCValue));
+    }
+    
+    // Send inductive effect
+    if (inductiveCC != 0) {
+        sendMIDIMessage(status, static_cast<uint8_t>(inductiveCC), static_cast<uint8_t>(inductiveCCValue));
+    }
+}
+
+void MIDIEngine::resetReactanceEffects() {
+    std::lock_guard<std::mutex> l(mtx);
+    
+    if (!opened) return;
+    
+    // Load configuration to know which CCs to reset
+    extern AppConfig cfg;
+    
+    constexpr int REACTANCE_CHANNEL = 3;
+    uint8_t status = 0xB0 | (REACTANCE_CHANNEL & 0x0F);  // Control Change
+    
+    // Reset all possible reactance effect CCs to 0
+    // Check both dotted and smooth configurations
+    int ccToReset[] = {
+        cfg.reactance_dotted_capacitive_cc,
+        cfg.reactance_dotted_inductive_cc,
+        cfg.reactance_smooth_capacitive_cc,
+        cfg.reactance_smooth_inductive_cc
+    };
+    
+    // Remove duplicates and send reset
+    std::set<int> uniqueCCs;
+    for (int cc : ccToReset) {
+        if (cc != 0 && uniqueCCs.find(cc) == uniqueCCs.end()) {
+            uniqueCCs.insert(cc);
+            sendMIDIMessage(status, static_cast<uint8_t>(cc), 0);
+        }
     }
 }

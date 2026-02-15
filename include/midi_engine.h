@@ -170,6 +170,20 @@ public:
      */
     double getInterpolationStrength() const { return interpolationStrength; }
     
+    /**
+     * Apply reactance effects (MIDI CC parameters) for the Reactance curve
+     * This is called from AcousticAnalyzer when generating audio for curve index 3
+     * @param reactanceX Reactance value in Ohms
+     * @param isSmoothMode true if in smooth/gliding mode, false if in dotted mode
+     */
+    void applyReactanceEffects(double reactanceX, bool isSmoothMode);
+    
+    /**
+     * Reset reactance effects to zero (turn off all effects)
+     * Called when switching away from Reactance curve
+     */
+    void resetReactanceEffects();
+    
     // Number of curves/channels supported
     static constexpr int NUM_CURVES = 5;
 

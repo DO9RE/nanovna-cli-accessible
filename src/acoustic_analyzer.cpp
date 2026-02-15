@@ -534,6 +534,14 @@ void AcousticAnalyzer::toggleCurve(int curveIndex) {
     // If curve is being disabled, stop its note to prevent hanging
     if (!newEnabled && audioEngine) {
         audioEngine->stopCurveNote(curveIndex);
+        
+        // If disabling reactance curve (curve 3), also reset its effects
+        if (curveIndex == 3 && audioEngine->getEngineType() == AudioEngineType::MIDI) {
+            auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+            if (midiEngine) {
+                midiEngine->resetReactanceEffects();
+            }
+        }
     }
     
     if (logger) {
@@ -1318,6 +1326,15 @@ void AcousticAnalyzer::playCurrentPosition(int durationMs) {
     if (curves[3].enabled) {  // Reactance
         int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
         audioEngine->generateAudio(mixBuffer, samples, 3, calcXPitch(pt), frac, effectiveVolume);
+        
+        // Apply reactance effects (MIDI CC parameters) for auditory differentiation
+        // between capacitive (X < 0) and inductive (X > 0) reactance
+        if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+            auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+            if (midiEngine) {
+                midiEngine->applyReactanceEffects(pt.X, smoothMode);
+            }
+        }
     }
     if (curves[4].enabled) {  // Phase
         int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
@@ -1517,6 +1534,16 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
         double pitch = calcXPitch(pt1) + (calcXPitch(pt2) - calcXPitch(pt1)) * pitchInterpolation;
         int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
         audioEngine->generateAudio(mixBuffer, samples, 3, pitch, currentFrac, effectiveVolume);
+        
+        // Apply reactance effects with interpolation
+        if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+            auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+            if (midiEngine) {
+                // Interpolate reactance value as well
+                double reactanceX = pt1.X + (pt2.X - pt1.X) * pitchInterpolation;
+                midiEngine->applyReactanceEffects(reactanceX, smoothMode);
+            }
+        }
     }
     if (curves[4].enabled) {  // Phase
         double pitch = calcPhasePitch(pt1) + (calcPhasePitch(pt2) - calcPhasePitch(pt1)) * pitchInterpolation;
@@ -3883,6 +3910,14 @@ bool AcousticAnalyzer::renderSynthToWav(const std::string& outputPath) {
             if (curves[3].enabled) {
                 int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
                 audioEngine->generateAudio(mixBuffer, toneSamples, 3, calcXPitch(pt), frac, effectiveVolume);
+                
+                // Apply reactance effects
+                if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+                    auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+                    if (midiEngine) {
+                        midiEngine->applyReactanceEffects(pt.X, smoothMode);
+                    }
+                }
             }
             if (curves[4].enabled) {
                 int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
