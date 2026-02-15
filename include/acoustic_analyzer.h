@@ -2,6 +2,7 @@
 #include "measurement.h"
 #include "audio.h"
 #include "audio_engine_interface.h"
+#include "config.h"
 #include "logger.h"
 #include "math_logger.h"
 #include "translation.h"
@@ -212,6 +213,63 @@ public:
     int getRulerCustomSoundMidiGliding() const { return rulerCustomSoundMidiGliding; }
     int getRulerCustomSoundMidiDotted() const { return rulerCustomSoundMidiDotted; }
     
+    // Reactance MIDI effect configuration
+    void setReactanceEffectsEnabled(bool enabled) {
+        reactanceEffectsEnabled = enabled;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", std::string("Reactance effects ") + (enabled ? "ENABLED" : "DISABLED"));
+        }
+    }
+    bool isReactanceEffectsEnabled() const { return reactanceEffectsEnabled; }
+    void setReactanceDeadzone(double ohms) {
+        reactanceDeadzoneOhms = ohms;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "Reactance dead zone set to +/-" + std::to_string(ohms) + " Ohm");
+        }
+    }
+    double getReactanceDeadzone() const { return reactanceDeadzoneOhms; }
+    void setReactanceMaxOhms(double ohms) {
+        reactanceMaxOhms = ohms;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "Reactance max set to " + std::to_string(ohms) + " Ohm");
+        }
+    }
+    double getReactanceMaxOhms() const { return reactanceMaxOhms; }
+    void setReactanceEffectsGliding(const AppConfig::ReactanceModeEffectConfig& config) {
+        reactanceEffectsGliding = config;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "MIDI gliding mode effect config updated: cap=" + 
+                std::to_string(static_cast<int>(config.capacitive_effect)) + "/max=" + std::to_string(config.capacitive_max_value) +
+                ", ind=" + std::to_string(static_cast<int>(config.inductive_effect)) + "/max=" + std::to_string(config.inductive_max_value));
+        }
+    }
+    void setReactanceEffectsDotted(const AppConfig::ReactanceModeEffectConfig& config) {
+        reactanceEffectsDotted = config;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "MIDI dotted mode effect config updated: cap=" + 
+                std::to_string(static_cast<int>(config.capacitive_effect)) + "/max=" + std::to_string(config.capacitive_max_value) +
+                ", ind=" + std::to_string(static_cast<int>(config.inductive_effect)) + "/max=" + std::to_string(config.inductive_max_value));
+        }
+    }
+    
+    // Synthesizer DSP reactance effect configuration
+    void setSynthReactanceEffectsSmooth(const AppConfig::SynthReactanceModeEffectConfig& config) {
+        synthReactanceEffectsSmooth = config;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "Synth smooth mode effect config updated: cap=" +
+                std::to_string(static_cast<int>(config.capacitive_effect)) + "/max=" + std::to_string(config.capacitive_max_percent) +
+                "%, ind=" + std::to_string(static_cast<int>(config.inductive_effect)) + "/max=" + std::to_string(config.inductive_max_percent) + "%");
+        }
+    }
+    void setSynthReactanceEffectsDotted(const AppConfig::SynthReactanceModeEffectConfig& config) {
+        synthReactanceEffectsDotted = config;
+        if (logger) {
+            logger->log("ACOUSTIC_FX", "Synth dotted mode effect config updated: cap=" +
+                std::to_string(static_cast<int>(config.capacitive_effect)) + "/max=" + std::to_string(config.capacitive_max_percent) +
+                "%, ind=" + std::to_string(static_cast<int>(config.inductive_effect)) + "/max=" + std::to_string(config.inductive_max_percent) + "%");
+        }
+    }
+    
     /**
      * Export MIDI file to the Export directory (cross-platform)
      * @param outputPath Full path for the output MIDI file
@@ -317,6 +375,17 @@ private:
     int rulerCustomSoundMidiGliding;  // Custom MIDI instrument for gliding
     int rulerCustomSoundMidiDotted;  // Custom MIDI instrument for dotted
     int lastEnabledCurve;  // Track last enabled curve for FOLLOW_LAST_CURVE mode
+    
+    // Reactance MIDI effect configuration
+    bool reactanceEffectsEnabled = true;
+    double reactanceDeadzoneOhms = 5.0;
+    double reactanceMaxOhms = 300.0;
+    AppConfig::ReactanceModeEffectConfig reactanceEffectsGliding;
+    AppConfig::ReactanceModeEffectConfig reactanceEffectsDotted;
+    
+    // Synthesizer DSP reactance effect configuration
+    AppConfig::SynthReactanceModeEffectConfig synthReactanceEffectsSmooth;
+    AppConfig::SynthReactanceModeEffectConfig synthReactanceEffectsDotted;
     
     // Timing constants for skip factor calculation
     static constexpr int MIN_SMOOTH_TRANSITION_TIME_MS = 20;   // Minimum time per transition in smooth mode (matches frame duration)

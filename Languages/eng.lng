@@ -33,15 +33,10 @@ OHM_TEXT=Ohm
 DEGREE_TEXT=degree
 
 # Common UI messages (unified/consolidated)
-ERROR_NO_PORT_SELECTED=Error: No COM port selected. Use (P)ort to select a port first.
-ERROR_NO_PORT_CONFIGURED=No serial port configured. Use (P)ort to select.
-ERROR_NO_RANGE_CONFIGURED=No frequency range configured. Please set range first.
-PROMPT_USE_RANGE_COMMAND=Use (R)ange command to configure frequency range.
 MSG_PRESS_ESC_BACK=Press ESC to go back
 GOING_BACK=[Going back to previous step]
 ERROR_UNKNOWN_COMMAND=Unknown command.
 ERROR_INVALID_PORT=Invalid port number.
-HELP_COMMAND_ESC_BACK=  ESC - Back        Return to main menu
 PORT_SCANNING=Scanning COM ports...
 PORT_CHOOSE_PROMPT=Choose port number (or ESC to cancel):
 DEVICE_INFO_PROMPT=Device Info
@@ -80,7 +75,6 @@ SWEEP_NO_TIMING=Continuous sweep enabled, but no timing information available.\n
 
 # Summary view
 SUMMARY_TITLE=Measurement Summary
-SUMMARY_NO_DATA=No data
 SUMMARY_POINTS=Points: {0}
 SUMMARY_FREQ_RANGE=Frequency range: {0} Hz to {1} Hz
 SUMMARY_MIN_SWR=Min SWR: {0} at {1} Hz
@@ -102,7 +96,6 @@ TABLE_PHASE=Phase
 TABLE_ALREADY_LAST=Already at last page.
 TABLE_ALREADY_FIRST=Already at first page.
 TABLE_PROMPT=[SPACE/N: Next | P: Previous | C: Customize | G: Go To | ESC: Back | H: Help] >
-TABLE_NO_DATA=No data
 
 # Customize menu
 CUSTOMIZE_TITLE=Customize Table Columns
@@ -112,14 +105,12 @@ CUSTOMIZE_INVALID=Invalid
 CUSTOMIZE_UPDATED=Updated columns.
 
 # Export menu
-EXPORT_NO_DATA=No data to export.
 EXPORT_LOOP_RANGE=Exporting loop range (markers {0} to {1})
 EXPORT_INVALID_LOOP=Invalid loop range, exporting all data
 EXPORT_ALL_DATA=Exporting all measurement data
 EXPORT_FORMAT=Export format: (1) CSV, (2) TXT, (3) Braille File, (4) Print to Braille Printer, (other) cancel
 EXPORT_SUCCESS=Exported to: {0}
 EXPORT_FAILED=Export failed: {0}
-EXPORT_CANCELED=Canceled
 
 # Braille printer
 BRAILLE_NO_PRINTERS=No printers found on this system.
@@ -153,7 +144,6 @@ DEVICE_INFO_SHELL=(S)hell
 
 # Debug Shell
 DEBUG_SHELL_TITLE=Debug Shell - Direct NanoVNA Communication
-DEBUG_SHELL_NO_PORT=Error: No COM port selected. Please select a port first using (P)ort menu.
 DEBUG_SHELL_INSTRUCTIONS=Type commands and press Enter to send to NanoVNA. Press ESC to exit.
 DEBUG_SHELL_PROMPT=Shell>
 DEBUG_SHELL_EXIT=Exiting shell...
@@ -168,7 +158,6 @@ CAL_MENU_TITLE=Calibration Menu
 CAL_MENU_PROMPT=Calibration
 CAL_MENU_LOAD=(L)oad Calibration Profile
 CAL_MENU_PERFORM=(P)erform Calibration
-CAL_MENU_HELP=(H)elp
 
 # Load calibration profile
 CAL_LOAD_TITLE=Load Calibration Profile
@@ -204,7 +193,6 @@ CURVE_NAME_REACTANCE=Reactance X
 CURVE_NAME_PHASE=Phase
 ACOUSTIC_DATA_POINTS=Data points: {0}
 ACOUSTIC_HELP=Press H for help, ESC to go back.
-ACOUSTIC_START=Press any key to start...
 ACOUSTIC_POSITION=Position: {0} / {1}
 ACOUSTIC_PAUSED=[PAUSED]
 ACOUSTIC_PLAYING=[PLAYING]
@@ -226,6 +214,16 @@ ACOUSTIC_FREQUENCY=Frequency: {0} Hz
 ACOUSTIC_IMPEDANCE=Impedance: {0} + j{1}
 ACOUSTIC_MAGNITUDE=Magnitude |Z|: {0}
 ACOUSTIC_S11=S11: {0} + j{1}
+ACOUSTIC_REACTANCE_HINT=Reactance character: {0}
+REACTANCE_HINT_RESONANT=Resonant (X ~ 0)
+REACTANCE_HINT_NEARLY_RESONANT_INDUCTIVE=Nearly resonant (slightly inductive)
+REACTANCE_HINT_NEARLY_RESONANT_CAPACITIVE=Nearly resonant (slightly capacitive)
+REACTANCE_HINT_SLIGHTLY_INDUCTIVE=Slightly inductive
+REACTANCE_HINT_SLIGHTLY_CAPACITIVE=Slightly capacitive
+REACTANCE_HINT_INDUCTIVE=Inductive
+REACTANCE_HINT_CAPACITIVE=Capacitive
+REACTANCE_HINT_STRONGLY_INDUCTIVE=Strongly inductive
+REACTANCE_HINT_STRONGLY_CAPACITIVE=Strongly capacitive
 ACOUSTIC_EXPORTING=[Exporting measurements...]
 ACOUSTIC_CONTINUE=[Press any key to continue...]
 ACOUSTIC_LEFT_MARKER=[Left marker set at {0}]
@@ -244,11 +242,9 @@ ACOUSTIC_MIDI_MODE_DOTTED=[MIDI: Switched to DOTTED mode with percussive instrum
 ACOUSTIC_RULER_PLAYING=[Playing acoustic Y-axis ruler...]
 ACOUSTIC_RULER_STOPPING=[Stopping Y-axis ruler...]
 ACOUSTIC_RULER_STOPPED=[Y-axis ruler stopped]
-ACOUSTIC_RULER_COMPLETE=[Acoustic Y-axis ruler complete]
 ACOUSTIC_RETURN=[Returning to main menu...]
 ACOUSTIC_EXITED=Acoustic analysis mode exited.
 ACOUSTIC_NO_DATA=No measurement data available for acoustic analysis.
-ACOUSTIC_NOT_WINDOWS=Acoustic analysis mode is only available on Windows.
 
 # Audio configuration
 AUDIO_CONFIG_TITLE=Audio Configuration
@@ -264,8 +260,6 @@ AUDIO_CONFIG_MIDI_CMD=  1-5 - Configure MIDI instrument for curve
 AUDIO_CONFIG_VOLUME_CMD=  V - Configure Volume for individual curves
 AUDIO_CONFIG_RULER_CMD=  A - Configure Y-Axis Ruler settings
 AUDIO_CONFIG_PREVIEW_CMD=  P - Preview current MIDI configuration
-AUDIO_CONFIG_HELP_CMD=  H - Help
-AUDIO_CONFIG_BACK_CMD=  ESC - Back
 
 # Ruler configuration submenu
 RULER_CONFIG_TITLE=Y-Axis Ruler Configuration
@@ -279,7 +273,6 @@ RULER_CONFIG_COMMANDS=Commands:
 RULER_CONFIG_MODE_CMD=  M - Toggle sound Mode (Follow last curve / Custom sound)
 RULER_CONFIG_CUSTOM_CMD=  C - Configure Custom sound
 RULER_CONFIG_DURATION_CMD=  D - Configure blip Duration (30-500 ms)
-RULER_CONFIG_BACK_CMD=  ESC - Back
 RULER_SOUND_MODE_FOLLOW=Follow last curve
 RULER_SOUND_MODE_CUSTOM=Custom sound
 RULER_MODE_TOGGLED=Ruler sound mode: {0}
@@ -304,7 +297,6 @@ DURATION_CONFIG_TOTAL_CURRENT=Total duration per point: {0} ms
 DURATION_CONFIG_COMMANDS=Commands:
 DURATION_CONFIG_POINT_CMD=  P - Configure Point duration (30-500 ms)
 DURATION_CONFIG_PAUSE_CMD=  U - Configure paUse duration (10-500 ms)
-DURATION_CONFIG_BACK_CMD=  ESC - Back
 DURATION_POINT_TITLE=Configure Point Duration
 DURATION_POINT_DESC=Point duration controls how long each measurement point sounds in dotted playback mode.\nLonger durations provide more time to hear each point clearly.\nShorter durations allow faster sweeps but may be harder to distinguish.
 DURATION_POINT_VALID_RANGE=Valid range: 30 - 500 ms
@@ -319,20 +311,16 @@ DURATION_PAUSE_PROMPT=Enter pause duration in milliseconds (10-500), or press ES
 DURATION_PAUSE_SET=Pause duration set to {0} ms
 DURATION_PAUSE_APPLIED=Change applied immediately - no restart needed
 DURATION_PAUSE_ERROR=Error: Pause duration must be between 10 and 500 ms
-DURATION_CANCELLED=Cancelled
 
 # Options menu
 OPTIONS_TITLE=Options
 OPTIONS_LANGUAGE=(L)anguage
 OPTIONS_BANDPLAN=(B)andplan
-OPTIONS_HELP=(H)elp
 
 # Language selection
 LANG_TITLE=Language Selection
 LANG_AVAILABLE=Available languages:
 LANG_PROMPT=Enter language number (or press Enter to cancel): >>>
-LANG_INVALID=Invalid selection.
-LANG_CANCELED=Canceled.
 LANG_SELECTED=Language changed to: {0}
 LANG_LOAD_FAILED=Failed to load language: {0}
 LANG_NO_LANGS=No language files found.
@@ -341,8 +329,6 @@ LANG_NO_LANGS=No language files found.
 BANDPLAN_TITLE=Band Plan Selection
 BANDPLAN_AVAILABLE=Available band plans:
 BANDPLAN_PROMPT=Enter band plan number (or press Enter to cancel): >>>
-BANDPLAN_INVALID=Invalid selection.
-BANDPLAN_CANCELED=Canceled.
 BANDPLAN_SELECTED=Band plan changed to: {0}
 BANDPLAN_LOAD_FAILED=Failed to load band plan: {0}
 BANDPLAN_NO_PLANS=No band plan files found.
@@ -356,7 +342,6 @@ GOTO_FREQUENCY=(F)requency
 GOTO_MINIMUM=(M)inimum
 GOTO_MAXIMUM=(X)maximum
 GOTO_CROSSPOINT=(C)ross Point
-GOTO_HELP=(H)elp
 GOTO_POINT_PROMPT=Enter point number (0-{0}): >>>
 GOTO_POINT_INVALID=Invalid point number.
 GOTO_POINT_JUMPED=Jumped to point {0} ({1} Hz)
@@ -383,7 +368,6 @@ GOTO_CROSSPOINT_JUMPED=Jumped to cross point at point {0} ({1} Hz)
 GOTO_CROSSPOINT_INVALID=Invalid cross point number.
 
 # General messages
-PRESS_ENTER=Press Enter to continue...
 
 # Autostart
 AUTOSTART_COMPLETE=Autostart: measurement complete.
@@ -403,7 +387,6 @@ HELP_CMD_LINE=NanoVNA-CLI-Accessible - Accessible Console Application for NanoVN
 
 
 
-HELP_DEVICE_SHELL_DESC=Debug Shell:\n  Opens a direct communication shell to the NanoVNA.\n  Allows sending raw commands for debugging and testing.\n  Use arrow keys to navigate, backspace to delete. Press ESC to exit.
 
 
 # U-Menu (Comfort Functions)
@@ -413,7 +396,6 @@ MENU_COMFORT=(U) Comfort Functions
 UMENU_TITLE=Comfort Functions Menu
 UMENU_SUBTITLE=Convenient measurement tools for antenna and cable analysis
 UMENU_PROMPT=Comfort Menu
-UMENU_HELP=Press H for help
 
 # U-Menu items
 UMENU_1=1. Band Suitability Check (S11)
@@ -442,10 +424,6 @@ UMENU_12=12. Configuration
 UMENU_12_DESC=    Set velocity factor, SWR limits, etc.
 
 # Common comfort function messages
-CF_NO_DATA=No measurement data available. Please perform a scan first.
-CF_NEED_S11=This function requires S11 measurement data.
-CF_NEED_S21=This function requires S21 measurement data. Please measure in through mode.
-CF_PRESS_ENTER=Press Enter to continue...
 
 # Band suitability check
 BAND_SUIT_TITLE=Band Suitability Check
@@ -533,10 +511,7 @@ CABLE_LEN_INST3=Sweep should cover wide frequency range for best accuracy.
 CABLE_LEN_TERM=Cable termination:
 CABLE_LEN_OPEN=1. Open (far end disconnected)
 CABLE_LEN_SHORT=2. Short (far end shorted)
-CABLE_LEN_SELECT_TYPE=Select cable type:
-CABLE_LEN_MANUAL_VF=Manual entry:
 CABLE_LEN_VF=Enter Velocity Factor (0.6-0.95): >
-CABLE_LEN_USING_CABLE=Using {0} with VF = {1}
 CABLE_LEN_ANALYZING=Analyzing phase response...
 CABLE_LEN_RESULT=Estimated Cable Length: {0} meters ({1} feet)
 CABLE_LEN_CONFIDENCE=Confidence: {0}%
@@ -638,8 +613,6 @@ MARKER_ANALYZING=Analyzing measurement data...
 MARKER_MIN_SWR=Marker 1: Minimum SWR at {0} Hz - SWR {1}
 MARKER_X_ZERO=Marker 2: X nearest to zero at {0} Hz - X {1} Ohm
 MARKER_MAX_S21=Marker 3: Maximum S21 at {0} Hz - {1} dB
-MARKER_3DB_LOW=Marker 4: -3dB lower at {0} Hz
-MARKER_3DB_HIGH=Marker 5: -3dB upper at {0} Hz
 MARKER_PLACED=Markers placed successfully
 MARKER_NO_S21=Note: S21 markers not available (no S21 data)
 
@@ -660,7 +633,6 @@ CONFIG_LOSS_SET=Cable Loss set to {0} dB/m
 OPTIONS_PROMPT=Options
 ACOUSTIC_PROMPT=Acoustic Analysis
 AUDIO_CONFIG_PROMPT=Audio Configuration
-AUDIO_CONFIG_MIDI_PRESET_PROMPT=Select preset:
 
 # Continuous sweep warning in U-Menu
 UMENU_SWEEP_DISABLED=Note: Continuous sweep has been automatically disabled to prevent data conflicts.
@@ -675,7 +647,6 @@ MEASURE_CONFIRM=Press Enter when ready to measure, or ESC to cancel
 MEASURE_PERFORMING=Performing measurement...
 MEASURE_COMPLETE=Measurement complete. {0} data points collected.
 MEASURE_FAILED=Measurement failed
-MEASURE_CANCELED=Measurement canceled.
 
 # Measurement configuration prompts (new for improved workflow)
 EXISTING_DATA_FOUND=Existing measurement data found that covers the current range.
@@ -715,7 +686,6 @@ CABLE_PRESET_TITLE=Select cable type:
 CABLE_PRESET_SELECTED=Using {0}: VF = {1}
 
 # Enhanced configuration
-CONFIG_CABLE_LIST=Available cable types:
 CONFIG_CABLE_CUSTOM_VF=Enter Velocity Factor (0.6-0.95): >
 CONFIG_CABLE_CUSTOM_LOSS=Enter loss in dB/100m at 100 MHz (optional, 0 to skip): >
 BAND_SUIT_PROMPT=Select band
@@ -761,8 +731,6 @@ VOLUME_CONFIG_MASTER_SET=[Master volume set to: {0}%]
 VOLUME_CONFIG_RULER_SET=[Ruler volume set to: {0}%]
 VOLUME_CONFIG_ERROR_CURVE=[Error: Curve number must be 1-5]
 VOLUME_CONFIG_ERROR_VOLUME=[Error: Volume must be between 0 and 100]
-VOLUME_CONFIG_ERROR_INVALID=[Error: Invalid number]
-VOLUME_CONFIG_CANCELLED=[Cancelled]
 
 # MIDI Instrument configuration
 MIDI_CONFIG_TITLE=Configure {0} MIDI Instrument ({1} mode)
@@ -770,7 +738,6 @@ MIDI_CONFIG_CURRENT=Current: {0} ({1})
 MIDI_CONFIG_COMMANDS=Commands:
 MIDI_CONFIG_ENTER_NUMBER=  Enter instrument number (0-127)
 MIDI_CONFIG_SHOW_LIST=  L - Show list of available MIDI instruments
-MIDI_CONFIG_ESC=  ESC - Cancel
 MIDI_CONFIG_PROMPT=> 
 MIDI_CONFIG_LIST_TITLE=MIDI Instrument List (General MIDI)
 MIDI_CONFIG_PIANO=Piano (0-7):
@@ -792,12 +759,9 @@ MIDI_CONFIG_SOUND_FX=Sound Effects (120-127):
 MIDI_CONFIG_ENTER_AGAIN=Enter instrument number (0-127), L to see list again, or ESC to cancel:
 MIDI_CONFIG_SET=[{0} instrument ({1} mode) set to: {2}]
 MIDI_CONFIG_ERROR_RANGE=[Error: Number must be 0-127]
-MIDI_CONFIG_CANCELLED=[Cancelled]
 MIDI_CONFIG_ERROR_INVALID=[Error: Invalid number]
 
 # Main program messages
-MAIN_UTF8_OUTPUT_WARNING=Warning: Failed to set console output to UTF-8. Umlauts may not display correctly.
-MAIN_UTF8_INPUT_WARNING=Warning: Failed to set console input to UTF-8.
 MAIN_TEMPLATE_LOAD_WARNING=Warning: {0}\nUsing defaults.
 MAIN_SERIAL_OPEN_FAILED=Serial open failed: {0}
 MAIN_CAL_LOADED=Calibration profile loaded from bank {0}
@@ -805,7 +769,6 @@ MAIN_FAREWELL=\nNanoVNA-CLI-Accessible QRT, 73 DE DO9RE
 MAIN_CLOSING=Program will close in 3 seconds...
 
 # Port selection
-PORT_CANCELED=Canceled.
 PORT_SELECTED=Selected port {0} ({1})
 PORT_OPEN_FAILED=Failed to open {0}: {1}
 
@@ -942,8 +905,6 @@ LOOP_PAUSE_CONFIG_SET=Loop pause set to {0} ms
 LOOP_PAUSE_CONFIG_APPLIED=Change applied immediately - no restart needed
 LOOP_PAUSE_CONFIG_ERROR=Error: Loop pause must be between 0 and 5000 ms
 AUDIO_CONFIG_LOOP_PAUSE_CMD=  U - Configure Loop pause duration
-AUDIO_HELP_LOOP_PAUSE=U - Configure Loop pause duration (0-5000 ms)
-AUDIO_HELP_LOOP_PAUSE_DESC=    Controls pause before loop repeats in continuous replay mode
 
 # Consolidated error and UI messages
 ERROR_NO_PORT=Error: No COM port selected. Use (P)ort menu to select a port first.
@@ -957,7 +918,6 @@ ERROR_INVALID_SELECTION=Invalid selection
 # Loop Mirroring
 ACOUSTIC_LOOP_INVERTED=[Loop INVERTED: Playing OUTSIDE loop markers]
 ACOUSTIC_LOOP_NORMAL=[Loop NORMAL: Playing INSIDE loop markers]
-HELP_ACOUSTIC_LOOP_INVERT=  I           Invert loop (play outside loop markers)
 
 # Braille Export and Printer Settings
 BRAILLE_EXPORT_TITLE=Export to Braille
@@ -991,18 +951,8 @@ BRAILLE_PRINTER_WAIT=Please wait...
 BRAILLE_PRINT_SUCCESS=\n*** Print job sent successfully! ***\nThe Braille graphics have been sent to the printer.
 
 # Export Module Messages
-EXPORT_NO_DATA=No data to export
-EXPORT_CANNOT_OPEN_FILE=Cannot open file: {0}
-EXPORT_FILE_WRITE_ERROR=Failed to write braille data to file
-EXPORT_NO_CURVES_SELECTED=No curves selected for export
 
 # CSV/TXT Export Headers
-EXPORT_CSV_HEADER=freq_hz,s11_re,s11_im,swr,return_loss_db,r_ohm,x_ohm
-EXPORT_CSV_S21_HEADER=,s21_re,s21_im
-EXPORT_TXT_TITLE=Measurement dump
-EXPORT_TXT_RANGE=Start: {0} Hz, End: {1} Hz, Step: {2} Hz
-EXPORT_TXT_POINTS=Points: {0}
-EXPORT_TXT_DATA_LINE=Freq: {0} Hz  SWR: {1}  RL: {2}  R: {3}  X: {4}
 
 # Key literal for ESC display
 KEY_ESC=ESC
@@ -1018,9 +968,6 @@ ACOUSTIC_STATUS_LINE_ON=[Status line ENABLED]
 ACOUSTIC_STATUS_LINE_OFF=[Status line DISABLED]
 ACOUSTIC_MIDI_MODE_GLIDING=[MIDI: Switched to GLIDING mode with sustained instruments]
 ACOUSTIC_MIDI_MODE_DOTTED=[MIDI: Switched to DOTTED mode with percussive instruments]
-HELP_ACOUSTIC_X_RULER=  X           Toggle X-axis ruler (blips at each measurement point)
-HELP_ACOUSTIC_STATUS_LINE=  N           Toggle status line (shows detailed info during playback)
-HELP_ACOUSTIC_GOTO=  G           Go To specific frequency/position
 
 
 # MIDI Interpolated Panning (Mischtechniken)
@@ -1048,8 +995,6 @@ SMITH_MODE_IMPEDANCE=Impedance Direct
 SMITH_MODE_SWR=SWR Circles
 SMITH_MODE_TIME=Time Domain + Smith Cues
 SMITH_MODE_HYBRID=Hybrid Multi-Layer
-SMITH_VISUALIZATION_TITLE=Smith Diagram Visualization
-SMITH_ENABLE_PROMPT=Enable Smith visualization? (y/n):
 SMITH_MODE_PROMPT=Select visualization mode:
 SMITH_MODE_1=1 - Cartesian: Position in 3D space (Re(Γ) → L/R, Im(Γ) → F/B)
 SMITH_MODE_2=2 - Polar: Rotation around user (∠Γ → angle, |Γ| → distance)
@@ -1059,18 +1004,7 @@ SMITH_MODE_5=5 - Time Domain: Extend acoustic with Smith cues
 SMITH_MODE_6=6 - Hybrid Multi: Multiple layers simultaneously
 SMITH_CUES_ENABLED=[Smith spatial cues ENABLED]
 SMITH_CUES_DISABLED=[Smith spatial cues DISABLED]
-SMITH_MARKERS_ENABLED=[Smith markers ENABLED]
-SMITH_MARKERS_DISABLED=[Smith markers DISABLED]
-SMITH_CUES_VOLUME=Smith cues volume: {0}%
 SMITH_MODE_SWITCHED=[Smith mode switched to: {0}]
-SMITH_HELP_TITLE=Smith Diagram Visualization Help
-SMITH_HELP_INTRO=Smith Diagram shows impedance matching acoustically.
-SMITH_HELP_CENTER=Center = Perfect match (50Ω, SWR 1.0)
-SMITH_HELP_EDGE=Edge = Poor match (high SWR)
-SMITH_HELP_HORIZONTAL=Horizontal (L-R) = Resistance level
-SMITH_HELP_VERTICAL=Vertical (F-B) = Reactance (inductive/capacitive)
-HELP_ACOUSTIC_SMITH=  V           Toggle Smith diagram visualization
-HELP_ACOUSTIC_SMITH_MODE=  B           Change Smith visualization mode (6 modes available)
 SMITH_ENABLE_FIRST=[Enable Smith visualization first with 'v']
 SMITH_MODE_HINT=[Press 'b' to change mode, 'h' for Smith help]
 SMITH_MODE_SELECTION=Smith Visualization Mode Selection
@@ -1444,8 +1378,6 @@ FEEDBACK_ATTACHMENTS_INFO=The following files should be attached:\n  - config/*\
 ACOUSTIC_CURVE_SOLO=[Solo: {0}]
 ACOUSTIC_CURVE_UNSOLO=[{0} unsoloed]
 ACOUSTIC_SOLO_OFF=[Solo OFF - previous state restored]
-ACOUSTIC_FREEZE_BY_TOUCH=[Freeze by Touch]
-ACOUSTIC_FREEZE_BY_TOUCH_RELEASED=[Freeze by Touch released]
 ACOUSTIC_VOLUME_AT_MINIMUM=[Master volume: minimum reached]
 ACOUSTIC_VOLUME_AT_MAXIMUM=[Master volume: maximum reached]
 ACOUSTIC_CURVE_VOLUME_AT_MINIMUM=[{0} volume: minimum reached]
@@ -1530,10 +1462,410 @@ MIDI_EXPORT_FAILED=[MIDI export failed]
 DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_EN.html
 DOC_PATH_TRAINING=doc/training/en/Training_Index.html
 DOC_PATH_BETA=doc/beta-testing/BETA_TESTING_EN.html
-DOC_PATH_MAIN_INDEX=doc/README.html
 
 # Error messages for documentation
 ERROR_DOC_NOT_FOUND=Error: Documentation file not found: {0}
 ERROR_BROWSER_FAILED=Error: Could not open browser.
 DOC_OPENED=Opening documentation in browser...
 
+
+# New translation keys
+ACOUSTIC_CONTINUOUS=Toggle Continuous Replay
+ACOUSTIC_CURVE_PHASE=Phase Curve
+ACOUSTIC_CURVE_RL=Return Loss Curve
+ACOUSTIC_CURVE_SWR=SWR Curve
+ACOUSTIC_CURVE_X=Reactance Curve
+ACOUSTIC_CURVE_Z=Impedance Curve
+ACOUSTIC_EXPORT=Export Measurement
+ACOUSTIC_FREEZE=Freeze
+ACOUSTIC_GOTO=Go To Frequency
+ACOUSTIC_LOOP_INVERT=Invert Loop
+ACOUSTIC_LOOP_LEFT=Set Left Loop Marker
+ACOUSTIC_LOOP_RIGHT=Set Right Loop Marker
+ACOUSTIC_LOOP_TOGGLE=Toggle Loop
+ACOUSTIC_LOOP_ZOOM=Toggle Loop Zoom
+ACOUSTIC_MEASURE=Show Measurement
+ACOUSTIC_PLAY_PAUSE=Play/Pause
+ACOUSTIC_SMITH=Toggle Smith Diagram
+ACOUSTIC_SMITH_MODE=Change Smith Mode
+ACOUSTIC_SPEED_DOWN=Decrease Speed
+ACOUSTIC_SPEED_UP=Increase Speed
+ACOUSTIC_STATUS=Toggle Status Line
+ACOUSTIC_STOP=Stop
+ACOUSTIC_TOGGLE_SMOOTH=Toggle Smooth/Dotted
+ACOUSTIC_X_RULER=Toggle X-Axis Ruler
+ACOUSTIC_Y_RULER=Y-Axis Ruler
+AUDIO_CONFIG_INVERTED_LOOP_GAP_CMD=  G - Configure inverted loop Gap duration
+AUDIO_CONFIG_MIDI_CTRL_CMD=  C - MIDI Controller Configuration
+AUDIO_CONFIG_PREVIEW_SYNTH_CMD=  P - Preview current Synthesizer configuration
+AUDIO_CONFIG_REACTANCE_FX_CMD=  Z - Configure Reactance (X) MIDI effects (inductance/capacitance sonification)
+AUDIO_CONFIG_REACTANCE_FX_SYNTH_CMD=  Z - Configure Reactance (X) DSP effects (inductance/capacitance sonification)
+AUDIO_CONFIG_SPATIAL_WIZARD_CMD=  W - Run Spatial Audio Calibration Wizard (recommended!)
+AUDIO_CONFIG_STATUS_LINE_CMD=  N - Configure Status Line settings
+AUDIO_CONFIG_X_RULER_CMD=  X - Configure X-Axis Ruler settings
+AXIS_EVENTS_DISABLED=[Axis crossing events DISABLED]
+AXIS_EVENTS_ENABLED=[Axis crossing events ENABLED - audible markers at axis crossings]
+BRAILLE_SETTINGS_PROMPT=Braille Settings>
+CAL_LOAD_CANCELED=Canceled.
+CAL_WIZARD_CANCELED=Calibration not saved.
+CENTER_PULSE_DISABLED=[Center pulse DISABLED]
+CENTER_PULSE_ENABLED=[Center pulse ENABLED - periodic reference signal]
+COMPARE_CLEAR=Clear snapshots
+COMPARE_RUN=Compare A vs B
+COMPARE_SAVE_A=Save Snapshot A
+COMPARE_SAVE_B=Save Snapshot B
+CONFIG_CABLE_PRESET=Select Cable Type Preset
+CONFIG_LOSS=Set Cable Loss
+CONFIG_SWR=Set SWR Threshold
+CONFIG_VF=Set Velocity Factor
+ENSURE_DATA_PROMPT=Ensure Data>
+ERROR_NO_ANALYZER=[Error: Audio analyzer not available]
+ERROR_NO_SMITH=[Error: Smith visualizer not available]
+EXPORT_LOOP_NO_ZOOM=(Loop active at markers {0} to {1}, but zoom off)
+INVERTED_LOOP_GAP_CONFIG_APPLIED=[Change applied immediately - no restart needed]
+INVERTED_LOOP_GAP_CONFIG_CURRENT=Current inverted loop gap: {0} ms
+INVERTED_LOOP_GAP_CONFIG_DESC=When loop is inverted, the section inside the loop markers is skipped.\n
+INVERTED_LOOP_GAP_CONFIG_ERROR=[Error: Gap duration must be between 0 and 5000 ms]
+INVERTED_LOOP_GAP_CONFIG_PROMPT=Enter gap duration in milliseconds (0-5000), or press ESC to cancel:
+INVERTED_LOOP_GAP_CONFIG_SET=[Inverted loop gap set to {0} ms]
+INVERTED_LOOP_GAP_CONFIG_TITLE=Inverted Loop Gap Configuration
+INVERTED_LOOP_GAP_CONFIG_VALID_RANGE=Valid range: 0 - 5000 ms (0 = instant skip)
+MAIN_DEVICE_VALIDATION_FAILED=Warning: Device validation failed.\n{0}\n\n
+MAIN_MENU_ESC_INFO=[Info: Already at main menu level. Press Q to quit.]
+MAIN_MENU_TITLE=Main Menu
+MAIN_PORT_NOT_DETECTED=Saved port {0} is not currently detected.\n
+MEASURE_START=Start Measurement
+MIDI_CTRL_CONFIG_PROMPT=Midi Ctrl Config>
+MIDI_MAPPING_PROMPT=Midi Mapping>
+OPTIONS_BRAILLE=(R) Braille Printer
+PRESS_ANY_KEY=Press any key to continue...
+RANGE_INVALID_RANGE=Invalid range: start must be less than end
+RANGE_INVALID_STEP_LARGE=Invalid step: step is larger than the range
+RANGE_INVALID_STEP_ZERO=Invalid step: must be greater than zero
+REACTANCE_FX_COMMANDS=Commands:
+REACTANCE_FX_DESC=Maps reactance sign to audio effects for audible inductance/capacitance distinction.\n
+REACTANCE_FX_HELP_TITLE=Reactance Effects Help
+REACTANCE_FX_PROMPT=Reactance Fx>
+REACTANCE_FX_TITLE=Reactance (X) MIDI Effects Configuration
+RULER_CONFIG=Ruler Config>
+RULER_CONFIG_LENGTHENING_CMD=  L - Configure Lengthening factor (100-500%)
+RULER_CONFIG_LENGTHENING_FACTOR=Lengthening factor: {0}%
+RULER_LENGTHENING_DESC=Lengthening factor controls how much longer the tones at full integers, 5, 10, and 15 are compared to half integers.\nHigher values create more distinction between different tone types.
+RULER_LENGTHENING_ERROR=Error: Lengthening factor must be between 100 and 500%
+RULER_LENGTHENING_PROMPT=Enter lengthening factor in percent (100-500%), or press ESC to cancel:
+RULER_LENGTHENING_SET=Ruler lengthening factor set to {0}%
+RULER_LENGTHENING_TITLE=Configure Ruler Lengthening Factor
+SMITH_CONFIG_AUDIO_MODE=\nAudio Mode: {0}
+SMITH_CONFIG_AXIS_EVENTS_CMD=  A - Configure Axis crossing Events
+SMITH_CONFIG_AXIS_EVENTS_COMMANDS=Commands:
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_DURATION=Duration: {0} ms
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_PITCH=Pitch range: {0}-{1} Hz
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_SOUND=Sound type: {0}
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_STATUS=Current status: {0}
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_VOL=Volume: {0}%
+SMITH_CONFIG_AXIS_EVENTS_DETAILS=  Volume: {0}%, Pitch: {1}-{2} Hz
+SMITH_CONFIG_AXIS_EVENTS_DURATION_CMD=  D - Set duration (50-500ms)
+SMITH_CONFIG_AXIS_EVENTS_DURATION_ERROR=[Error: Duration must be 50-500ms]
+SMITH_CONFIG_AXIS_EVENTS_DURATION_SET=[Axis events duration set to {0} ms]
+SMITH_CONFIG_AXIS_EVENTS_ENTER_DURATION=Enter axis events sound duration (50-500ms, current: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_MAX=Enter maximum pitch (400-2000 Hz, current: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_MIN=Enter minimum pitch (200-1000 Hz, current: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_VOL=Enter axis events volume (10-100%, current: {0}%):
+SMITH_CONFIG_AXIS_EVENTS_MENU=Axis Crossing Events Configuration
+SMITH_CONFIG_AXIS_EVENTS_PITCH_CMD=  P - Set pitch range
+SMITH_CONFIG_AXIS_EVENTS_PITCH_ERROR=[Error: Invalid pitch range]
+SMITH_CONFIG_AXIS_EVENTS_PITCH_MENU=Set pitch range:
+SMITH_CONFIG_AXIS_EVENTS_PITCH_SET=[Pitch range set to {0}-{1} Hz]
+SMITH_CONFIG_AXIS_EVENTS_PROMPT=Smith Config Axis Events>
+SMITH_CONFIG_AXIS_EVENTS_SOUND_1=  1 - Pluck (string-like, natural - default)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_2=  2 - Sweep (pure sine, directional)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_3=  3 - Chirp (complex, attention-grabbing)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_4=  4 - Bell (resonant, pleasant)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_5=  5 - Percussion (sharp, distinctive)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_CMD=  S - Select sound type
+SMITH_CONFIG_AXIS_EVENTS_SOUND_MENU=Select Axis Crossing Sound
+SMITH_CONFIG_AXIS_EVENTS_SOUND_SET=[Axis crossing sound set to: {0}]
+SMITH_CONFIG_AXIS_EVENTS_STATUS=Axis events: {0}
+SMITH_CONFIG_AXIS_EVENTS_TOGGLED=[Axis events: {0}]
+SMITH_CONFIG_AXIS_EVENTS_TOGGLE_CMD=  T - Toggle axis events on/off
+SMITH_CONFIG_AXIS_EVENTS_VOLUME_CMD=  V - Set volume (10-100%)
+SMITH_CONFIG_AXIS_EVENTS_VOL_ERROR=[Error: Volume must be 10-100]
+SMITH_CONFIG_AXIS_EVENTS_VOL_SET=[Axis events volume set to {0}%]
+SMITH_CONFIG_CENTER_PULSE_CMD=  C - Configure Center Pulse (reference signal)
+SMITH_CONFIG_CENTER_PULSE_COMMANDS=Commands:
+SMITH_CONFIG_CENTER_PULSE_CURRENT_INT=Interval: {0} seconds
+SMITH_CONFIG_CENTER_PULSE_CURRENT_STATUS=Current status: {0}
+SMITH_CONFIG_CENTER_PULSE_CURRENT_VOL=Volume: {0}%
+SMITH_CONFIG_CENTER_PULSE_CURRENT_WAVE=Waveform: {0}
+SMITH_CONFIG_CENTER_PULSE_DETAILS=  Volume: {0}%, Interval: {1} seconds
+SMITH_CONFIG_CENTER_PULSE_ENTER_INT=Enter pulse interval in seconds (0.5-2.0, current: {0}):
+SMITH_CONFIG_CENTER_PULSE_ENTER_VOL=Enter center pulse volume (10-100%, current: {0}%):
+SMITH_CONFIG_CENTER_PULSE_INTERVAL_CMD=  I - Set interval (0.5-2.0 seconds)
+SMITH_CONFIG_CENTER_PULSE_INT_ERROR=[Error: Interval must be 0.5-2.0]
+SMITH_CONFIG_CENTER_PULSE_INT_SET=[Pulse interval set to {0} seconds]
+SMITH_CONFIG_CENTER_PULSE_MENU=Center Pulse Configuration
+SMITH_CONFIG_CENTER_PULSE_PROMPT=Smith Config Center Pulse>
+SMITH_CONFIG_CENTER_PULSE_STATUS=\nCenter pulse: {0}
+SMITH_CONFIG_CENTER_PULSE_TOGGLED=[Center pulse: {0}]
+SMITH_CONFIG_CENTER_PULSE_TOGGLE_CMD=  T - Toggle center pulse on/off
+SMITH_CONFIG_CENTER_PULSE_VOLUME_CMD=  V - Set volume (10-100%)
+SMITH_CONFIG_CENTER_PULSE_VOL_ERROR=[Error: Volume must be 10-100]
+SMITH_CONFIG_CENTER_PULSE_VOL_SET=[Center pulse volume set to {0}%]
+SMITH_CONFIG_CENTER_PULSE_WAVEFORM_CMD=  W - Select waveform type
+SMITH_CONFIG_CENTER_PULSE_WAVE_1=  1 - Click (filtered noise - default, percussive)
+SMITH_CONFIG_CENTER_PULSE_WAVE_2=  2 - Sine wave (clean, musical)
+SMITH_CONFIG_CENTER_PULSE_WAVE_3=  3 - Square wave (bright, synthetic)
+SMITH_CONFIG_CENTER_PULSE_WAVE_4=  4 - Triangle wave (warm, mellow)
+SMITH_CONFIG_CENTER_PULSE_WAVE_5=  5 - Sawtooth wave (bright, rich)
+SMITH_CONFIG_CENTER_PULSE_WAVE_6=  6 - Pulse wave (sharp, electronic)
+SMITH_CONFIG_CENTER_PULSE_WAVE_MENU=Select Center Pulse Waveform
+SMITH_CONFIG_CENTER_PULSE_WAVE_SET=[Center pulse waveform set to: {0}]
+SMITH_CONFIG_NOISE_TYPE_PROMPT=Smith Config Noise Type>
+SMITH_CONFIG_SOUND_TYPE_PROMPT=Smith Config Sound Type>
+SMITH_CONFIG_STEREO_HINT=  For full 360° spatial audio, use a 5.1 or 7.1 surround headset.
+SMITH_CONFIG_STEREO_NOTE=  Note: Only left/right panning available in stereo mode.
+SMITH_CONFIG_SURROUND_ACTIVE=  Full spatial audio (360°) is active!
+SMITH_CONFIG_SURROUND_CMD=  S - Configure Surround Sound parameters
+SMITH_CONFIG_SURROUND_HINT=  Use 'S' to configure surround sound parameters.
+SMITH_CONFIG_WAVEFORM_PROMPT=Smith Config Waveform>
+SPATIAL_WIZARD_AMBIENT_VOLUME=\n1. Smith ambient cues (background positioning):\n
+SPATIAL_WIZARD_APPLY=These settings will be applied to all spatial audio features.
+SPATIAL_WIZARD_AXIS_SOUND=Axis crossing sounds (when impedance crosses real/imaginary axis):\n
+SPATIAL_WIZARD_CENTER_PULSE=Center pulse (reference signal at Smith chart center):\n
+SPATIAL_WIZARD_COMPLETE=Calibration Complete!
+SPATIAL_WIZARD_COMPLETED=[Calibration completed and saved]
+SPATIAL_WIZARD_CORRECT=✓ Correct!
+SPATIAL_WIZARD_CROSSFEED=Crossfeed helps distinguish front from back by mixing a small amount\n
+SPATIAL_WIZARD_CROSSFEED_OPTION=   Option {0} (crossfeed: {1}%):
+SPATIAL_WIZARD_CROSSFEED_VAL=Crossfeed amount: {0}%
+SPATIAL_WIZARD_CURVE_VOL=Preferred curve volume: {0}%
+SPATIAL_WIZARD_DETECTED=Detected audio hardware: {0}
+SPATIAL_WIZARD_DIAG_ACCURACY=Diagonal accuracy: {0}%
+SPATIAL_WIZARD_DISTANCE_TEST=I will play sounds at different distances from the center.\n
+SPATIAL_WIZARD_EVENT_VOLUME=2. Axis crossing event sounds:\n
+SPATIAL_WIZARD_FAR_THRESHOLD=Far threshold: {0}
+SPATIAL_WIZARD_FB_ACCURACY=Front-Back accuracy: {0}%
+SPATIAL_WIZARD_FB_CROSSFEED_TEST=Which setting makes front/back distinction CLEAREST?\n
+SPATIAL_WIZARD_FB_TEST=Now testing front-back perception (more challenging with stereo)...
+SPATIAL_WIZARD_FRONT_BACK=\nWas the sound more in FRONT (1) or BACK (2)?\n
+SPATIAL_WIZARD_IDENTIFY=\nWhich direction did the sound come from?\n
+SPATIAL_WIZARD_INCORRECT=✗ That was from {0}
+SPATIAL_WIZARD_INCORRECT_FB=✗ Incorrect
+SPATIAL_WIZARD_INCORRECT_LR=✗ Incorrect
+SPATIAL_WIZARD_INTRO=This wizard will:\n
+SPATIAL_WIZARD_INVALID_ANSWER=Invalid answer. Please enter 1-8 or R to repeat.\n
+SPATIAL_WIZARD_INVALID_CHOICE=[Invalid choice, using default]\n
+SPATIAL_WIZARD_LEFT_RIGHT=\nWas the sound more on the LEFT (1) or RIGHT (2)?\n
+SPATIAL_WIZARD_LR_ACCURACY=Left-Right accuracy: {0}%
+SPATIAL_WIZARD_NEAR_FAR=\nDid the sound feel NEAR (1) or FAR (2)?\n
+SPATIAL_WIZARD_NEAR_THRESHOLD=Near threshold: {0}
+SPATIAL_WIZARD_PHASE1=Phase 1: Direction Perception Calibration
+SPATIAL_WIZARD_PHASE2=Phase 2: Distance Perception Calibration
+SPATIAL_WIZARD_PHASE3=Phase 3: Volume and Sound Preferences
+SPATIAL_WIZARD_PHASE4=Phase 4: Sound Type Selection
+SPATIAL_WIZARD_PHASE5=Phase 5: Psychoacoustic Tuning (Stereo Mode)
+SPATIAL_WIZARD_PLAYING=Playing test sound...
+SPATIAL_WIZARD_PLAYING_SHORT= Playing Smith ambient cue...\n
+SPATIAL_WIZARD_PRESS_PLAY=Press ENTER to play...
+SPATIAL_WIZARD_PSYCHO_INTRO=Stereo mode uses psychoacoustic techniques to simulate 3D audio.\n
+SPATIAL_WIZARD_REPEATING=Repeating sound...\n
+SPATIAL_WIZARD_REPEAT_PROMPT= (Press R to repeat, ENTER to continue, ESC to cancel):
+SPATIAL_WIZARD_SAVED=Settings saved successfully!
+SPATIAL_WIZARD_SELECT_CROSSFEED=\nWhich option sounded best? (1-5):
+SPATIAL_WIZARD_SELECT_SOUND=\nWhich sound do you prefer for axis crossings? (1-5):
+SPATIAL_WIZARD_SELECT_VOLUME=\nWhich volume felt most comfortable? (1-4):
+SPATIAL_WIZARD_SETTINGS_APPLIED=Settings have been applied to Smith analyzer.
+SPATIAL_WIZARD_SOUND_OPTION=   {0}: {1} (Smith analyzer sound) -
+SPATIAL_WIZARD_SOUND_TYPES=Now let's select your preferred sounds for Smith analyzer events.\n
+SPATIAL_WIZARD_STARTING=[Starting Spatial Audio Calibration Wizard...]
+SPATIAL_WIZARD_START_PROMPT=Press ENTER to start, or ESC to cancel:
+SPATIAL_WIZARD_STEREO_DIR_TEST=With stereo, we'll test left-right perception and simulated\n
+SPATIAL_WIZARD_STEREO_MODE=Stereo mode detected. This wizard will calibrate psychoacoustic\n
+SPATIAL_WIZARD_SUMMARY=Your spatial audio profile:
+SPATIAL_WIZARD_SURROUND_DIR_TEST=I will play test sounds from different directions.\n
+SPATIAL_WIZARD_SURROUND_MODE=Surround sound detected! This wizard will calibrate full 3D spatial\n
+SPATIAL_WIZARD_TEST_SOUND=\nTest sound {0} of 8
+SPATIAL_WIZARD_TITLE=Spatial Audio Calibration Wizard
+SPATIAL_WIZARD_VOLUME_OPTION=   Option {0} ({1}%):
+SPATIAL_WIZARD_VOLUME_TEST=Now let's set your preferred volume levels for Smith analyzer sounds.\n
+STATUS_LINE_CONFIG=Status Line Config>
+STATUS_LINE_CONFIG_COMMANDS=Commands:
+STATUS_LINE_CONFIG_DESC=Select which parameters to display in the status line:
+STATUS_LINE_CONFIG_FREQUENCY=  F - Frequency: {0}
+STATUS_LINE_CONFIG_IMPEDANCE=  Z - Impedance |Z|: {0}
+STATUS_LINE_CONFIG_PHASE=  H - Phase: {0}
+STATUS_LINE_CONFIG_POSITION=  P - Position: {0}
+STATUS_LINE_CONFIG_REACTANCE=  X - Reactance: {0}
+STATUS_LINE_CONFIG_RL=  R - Return Loss: {0}
+STATUS_LINE_CONFIG_SWR=  S - SWR: {0}
+STATUS_LINE_CONFIG_TITLE=Status Line Configuration
+STATUS_LINE_CONFIG_TOGGLE=  P/F/S/R/Z/X/H - Toggle respective parameter
+STATUS_LINE_FREQUENCY_TOGGLED=Frequency display: {0}
+STATUS_LINE_IMPEDANCE_TOGGLED=Impedance |Z| display: {0}
+STATUS_LINE_PHASE_TOGGLED=Phase display: {0}
+STATUS_LINE_POSITION_TOGGLED=Position display: {0}
+STATUS_LINE_REACTANCE_TOGGLED=Reactance display: {0}
+STATUS_LINE_RL_TOGGLED=Return Loss display: {0}
+STATUS_LINE_SWR_TOGGLED=SWR display: {0}
+SURROUND_CONFIG_BACK_CMD=  B - Configure Back distance (50-200%)
+SURROUND_CONFIG_BACK_DIST=  Back distance factor: {0}%
+SURROUND_CONFIG_BACK_SET=[Back distance set to: {0}%]
+SURROUND_CONFIG_CENTER_CMD=  C - Configure Center strength (0-100%)
+SURROUND_CONFIG_CENTER_ERROR=[Error: Value must be between 0 and 100]
+SURROUND_CONFIG_CENTER_SET=[Center strength set to: {0}%]
+SURROUND_CONFIG_CENTER_STR=  Center channel strength: {0}%
+SURROUND_CONFIG_COMMANDS=Commands:
+SURROUND_CONFIG_CURRENT=Current Settings:
+SURROUND_CONFIG_ENTER_BACK=Enter back distance factor (50-200%, current: {0}%):
+SURROUND_CONFIG_ENTER_CENTER=Enter center strength (0-100%, current: {0}%):
+SURROUND_CONFIG_ENTER_FB_SEP=Enter front/back separation (50-200%, current: {0}%):
+SURROUND_CONFIG_ENTER_FRONT=Enter front distance factor (50-200%, current: {0}%):
+SURROUND_CONFIG_ENTER_SIDE=Enter side distance factor (50-200%, current: {0}%):
+SURROUND_CONFIG_ENTER_SIDE_EMP=Enter side channel emphasis (50-200%, current: {0}%):
+SURROUND_CONFIG_FADING=  Fading curve: {0}
+SURROUND_CONFIG_FADING_1=  1 - Linear (equal perceived movement)
+SURROUND_CONFIG_FADING_2=  2 - Logarithmic (more emphasis on center)
+SURROUND_CONFIG_FADING_3=  3 - Exponential (more emphasis on edges)
+SURROUND_CONFIG_FADING_4=  4 - Sine (smooth, natural transition)
+SURROUND_CONFIG_FADING_CMD=  V - Configure fading curVe (Linear/Log/Exp/Sine)
+SURROUND_CONFIG_FADING_MENU=Select Fading Curve
+SURROUND_CONFIG_FADING_PROMPT=Surround Config Fading>
+SURROUND_CONFIG_FADING_SET=[Fading curve changed to: {0}]
+SURROUND_CONFIG_FB_SEP=  Front/Back separation: {0}%
+SURROUND_CONFIG_FB_SEP_CMD=  S - Configure front/back Separation (50-200%)
+SURROUND_CONFIG_FB_SEP_SET=[F/B separation set to: {0}%]
+SURROUND_CONFIG_FRONT_CMD=  F - Configure Front distance (50-200%)
+SURROUND_CONFIG_FRONT_DIST=  Front distance factor: {0}%
+SURROUND_CONFIG_FRONT_SET=[Front distance set to: {0}%]
+SURROUND_CONFIG_HELP_BACK=B - Back distance: Perceived distance to back speakers (50-200%)
+SURROUND_CONFIG_HELP_CENTER=C - Center strength: Center channel strength (0-100%, 0=off)
+SURROUND_CONFIG_HELP_DESC=Configure spatial audio parameters for optimal Smith diagram localization.
+SURROUND_CONFIG_HELP_FADING=V - Fading curve: Spatial movement perception curve
+SURROUND_CONFIG_HELP_FB_SEP=S - F/B separation: Front/back distinction enhancement (50-200%)
+SURROUND_CONFIG_HELP_FRONT=F - Front distance: Perceived distance to front speakers (50-200%)
+SURROUND_CONFIG_HELP_RESET=R - Reset all settings to defaults
+SURROUND_CONFIG_HELP_SIDE=I - Side distance: Perceived distance to side speakers (50-200%)
+SURROUND_CONFIG_HELP_SIDE_EMP=E - Side emphasis: 90° localization emphasis (50-200%)
+SURROUND_CONFIG_HELP_TIP=Tip: Start with defaults, then adjust front/back separation if
+SURROUND_CONFIG_HELP_TIP2=     front and back sound too similar.
+SURROUND_CONFIG_HELP_TITLE=Surround Configuration Help
+SURROUND_CONFIG_NO_SMITH=[Error: Smith visualizer not available]
+SURROUND_CONFIG_PROMPT=Surround Config>
+SURROUND_CONFIG_RANGE_ERROR=[Error: Value must be between 50 and 200]
+SURROUND_CONFIG_RESET_CMD=  R - Reset to defaults
+SURROUND_CONFIG_RESET_DONE=[Surround settings reset to defaults]
+SURROUND_CONFIG_SIDE_CMD=  I - Configure Side distance (50-200%)
+SURROUND_CONFIG_SIDE_DIST=  Side distance factor: {0}%
+SURROUND_CONFIG_SIDE_EMP=  Side channel emphasis: {0}%
+SURROUND_CONFIG_SIDE_EMP_CMD=  E - Configure side channel Emphasis (50-200%)
+SURROUND_CONFIG_SIDE_EMP_SET=[Side emphasis set to: {0}%]
+SURROUND_CONFIG_SIDE_SET=[Side distance set to: {0}%]
+SURROUND_CONFIG_TITLE=Surround Sound Configuration
+SYNTH_ERROR_PREVIEW_FAILED=[Error: Could not open Synthesizer for preview]
+SYNTH_RENDERING_WAV=[Rendering audio to WAV file...]
+SYNTH_WAV_FAILED=[WAV rendering failed]
+SYNTH_WAV_SUCCESS=[WAV file saved: {0}]
+TABLE_CUSTOMIZE=Customize Columns
+TABLE_GOTO=Go To
+TABLE_NEXT=Next Page
+TABLE_PREV=Previous Page
+VOLUME_CONFIG_ENTER_X_RULER=Enter X-axis ruler volume (0-100%), or press ESC to cancel:
+VOLUME_CONFIG_X_RULER_SET=[X-axis ruler volume set to: {0}%]
+VOLUME_X_RULER=X-axis ruler volume (X): {0}%
+WEB_INTERFACE_START=Start
+WEB_INTERFACE_STOP=Stop
+X_RULER_CONFIG=X-Ruler Config>
+X_RULER_CONFIG_COMMANDS=Commands:
+X_RULER_CONFIG_DRUM_CMD=  M - Configure MIDI drum note (35-81)
+X_RULER_CONFIG_DURATION=Blip duration: {0} ms
+X_RULER_CONFIG_DURATION_CMD=  D - Configure blip Duration (30-200 ms)
+X_RULER_CONFIG_MIDI_DRUM=MIDI drum note: {0}
+X_RULER_CONFIG_NOISE_CMD=  N - Configure Noise type (White/Pink/Click)
+X_RULER_CONFIG_NOISE_TYPE=Noise type: {0}
+X_RULER_CONFIG_TITLE=X-Axis Ruler Configuration
+X_RULER_DRUM_DESC=Select the MIDI drum note for X-axis ruler blips.\nCommon drums: 35=Acoustic Bass Drum, 36=Bass Drum 1, 38=Acoustic Snare, 42=Closed Hi-Hat, 46=Open Hi-Hat
+X_RULER_DRUM_ERROR=Error: MIDI drum note must be between 35 and 81
+X_RULER_DRUM_PROMPT=Enter MIDI drum note (35-81), or press ESC to cancel:
+X_RULER_DRUM_SET=X-axis ruler MIDI drum note set to: {0}
+X_RULER_DRUM_TITLE=Configure X-Axis Ruler MIDI Drum
+X_RULER_DURATION_DESC=Blip duration controls the length of the noise bursts at each measurement point.
+X_RULER_DURATION_ERROR=Error: Blip duration must be between 30 and 200 ms
+X_RULER_DURATION_PROMPT=Enter blip duration in milliseconds (30-200), or press ESC to cancel:
+X_RULER_DURATION_SET=X-axis ruler blip duration set to {0} ms
+X_RULER_DURATION_TITLE=Configure X-Axis Ruler Blip Duration
+X_RULER_NOISE_DESC=Select the type of noise used for X-axis ruler blips:\n  0 = White Noise (bright, full spectrum)\n  1 = Pink Noise (warmer, filtered)\n  2 = Click (short impulse)
+X_RULER_NOISE_ERROR=Error: Noise type must be 0, 1, or 2
+X_RULER_NOISE_PROMPT=Enter noise type (0-2), or press ESC to cancel:
+X_RULER_NOISE_SET=X-axis ruler noise type set to: {0}
+X_RULER_NOISE_TITLE=Configure X-Axis Ruler Noise Type
+
+# Reactance Effects Menu translations
+REACTANCE_FX_SYNTH_TITLE=Reactance (X) Synthesizer DSP Effects Configuration
+REACTANCE_FX_STATUS_LABEL=Reactance effects:
+REACTANCE_FX_STATUS_ENABLED=ENABLED
+REACTANCE_FX_STATUS_DISABLED=DISABLED
+REACTANCE_FX_DEADZONE_LABEL=  Dead zone: +/-{0} Ohm
+REACTANCE_FX_MAX_LABEL=  Max reactance for full effect: {0} Ohm
+REACTANCE_FX_MIDI_GLIDING_HEADER=Gliding mode (sustained instruments)
+REACTANCE_FX_MIDI_DOTTED_HEADER=Dotted mode (percussive instruments)
+REACTANCE_FX_SYNTH_SMOOTH_HEADER=Smooth mode
+REACTANCE_FX_SYNTH_DOTTED_HEADER=Dotted mode
+REACTANCE_FX_CAPACITIVE_LABEL=Capacitive effect (X<0):
+REACTANCE_FX_INDUCTIVE_LABEL=Inductive effect (X>0):
+REACTANCE_FX_MAX_VALUE_LABEL=    Max value: {0}/127, Scaling: {1}
+REACTANCE_FX_MAX_DEPTH_LABEL=    Max depth: {0}%, Scaling: {1}
+REACTANCE_FX_CMD_TOGGLE=  E - Toggle reactance effects ON/OFF
+REACTANCE_FX_CMD_DEADZONE=  D - Set dead zone size (Ohms around zero)
+REACTANCE_FX_CMD_MAX=  M - Set maximum reactance for full effect (Ohms)
+REACTANCE_FX_CMD_GLIDING_CAP=  1 - Configure GLIDING mode: capacitive effect (X<0)
+REACTANCE_FX_CMD_GLIDING_IND=  2 - Configure GLIDING mode: inductive effect (X>0)
+REACTANCE_FX_CMD_SMOOTH_CAP=  1 - Configure SMOOTH mode: capacitive effect (X<0)
+REACTANCE_FX_CMD_SMOOTH_IND=  2 - Configure SMOOTH mode: inductive effect (X>0)
+REACTANCE_FX_CMD_DOTTED_CAP=  3 - Configure DOTTED mode: capacitive effect (X<0)
+REACTANCE_FX_CMD_DOTTED_IND=  4 - Configure DOTTED mode: inductive effect (X>0)
+REACTANCE_FX_CMD_HELP=  H - Help (scaling curve descriptions)
+REACTANCE_FX_CMD_BACK=  ESC - Back
+REACTANCE_FX_CONFIGURE_HEADING=Configure {0}
+REACTANCE_FX_MIDI_CURRENT=  Current: {0}, Max={1}/127, Scaling={2}
+REACTANCE_FX_MIDI_EFFECTS_LIST=  Available effect types:\n    0 = Reverb (CC 91) - spatial, room-filling sound\n    1 = Tremolo/Modulation (CC 1) - oscillation, vibration\n    2 = Chorus (CC 93) - widening, thickening\n    3 = Vibrato Depth (CC 77) - pitch oscillation intensity\n    4 = Vibrato Rate (CC 76) - pitch oscillation speed\n    5 = Detune/Celeste (CC 94) - subtle pitch shifting\n    6 = Brightness (CC 74) - timbral/filter change\n    7 = Expression (CC 11) - dynamic volume modulation
+REACTANCE_FX_ENTER_EFFECT_TYPE_MIDI=  Enter effect type number (0-7), or ESC to cancel:
+REACTANCE_FX_EFFECT_SET_MIDI=  Effect set to: {0}
+REACTANCE_FX_ERROR_INVALID_EFFECT_MIDI=  [Error: Invalid effect type, must be 0-7]
+REACTANCE_FX_ERROR_INVALID_NUMBER=  [Error: Invalid number]
+REACTANCE_FX_ENTER_MAX_CC=  Enter maximum CC value (0-127, current={0}), or ESC to keep:
+REACTANCE_FX_MAX_VALUE_SET=  Max value set to: {0}
+REACTANCE_FX_ERROR_RANGE_0_127=  [Error: Must be 0-127]
+REACTANCE_FX_SCALING_LIST=  Available scaling curves:
+REACTANCE_FX_ENTER_SCALING=  Enter scaling type (0-4, current={0}), or ESC to keep:
+REACTANCE_FX_SCALING_SET=  Scaling set to: {0}
+REACTANCE_FX_ERROR_RANGE_0_4=  [Error: Must be 0-4]
+REACTANCE_FX_SAVED=  [Configuration saved]
+REACTANCE_FX_CANCELLED=\n[Cancelled]
+REACTANCE_FX_SYNTH_CURRENT=  Current: {0}, Max depth={1}%, Scaling={2}
+REACTANCE_FX_SYNTH_EFFECTS_LIST=  Available DSP effect types:\n    0 = AM Tremolo - periodic volume oscillation (vibration -> inductance)\n    1 = Echo/Reverb - delay-based spatial effect (room-filling -> capacitance)\n    2 = Ring Modulation - metallic, inharmonic tones (distinctive timbre)\n    3 = Filter Sweep - low-pass filter darkening (capacitance charging)\n    4 = Noise Mix - adds hiss proportional to reactance\n    5 = Bitcrush - digital distortion, resolution loss
+REACTANCE_FX_ENTER_EFFECT_TYPE_SYNTH=  Enter effect type number (0-5), or ESC to cancel:
+REACTANCE_FX_EFFECT_SET_SYNTH=  Effect set to: {0}
+REACTANCE_FX_ERROR_INVALID_EFFECT_SYNTH=  [Error: Invalid effect type, must be 0-5]
+REACTANCE_FX_ENTER_MAX_DEPTH=  Enter maximum effect depth in percent (0-100, current={0}), or ESC to keep:
+REACTANCE_FX_MAX_DEPTH_SET=  Max depth set to: {0}%
+REACTANCE_FX_ERROR_RANGE_0_100=  [Error: Must be 0-100]
+REACTANCE_FX_DEADZONE_PROMPT=  Enter dead zone size in Ohms (0-100, current={0}):
+REACTANCE_FX_DEADZONE_SET=  Dead zone set to: +/-{0} Ohm
+REACTANCE_FX_MAX_PROMPT=  Enter max reactance for full effect in Ohms (10-1000, current={0}):
+REACTANCE_FX_MAX_SET=  Max reactance set to: {0} Ohm
+REACTANCE_FX_ERROR_RANGE_10_1000=  [Error: Must be 10-1000]
+REACTANCE_FX_LABEL_GLIDING_CAP=Gliding Mode - Capacitive (X<0)
+REACTANCE_FX_LABEL_GLIDING_IND=Gliding Mode - Inductive (X>0)
+REACTANCE_FX_LABEL_SMOOTH_CAP=Smooth Mode - Capacitive (X<0)
+REACTANCE_FX_LABEL_SMOOTH_IND=Smooth Mode - Inductive (X>0)
+REACTANCE_FX_LABEL_DOTTED_CAP=Dotted Mode - Capacitive (X<0)
+REACTANCE_FX_LABEL_DOTTED_IND=Dotted Mode - Inductive (X>0)
+REACTANCE_FX_HELP_CONCEPT=\n  === Concept ===\n  Positive reactance (X > 0 Ohm) indicates INDUCTANCE (coils, magnetic fields).\n  Negative reactance (X < 0 Ohm) indicates CAPACITANCE (capacitors, electric fields).\n  This feature maps these to audio effects so you can HEAR the difference:\n    - Capacitance -> Room/spatial effect (e.g., Reverb/Echo = filling a space)\n    - Inductance  -> Oscillation effect (e.g., Tremolo = vibration/magnetic field)
+REACTANCE_FX_HELP_DEADZONE=  === Dead Zone ===\n  A configurable zone around X=0 where NO effects are applied.\n  This keeps purely resistive impedances clean and unaffected.\n  Recommended: 3-10 Ohm depending on measurement noise.
+REACTANCE_FX_HELP_MIDI_MODES=  === Gliding vs. Dotted Mode (MIDI) ===\n  Effects behave differently with sustained vs. percussive instruments:\n  - Gliding (sustained): Reverb may be less noticeable, Tremolo is clearer\n  - Dotted (percussive): Reverb tail is very audible, Tremolo may be subtle\n  Configure each mode independently for best results.
+REACTANCE_FX_HELP_SYNTH_MODES=  === Smooth vs. Dotted Mode (Synthesizer) ===\n  DSP effects are applied directly to the PCM waveform buffer.\n  - Smooth mode: Continuous signal — Echo/Tremolo build up smoothly\n  - Dotted mode: Short bursts — some effects (Echo) leave audible tails\n  Configure each mode independently for best results.
+REACTANCE_FX_HELP_DSP_EFFECTS=  === DSP Effect Types (Synthesizer) ===\n  0 = AM Tremolo: Volume oscillation at ~6 Hz. Maps to inductance (vibration).\n      Best in smooth mode where oscillation is clearly audible.\n  1 = Echo/Reverb: Delay-based spatial effect. Maps to capacitance (filling).\n      Creates room-like spatial impression. Tail audible in dotted mode.\n  2 = Ring Modulation: Metallic, inharmonic timbre change.\n      Very distinctive — creates alien/metallic quality. Both modes.\n  3 = Filter Sweep: Low-pass filter that darkens the sound.\n      Simulates capacitance charging (absorbing high frequencies).\n  4 = Noise Mix: Adds white noise hiss proportional to reactance.\n      Simple but effective indicator. Works on all platforms.\n  5 = Bitcrush: Reduces bit depth for digital distortion.\n      Creative alternative — resolution loss as reactance indicator.
+REACTANCE_FX_HELP_SCALING=  === Scaling Curves ===
+REACTANCE_FX_HELP_PLATFORM_MIDI=  === Platform Notes (MIDI) ===\n  Windows (GS Wavetable): Supports Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n    Limited effect range. Reverb and Modulation are most effective.\n  macOS (DLS Synth): Full GM effects support. All CC parameters work well.\n    Effects were previously disabled for clean output - now enabled only on reactance channel.\n  Linux (FluidSynth/TiMidity): Depends on soundfont. Most effects supported.
+REACTANCE_FX_HELP_PLATFORM_SYNTH=  === Platform Notes (Synthesizer) ===\n  All DSP effects work identically on Windows (WaveOut), macOS (PortAudio),\n  and Linux (PortAudio). No platform limitations for native DSP processing.
+REACTANCE_FX_BACK=\n[Returning to audio configuration...]

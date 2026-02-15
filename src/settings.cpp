@@ -570,6 +570,89 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
                 }
             } catch (...) {}
         }
+        // Reactance MIDI effect settings
+        else if (k == "reactance_effects_enabled") cfg.reactance_effects_enabled = (v == "1" || v == "true");
+        else if (k == "reactance_deadzone_ohms") {
+            try { double d = std::stod(v); if (d >= 0.0 && d <= 100.0) cfg.reactance_deadzone_ohms = d; } catch (...) {}
+        }
+        else if (k == "reactance_max_ohms") {
+            try { double d = std::stod(v); if (d >= 10.0 && d <= 1000.0) cfg.reactance_max_ohms = d; } catch (...) {}
+        }
+        // Gliding mode reactance effects
+        else if (k == "reactance_gliding_capacitive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 7) cfg.reactance_effects_gliding.capacitive_effect = static_cast<AppConfig::ReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "reactance_gliding_capacitive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 127) cfg.reactance_effects_gliding.capacitive_max_value = m; } catch (...) {}
+        }
+        else if (k == "reactance_gliding_capacitive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.reactance_effects_gliding.capacitive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        else if (k == "reactance_gliding_inductive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 7) cfg.reactance_effects_gliding.inductive_effect = static_cast<AppConfig::ReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "reactance_gliding_inductive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 127) cfg.reactance_effects_gliding.inductive_max_value = m; } catch (...) {}
+        }
+        else if (k == "reactance_gliding_inductive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.reactance_effects_gliding.inductive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        // Dotted mode reactance effects
+        else if (k == "reactance_dotted_capacitive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 7) cfg.reactance_effects_dotted.capacitive_effect = static_cast<AppConfig::ReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "reactance_dotted_capacitive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 127) cfg.reactance_effects_dotted.capacitive_max_value = m; } catch (...) {}
+        }
+        else if (k == "reactance_dotted_capacitive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.reactance_effects_dotted.capacitive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        else if (k == "reactance_dotted_inductive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 7) cfg.reactance_effects_dotted.inductive_effect = static_cast<AppConfig::ReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "reactance_dotted_inductive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 127) cfg.reactance_effects_dotted.inductive_max_value = m; } catch (...) {}
+        }
+        else if (k == "reactance_dotted_inductive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.reactance_effects_dotted.inductive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        // Synthesizer reactance DSP effect settings
+        else if (k == "synth_reactance_smooth_capacitive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 5) cfg.synth_reactance_effects_smooth.capacitive_effect = static_cast<AppConfig::SynthReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "synth_reactance_smooth_capacitive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 100) cfg.synth_reactance_effects_smooth.capacitive_max_percent = m; } catch (...) {}
+        }
+        else if (k == "synth_reactance_smooth_capacitive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.synth_reactance_effects_smooth.capacitive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        else if (k == "synth_reactance_smooth_inductive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 5) cfg.synth_reactance_effects_smooth.inductive_effect = static_cast<AppConfig::SynthReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "synth_reactance_smooth_inductive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 100) cfg.synth_reactance_effects_smooth.inductive_max_percent = m; } catch (...) {}
+        }
+        else if (k == "synth_reactance_smooth_inductive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.synth_reactance_effects_smooth.inductive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_capacitive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 5) cfg.synth_reactance_effects_dotted.capacitive_effect = static_cast<AppConfig::SynthReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_capacitive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 100) cfg.synth_reactance_effects_dotted.capacitive_max_percent = m; } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_capacitive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.synth_reactance_effects_dotted.capacitive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_inductive_effect") {
+            try { int e = std::stoi(v); if (e >= 0 && e <= 5) cfg.synth_reactance_effects_dotted.inductive_effect = static_cast<AppConfig::SynthReactanceEffectType>(e); } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_inductive_max") {
+            try { int m = std::stoi(v); if (m >= 0 && m <= 100) cfg.synth_reactance_effects_dotted.inductive_max_percent = m; } catch (...) {}
+        }
+        else if (k == "synth_reactance_dotted_inductive_scaling") {
+            try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.synth_reactance_effects_dotted.inductive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
+        }
     }
     return true;
 }
@@ -777,6 +860,48 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "midi_controller_preset=" << cfg.midi_controller_preset << "  # MIDI mapping preset filename\n";
     ofs << "midi_controller_feedback=" << (cfg.midi_controller_feedback ? "1" : "0") << "  # Send motor fader feedback\n";
     ofs << "midi_controller_freeze_by_touch=" << (cfg.midi_controller_freeze_by_touch ? "1" : "0") << "  # Freeze playback when fader touched\n";
+    
+    // Reactance MIDI effect settings
+    ofs << "\n# Reactance MIDI Effect Configuration\n";
+    ofs << "# Maps reactance sign/magnitude to MIDI effects for audible inductance/capacitance\n";
+    ofs << "# Effect types: 0=Reverb, 1=Tremolo(Mod), 2=Chorus, 3=VibratoDepth, 4=VibratoRate, 5=Detune, 6=Brightness, 7=Expression\n";
+    ofs << "# Scaling: 0=Linear, 1=SquareRoot, 2=Exponential, 3=Logarithmic, 4=S-Curve\n";
+    ofs << "reactance_effects_enabled=" << (cfg.reactance_effects_enabled ? "1" : "0") << "  # Enable reactance MIDI effects\n";
+    ofs << "reactance_deadzone_ohms=" << std::fixed << std::setprecision(1) << cfg.reactance_deadzone_ohms << "  # Dead zone around 0 in Ohms (no effects)\n";
+    ofs << "reactance_max_ohms=" << std::fixed << std::setprecision(1) << cfg.reactance_max_ohms << "  # Max reactance for full effect intensity\n";
+    ofs << "\n# Gliding mode reactance effects (sustained instruments)\n";
+    ofs << "reactance_gliding_capacitive_effect=" << static_cast<int>(cfg.reactance_effects_gliding.capacitive_effect) << "\n";
+    ofs << "reactance_gliding_capacitive_max=" << cfg.reactance_effects_gliding.capacitive_max_value << "\n";
+    ofs << "reactance_gliding_capacitive_scaling=" << static_cast<int>(cfg.reactance_effects_gliding.capacitive_scaling) << "\n";
+    ofs << "reactance_gliding_inductive_effect=" << static_cast<int>(cfg.reactance_effects_gliding.inductive_effect) << "\n";
+    ofs << "reactance_gliding_inductive_max=" << cfg.reactance_effects_gliding.inductive_max_value << "\n";
+    ofs << "reactance_gliding_inductive_scaling=" << static_cast<int>(cfg.reactance_effects_gliding.inductive_scaling) << "\n";
+    ofs << "\n# Dotted mode reactance effects (percussive instruments)\n";
+    ofs << "reactance_dotted_capacitive_effect=" << static_cast<int>(cfg.reactance_effects_dotted.capacitive_effect) << "\n";
+    ofs << "reactance_dotted_capacitive_max=" << cfg.reactance_effects_dotted.capacitive_max_value << "\n";
+    ofs << "reactance_dotted_capacitive_scaling=" << static_cast<int>(cfg.reactance_effects_dotted.capacitive_scaling) << "\n";
+    ofs << "reactance_dotted_inductive_effect=" << static_cast<int>(cfg.reactance_effects_dotted.inductive_effect) << "\n";
+    ofs << "reactance_dotted_inductive_max=" << cfg.reactance_effects_dotted.inductive_max_value << "\n";
+    ofs << "reactance_dotted_inductive_scaling=" << static_cast<int>(cfg.reactance_effects_dotted.inductive_scaling) << "\n";
+    
+    // Synthesizer reactance DSP effect settings
+    ofs << "\n# Synthesizer Reactance DSP Effect Configuration\n";
+    ofs << "# DSP effects applied natively to PCM buffer for synth mode reactance sonification\n";
+    ofs << "# Effect types: 0=AM_Tremolo, 1=Echo, 2=RingMod, 3=FilterSweep, 4=NoiseMix, 5=Bitcrush\n";
+    ofs << "\n# Smooth mode synth reactance effects\n";
+    ofs << "synth_reactance_smooth_capacitive_effect=" << static_cast<int>(cfg.synth_reactance_effects_smooth.capacitive_effect) << "\n";
+    ofs << "synth_reactance_smooth_capacitive_max=" << cfg.synth_reactance_effects_smooth.capacitive_max_percent << "\n";
+    ofs << "synth_reactance_smooth_capacitive_scaling=" << static_cast<int>(cfg.synth_reactance_effects_smooth.capacitive_scaling) << "\n";
+    ofs << "synth_reactance_smooth_inductive_effect=" << static_cast<int>(cfg.synth_reactance_effects_smooth.inductive_effect) << "\n";
+    ofs << "synth_reactance_smooth_inductive_max=" << cfg.synth_reactance_effects_smooth.inductive_max_percent << "\n";
+    ofs << "synth_reactance_smooth_inductive_scaling=" << static_cast<int>(cfg.synth_reactance_effects_smooth.inductive_scaling) << "\n";
+    ofs << "\n# Dotted mode synth reactance effects\n";
+    ofs << "synth_reactance_dotted_capacitive_effect=" << static_cast<int>(cfg.synth_reactance_effects_dotted.capacitive_effect) << "\n";
+    ofs << "synth_reactance_dotted_capacitive_max=" << cfg.synth_reactance_effects_dotted.capacitive_max_percent << "\n";
+    ofs << "synth_reactance_dotted_capacitive_scaling=" << static_cast<int>(cfg.synth_reactance_effects_dotted.capacitive_scaling) << "\n";
+    ofs << "synth_reactance_dotted_inductive_effect=" << static_cast<int>(cfg.synth_reactance_effects_dotted.inductive_effect) << "\n";
+    ofs << "synth_reactance_dotted_inductive_max=" << cfg.synth_reactance_effects_dotted.inductive_max_percent << "\n";
+    ofs << "synth_reactance_dotted_inductive_scaling=" << static_cast<int>(cfg.synth_reactance_effects_dotted.inductive_scaling) << "\n";
     
     ofs << "\n# Table view preferences\n";
     ofs << "table_columns=";

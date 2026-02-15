@@ -10,6 +10,7 @@
 #include <thread>
 #include <chrono>
 #include <cstring>
+#include <cstdio>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -238,6 +239,12 @@ void AcousticAnalyzer::play() {
             audioEngine->stopAllNotes();
         }
     }
+    
+    // Reset abort state so audio backend accepts new data
+    if (backend) {
+        backend->resetAbort();
+    }
+    
     state = PlaybackState::PLAYING;
     
     if (!audioThread.joinable()) {
@@ -274,6 +281,15 @@ void AcousticAnalyzer::freeze() {
 void AcousticAnalyzer::stop() {
     state = PlaybackState::STOPPED;
     shouldStop = true;
+    
+    // Abort any ongoing blocking audio writes to prevent hang during shutdown
+    if (backend) {
+        try {
+            backend->abort();
+        } catch (...) {
+            if (logger) logger->log("ACOUSTIC", "Exception in backend->abort()");
+        }
+    }
     
     // Clear pending axis event buffer to prevent crackling on restart
     {
@@ -585,7 +601,30 @@ int AcousticAnalyzer::getMasterVolume() const {
 }
 
 void AcousticAnalyzer::setSmoothMode(bool smooth) {
-    smoothMode = smooth;
+    bool wasSmooth = smoothMode.exchange(smooth);
+    
+    // When switching modes during playback, clean up to prevent audio hangs
+    if (wasSmooth != smooth && state.load() == PlaybackState::PLAYING) {
+        // Stop all active notes to prevent hanging notes across mode boundaries
+        if (audioEngine) {
+            try {
+                audioEngine->stopAllNotes();
+            } catch (...) {
+                if (logger) logger->log("ACOUSTIC", "Exception stopping notes during mode switch");
+            }
+        }
+        
+        // Force recalculation of point selection for dotted mode
+        needsPointSelection.store(true);
+        
+        // Signal buffer flush for immediate mode transition
+        buffersWereFlushed.store(true);
+        
+        if (logger) {
+            logger->log("ACOUSTIC", "Mode switch during playback: stopped notes, flushed buffers, recalculating points");
+        }
+    }
+    
     if (logger) {
         logger->log("ACOUSTIC", std::string("Playback mode: ") + (smooth ? "smooth" : "dotted"));
     }
@@ -1081,7 +1120,8 @@ void AcousticAnalyzer::audioThreadFunc() {
                     
                     smoothFractionalPos = 0.0;
                     
-                    // Silence between dots
+                    // Silence between dots - check shouldStop to allow fast exit
+                    if (shouldStop.load()) break;
                     std::this_thread::sleep_for(std::chrono::milliseconds(silenceDurationMs));
                 } else {
                     // No more selected points, advance normally
@@ -1093,20 +1133,34 @@ void AcousticAnalyzer::audioThreadFunc() {
         } else {
             // Frozen mode: stay at current point without continuous audio generation
             if (isSmooth) {
-                // In smooth frozen mode, just hold position without flooding audio buffers
-                // Only re-play if position changed (e.g., user moved playback head)
                 size_t frozenPos = currentPos.load();
-                if (frozenPos != lastFrozenPos) {
-                    playCurrentPositionSmooth(0.0);  // Play once at new position
+                bool positionChanged = (frozenPos != lastFrozenPos);
+                if (positionChanged) {
                     lastFrozenPos = frozenPos;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(frameDurationMs));
+                
+                // Synth engine needs continuous PCM buffer generation for sustained tone.
+                // MIDI engine sustains notes after a single Note On, so only replay on position change.
+                bool isSynth = audioEngine && audioEngine->getEngineType() == AudioEngineType::SYNTHESIZER;
+                if (isSynth) {
+                    // Continuous PCM generation - no sleep needed, audio backend
+                    // buffering provides natural timing (same as PLAYING smooth path)
+                    playCurrentPositionSmooth(0.0);
+                } else if (positionChanged) {
+                    // MIDI: re-trigger note only when position changes
+                    playCurrentPositionSmooth(0.0);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(frameDurationMs));
+                } else {
+                    // MIDI with no position change - just poll for changes
+                    std::this_thread::sleep_for(std::chrono::milliseconds(frameDurationMs));
+                }
             } else {
                 // In dotted mode (freeze), use configured freeze point pause timing
                 int dotDurationMs = dottedDurationMs.load();
                 int freezePointPauseDurationMs = freezePointPauseMs.load();
                 
                 playCurrentPosition(dotDurationMs);
+                if (shouldStop.load()) continue;  // Fast exit in frozen mode
                 std::this_thread::sleep_for(std::chrono::milliseconds(freezePointPauseDurationMs));
             }
         }
@@ -1318,6 +1372,28 @@ void AcousticAnalyzer::playCurrentPosition(int durationMs) {
     if (curves[3].enabled) {  // Reactance
         int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
         audioEngine->generateAudio(mixBuffer, samples, 3, calcXPitch(pt), frac, effectiveVolume);
+        // Apply reactance effects based on engine type
+        if (reactanceEffectsEnabled) {
+            if (logger) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Dotted: Applying reactance effects at pos=%zu, X=%.1f Ohm, engine=%s, mode=%s",
+                         pos, pt.X, audioEngine->getName(), smoothMode.load() ? "smooth" : "dotted");
+                logger->log("ACOUSTIC_FX", msg);
+            }
+            if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+                auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+                if (midiEngine) {
+                    const auto& effectConfig = smoothMode.load() ? reactanceEffectsGliding : reactanceEffectsDotted;
+                    midiEngine->applyReactanceEffects(pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                }
+            } else if (audioEngine->getEngineType() == AudioEngineType::SYNTHESIZER) {
+                auto synthEngine = std::dynamic_pointer_cast<SynthesizerEngine>(audioEngine);
+                if (synthEngine) {
+                    const auto& effectConfig = smoothMode.load() ? synthReactanceEffectsSmooth : synthReactanceEffectsDotted;
+                    synthEngine->applySynthReactanceEffects(mixBuffer, samples, pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                }
+            }
+        }
     }
     if (curves[4].enabled) {  // Phase
         int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
@@ -1517,6 +1593,29 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
         double pitch = calcXPitch(pt1) + (calcXPitch(pt2) - calcXPitch(pt1)) * pitchInterpolation;
         int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
         audioEngine->generateAudio(mixBuffer, samples, 3, pitch, currentFrac, effectiveVolume);
+        // Apply reactance effects with interpolated reactance value
+        if (reactanceEffectsEnabled) {
+            double interpX = pt1.X + (pt2.X - pt1.X) * pitchInterpolation;
+            if (logger) {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Smooth: Applying reactance effects at pos=%zu, interpX=%.1f Ohm (pt1.X=%.1f, pt2.X=%.1f, t=%.3f), engine=%s",
+                         pos, interpX, pt1.X, pt2.X, pitchInterpolation, audioEngine->getName());
+                logger->log("ACOUSTIC_FX", msg);
+            }
+            if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+                auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+                if (midiEngine) {
+                    const auto& effectConfig = reactanceEffectsGliding;  // Always gliding in smooth mode
+                    midiEngine->applyReactanceEffects(interpX, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                }
+            } else if (audioEngine->getEngineType() == AudioEngineType::SYNTHESIZER) {
+                auto synthEngine = std::dynamic_pointer_cast<SynthesizerEngine>(audioEngine);
+                if (synthEngine) {
+                    const auto& effectConfig = synthReactanceEffectsSmooth;  // Always smooth in smooth mode
+                    synthEngine->applySynthReactanceEffects(mixBuffer, samples, interpX, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                }
+            }
+        }
     }
     if (curves[4].enabled) {  // Phase
         double pitch = calcPhasePitch(pt1) + (calcPhasePitch(pt2) - calcPhasePitch(pt1)) * pitchInterpolation;
@@ -1941,6 +2040,7 @@ void AcousticAnalyzer::synthPhaseInterpolated(const MeasurementPoint& pt1, const
 void AcousticAnalyzer::playAudioBuffer(const std::vector<int16_t>& buffer) {
     if (!backend) return;
     if (buffer.empty()) return;
+    if (shouldStop.load()) return;  // Don't start new writes during shutdown
     
     std::lock_guard<std::mutex> lock(audioMutex);
     
@@ -3154,11 +3254,16 @@ void AcousticAnalyzer::rulerThreadFunc() {
         audioEngine->stopAllNotes();
     }
     
-    // Restore previous playback state
-    PlaybackState restoreState = stateBeforeRuler;
-    if (restoreState == PlaybackState::PLAYING) {
-        // Resume playing
-        play();
+    // Restore previous playback state only if the ruler completed its full sequence
+    // naturally. When rulerShouldStop is true, the ruler was force-stopped externally
+    // (e.g., by ESC/shutdown), so we must NOT restart playback to prevent hangs.
+    bool rulerWasForceStopped = rulerShouldStop.load();
+    if (!rulerWasForceStopped) {
+        PlaybackState restoreState = stateBeforeRuler;
+        if (restoreState == PlaybackState::PLAYING) {
+            // Resume playing
+            play();
+        }
     }
     
     rulerPlaying.store(false);

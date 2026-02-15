@@ -39,6 +39,20 @@ public:
     virtual void shutdown() = 0;
     
     /**
+     * Abort any ongoing audio playback immediately
+     * This can be called from a different thread to unblock a blocking playBuffer() call
+     * Default implementation does nothing
+     */
+    virtual void abort() {}
+    
+    /**
+     * Reset the abort state so that playback can resume after a previous abort
+     * Must be called before playBuffer() will accept new data again
+     * Default implementation does nothing
+     */
+    virtual void resetAbort() {}
+    
+    /**
      * Play audio buffer (blocking)
      * @param buffer Interleaved stereo PCM data (int16_t, left/right alternating)
      * @param samples Number of samples per channel

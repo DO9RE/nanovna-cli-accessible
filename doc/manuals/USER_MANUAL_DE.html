@@ -733,6 +733,18 @@ make -j$(nproc)</code></pre>
 <li>MIDI-Instrumente pro Kurve auswählen</li>
 <li>Klänge vor dem Anwenden vorhören</li>
 </ul>
+<p><strong>Reaktanz-MIDI-Effekte (Taste Z in der Audio-Konfiguration):</strong></p>
+<p>Bei Verwendung der MIDI-Engine können Sie das Vorzeichen und die Größe der Reaktanz (X) auf MIDI-Effekte abbilden,
+sodass Sie <em>hören</em> können, ob eine Induktivität oder Kapazität vorliegt:</p>
+<ul>
+<li><strong>Kapazitive Reaktanz (X &lt; 0)</strong>: wird auf einen räumlichen/raumfüllenden Effekt abgebildet (Standard: Reverb) — denken Sie an einen Kondensator, der sich &quot;füllt&quot;</li>
+<li><strong>Induktive Reaktanz (X &gt; 0)</strong>: wird auf einen Schwingungs-/Vibrationseffekt abgebildet (Standard: Tremolo/Modulation) — denken Sie an eine Spule, die &quot;schwingt&quot;</li>
+<li><strong>Tote Zone</strong>: Ein konfigurierbarer Bereich um X=0, in dem keine Effekte angewendet werden — rein ohmsche Impedanzen bleiben klar</li>
+<li><strong>Separate Gliding/Dotted-Konfiguration</strong>: Gehaltene Instrumente (Gliding-Modus) und perkussive Instrumente (Dotted-Modus) reagieren unterschiedlich auf Effekte — konfigurieren Sie jeden Modus unabhängig</li>
+<li><strong>8 Effekttypen</strong>: Reverb, Tremolo, Chorus, Vibrato-Tiefe, Vibrato-Rate, Detune, Brightness, Expression</li>
+<li><strong>5 Skalierungskurven</strong>: Linear, Quadratwurzel (empfohlen), Exponentiell, Logarithmisch, S-Kurve — jede mit unterschiedlichen Wahrnehmungseigenschaften</li>
+<li><strong>Plattformhinweise</strong>: Windows GS Wavetable unterstützt Reverb/Chorus/Modulation; macOS DLS Synth unterstützt alle; Linux hängt vom Soundfont ab</li>
+</ul>
 <h3>Smith-Diagramm-Visualisierung:</h3>
 <p>Erleben Sie Impedanzanpassung durch 3D-Raumaudio-Darstellung des Smith-Diagramms. <strong>SIE</strong> stehen im Zentrum des Smith-Diagramms (perfekte 50Ω-Anpassung). Messpunkte bewegen sich in 3D um Sie herum.</p>
 <p><strong>Was ist Smith-Diagramm-Visualisierung?</strong></p>

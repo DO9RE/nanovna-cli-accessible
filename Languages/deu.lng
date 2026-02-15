@@ -33,15 +33,10 @@ OHM_TEXT=Ohm
 DEGREE_TEXT=Grad
 
 # Allgemeine UI-Nachrichten (vereinheitlicht/konsolidiert)
-ERROR_NO_PORT_SELECTED=Fehler: Kein COM-Port ausgewählt. Verwenden Sie (P)ort, um zuerst einen Port auszuwählen.
-ERROR_NO_PORT_CONFIGURED=Kein serieller Port konfiguriert. Verwenden Sie (P)ort zum Auswählen.
-ERROR_NO_RANGE_CONFIGURED=Kein Frequenzbereich konfiguriert. Bitte zuerst den Bereich einstellen.
-PROMPT_USE_RANGE_COMMAND=Verwenden Sie (R)ange um den Frequenzbereich zu konfigurieren.
 MSG_PRESS_ESC_BACK=ESC zum Zurückgehen
 GOING_BACK=[Zurück zum vorherigen Schritt]
 ERROR_UNKNOWN_COMMAND=Unbekannter Befehl.
 ERROR_INVALID_PORT=Ungültige Portnummer.
-HELP_COMMAND_ESC_BACK=  ESC - Zurück      Zurück zum Hauptmenü
 PORT_SCANNING=Scanne COM-Ports...
 PORT_CHOOSE_PROMPT=Portnummer wählen (oder ESC zum Abbrechen):
 DEVICE_INFO_PROMPT=Geräteinformationen
@@ -83,7 +78,6 @@ SWEEP_NO_TIMING=Kontinuierlicher Sweep aktiviert, aber keine Zeitinformationen v
 
 # Zusammenfassung
 SUMMARY_TITLE=Messwert Zusammenfassung
-SUMMARY_NO_DATA=Keine Daten
 SUMMARY_POINTS=Messpunkte: {0}
 SUMMARY_FREQ_RANGE=Frequenzbereich: {0} Hz bis {1} Hz
 SUMMARY_MIN_SWR=Min SWR: {0} bei {1} Hz
@@ -105,7 +99,6 @@ TABLE_PHASE=Phase
 TABLE_ALREADY_LAST=Bereits auf letzter Seite.
 TABLE_ALREADY_FIRST=Bereits auf erster Seite.
 TABLE_PROMPT=[LEER/N: Weiter | P: Zurück | C: Anpassen | G: Gehe zu | ESC: Zurück | H: Hilfe] >
-TABLE_NO_DATA=Keine Daten
 
 # Anpassungsmenue
 CUSTOMIZE_TITLE=Tabellenspalten anpassen
@@ -115,14 +108,12 @@ CUSTOMIZE_INVALID=Ungültig
 CUSTOMIZE_UPDATED=Spalten aktualisiert.
 
 # Exportmenue
-EXPORT_NO_DATA=Keine Daten zum Exportieren.
 EXPORT_LOOP_RANGE=Exportiere Loop Range (Marker {0} bis {1})
 EXPORT_INVALID_LOOP=Ungültiger Loop Range, exportiere alle Daten
 EXPORT_ALL_DATA=Exportiere alle Messdaten
 EXPORT_FORMAT=Export Format: (1) CSV, (2) TXT, (3) Braille Datei, (4) Direkt an Braille Drucker drucken, (andere) abbrechen
 EXPORT_SUCCESS=Exportiert nach: {0}
 EXPORT_FAILED=Export fehlgeschlagen: {0}
-EXPORT_CANCELED=Abgebrochen
 
 # Braille Drucker
 BRAILLE_NO_PRINTERS=Keine Drucker auf diesem System gefunden.
@@ -156,7 +147,6 @@ DEVICE_INFO_SHELL=(S)hell
 
 # Debug Shell
 DEBUG_SHELL_TITLE=Debug Shell - Direkte NanoVNA Kommunikation
-DEBUG_SHELL_NO_PORT=Fehler: Kein COM-Port ausgewählt. Bitte wählen Sie zuerst einen Port im (P)ort-Menü aus.
 DEBUG_SHELL_INSTRUCTIONS=Geben Sie Befehle ein und drücken Sie Enter zum Senden an NanoVNA. Drücken Sie ESC zum Beenden.
 DEBUG_SHELL_PROMPT=Shell>
 DEBUG_SHELL_EXIT=Beende Shell...
@@ -171,7 +161,6 @@ CAL_MENU_TITLE=Kalibrierungsmenü
 CAL_MENU_PROMPT=Kalibrierung
 CAL_MENU_LOAD=(L)aden Kalibrierungsprofil
 CAL_MENU_PERFORM=(P) Kalibrierung durchführen
-CAL_MENU_HELP=(H)ilfe
 
 # Kalibrierungsprofil laden
 CAL_LOAD_TITLE=Kalibrierungsprofil laden
@@ -208,7 +197,6 @@ CURVE_NAME_REACTANCE=Reaktanz X
 CURVE_NAME_PHASE=Phase
 ACOUSTIC_DATA_POINTS=Datenpunkte: {0}
 ACOUSTIC_HELP=H für Hilfe drücken, ESC zum zurück.
-ACOUSTIC_START=Beliebige Taste zum starten...
 ACOUSTIC_POSITION=Position: {0} / {1}
 ACOUSTIC_PAUSED=[PAUSIERT]
 ACOUSTIC_PLAYING=[SPIELT AB]
@@ -230,6 +218,16 @@ ACOUSTIC_FREQUENCY=Frequenz: {0} Hz
 ACOUSTIC_IMPEDANCE=Impedanz: {0} + j{1}
 ACOUSTIC_MAGNITUDE=Betrag |Z|: {0}
 ACOUSTIC_S11=S11: {0} + j{1}
+ACOUSTIC_REACTANCE_HINT=Reaktanzcharakter: {0}
+REACTANCE_HINT_RESONANT=Resonant (X ~ 0)
+REACTANCE_HINT_NEARLY_RESONANT_INDUCTIVE=Nahezu resonant (leicht induktiv)
+REACTANCE_HINT_NEARLY_RESONANT_CAPACITIVE=Nahezu resonant (leicht kapazitiv)
+REACTANCE_HINT_SLIGHTLY_INDUCTIVE=Leicht induktiv
+REACTANCE_HINT_SLIGHTLY_CAPACITIVE=Leicht kapazitiv
+REACTANCE_HINT_INDUCTIVE=Induktiv
+REACTANCE_HINT_CAPACITIVE=Kapazitiv
+REACTANCE_HINT_STRONGLY_INDUCTIVE=Stark induktiv
+REACTANCE_HINT_STRONGLY_CAPACITIVE=Stark kapazitiv
 ACOUSTIC_EXPORTING=[Exportiere Messwerte...]
 ACOUSTIC_CONTINUE=[Beliebige Taste zum fortfahren...]
 ACOUSTIC_LEFT_MARKER=[Linker Marker gesetzt bei {0}]
@@ -248,11 +246,9 @@ ACOUSTIC_MIDI_MODE_DOTTED=[MIDI: Gewechselt zu PUNKTIERT Modus mit perkussiven I
 ACOUSTIC_RULER_PLAYING=[Spiele Akustisches Y-Achsen-Lineal...]
 ACOUSTIC_RULER_STOPPING=[Stoppe Y-Achsen-Lineal...]
 ACOUSTIC_RULER_STOPPED=[Y-Achsen-Lineal gestoppt]
-ACOUSTIC_RULER_COMPLETE=[Akustisches Y-Achsen-Lineal abgeschlossen]
 ACOUSTIC_RETURN=[Zurück zum Hauptmenü...]
 ACOUSTIC_EXITED=Akustischer Analyse Modus beendet.
 ACOUSTIC_NO_DATA=Keine Messdaten für akustische Analyse verfügbar.
-ACOUSTIC_NOT_WINDOWS=Akustische Analyse ist nur unter Windows verfügbar.
 
 # Audio Konfiguration
 AUDIO_CONFIG_TITLE=Audio Konfiguration
@@ -268,8 +264,6 @@ AUDIO_CONFIG_MIDI_CMD=  1-5 - MIDI Instrument für Kurve konfigurieren
 AUDIO_CONFIG_VOLUME_CMD=  V - Lautstärke für einzelne Kurven konfigurieren
 AUDIO_CONFIG_RULER_CMD=  A - Y-Achsen-Lineal Einstellungen konfigurieren
 AUDIO_CONFIG_PREVIEW_CMD=  P - Aktuelle MIDI Konfiguration vorhören
-AUDIO_CONFIG_HELP_CMD=  H - Hilfe
-AUDIO_CONFIG_BACK_CMD=  ESC - Zurück
 
 # Lineal Konfiguration Untermenü
 RULER_CONFIG_TITLE=Y-Achsen-Lineal Konfiguration
@@ -283,7 +277,6 @@ RULER_CONFIG_COMMANDS=Befehle:
 RULER_CONFIG_MODE_CMD=  M - Sound-Modus umschalten (Letzter Kurve folgen / Eigener Sound)
 RULER_CONFIG_CUSTOM_CMD=  C - Eigenen Sound konfigurieren
 RULER_CONFIG_DURATION_CMD=  D - Blip-Dauer konfigurieren (30-500 ms)
-RULER_CONFIG_BACK_CMD=  ESC - Zurück
 RULER_SOUND_MODE_FOLLOW=Letzter Kurve folgen
 RULER_SOUND_MODE_CUSTOM=Eigener Sound
 RULER_MODE_TOGGLED=Lineal Sound-Modus: {0}
@@ -308,7 +301,6 @@ DURATION_CONFIG_TOTAL_CURRENT=Gesamtdauer pro Punkt: {0} ms
 DURATION_CONFIG_COMMANDS=Befehle:
 DURATION_CONFIG_POINT_CMD=  P - Punktdauer konfigurieren (30-500 ms)
 DURATION_CONFIG_PAUSE_CMD=  U - PaUsendauer konfigurieren (10-500 ms)
-DURATION_CONFIG_BACK_CMD=  ESC - Zurück
 DURATION_POINT_TITLE=Punktdauer konfigurieren
 DURATION_POINT_DESC=Die Punktdauer bestimmt, wie lange jeder Messpunkt im punktierten Abspielmodus hörbar ist.\nLängere Dauern bieten mehr Zeit, jeden Punkt klar zu hören.\nKürzere Dauern ermöglichen schnellere Durchläufe, können aber schwerer zu unterscheiden sein.
 DURATION_POINT_VALID_RANGE=Gültiger Bereich: 30 - 500 ms
@@ -323,20 +315,16 @@ DURATION_PAUSE_PROMPT=Pausendauer in Millisekunden eingeben (10-500), oder ESC z
 DURATION_PAUSE_SET=Pausendauer auf {0} ms gesetzt
 DURATION_PAUSE_APPLIED=Änderung sofort angewendet - kein Neustart erforderlich
 DURATION_PAUSE_ERROR=Fehler: Pausendauer muss zwischen 10 und 500 ms liegen
-DURATION_CANCELLED=Abgebrochen
 
 # Options menu
 OPTIONS_TITLE=Optionen
 OPTIONS_LANGUAGE=(S)prache
 OPTIONS_BANDPLAN=(B)andplan
-OPTIONS_HELP=(H)ilfe
 
 # Sprachauswahl
 LANG_TITLE=Sprachauswahl
 LANG_AVAILABLE=Verfügbare Sprachen:
 LANG_PROMPT=Sprachnummer eingeben (oder Enter zum abbrechen): >>>
-LANG_INVALID=Ungültige Auswahl.
-LANG_CANCELED=Abgebrochen.
 LANG_SELECTED=Sprache gewechselt zu: {0}
 LANG_LOAD_FAILED=Sprache laden fehlgeschlagen: {0}
 LANG_NO_LANGS=Keine Sprachdateien gefunden.
@@ -345,8 +333,6 @@ LANG_NO_LANGS=Keine Sprachdateien gefunden.
 BANDPLAN_TITLE=Bandplan Auswahl
 BANDPLAN_AVAILABLE=Verfügbare Bandpläne:
 BANDPLAN_PROMPT=Bandplan Nummer eingeben (oder Enter zum abbrechen): >>>
-BANDPLAN_INVALID=Ungültige Auswahl.
-BANDPLAN_CANCELED=Abgebrochen.
 BANDPLAN_SELECTED=Bandplan gewechselt zu: {0}
 BANDPLAN_LOAD_FAILED=Bandplan laden fehlgeschlagen: {0}
 BANDPLAN_NO_PLANS=Keine Bandplan Dateien gefunden.
@@ -360,7 +346,6 @@ GOTO_FREQUENCY=(F)requenz
 GOTO_MINIMUM=(M)inimum
 GOTO_MAXIMUM=(X)maximum
 GOTO_CROSSPOINT=(K)reuzpunkt
-GOTO_HELP=(H)ilfe
 GOTO_POINT_PROMPT=Punktnummer eingeben (0-{0}): >>>
 GOTO_POINT_INVALID=Ungültige Punktnummer.
 GOTO_POINT_JUMPED=Gesprungen zu Punkt {0} ({1} Hz)
@@ -387,7 +372,6 @@ GOTO_CROSSPOINT_JUMPED=Gesprungen zu Kreuzpunkt bei Punkt {0} ({1} Hz)
 GOTO_CROSSPOINT_INVALID=Ungültige Kreuzpunktnummer.
 
 # Allgemeine Nachrichten
-PRESS_ENTER=Enter drücken zum Fortfahren...
 
 # Autostart
 AUTOSTART_COMPLETE=Autostart: Messung abgeschlossen.
@@ -407,7 +391,6 @@ HELP_CMD_LINE=NanoVNA-CLI-Accessible - Barrierefreie Konsolenanwendung für Nano
 
 
 
-HELP_DEVICE_SHELL_DESC=Debug Shell:\n  Öffnet eine direkte Kommunikationsshell zum NanoVNA.\n  Ermöglicht das Senden von Rohbefehlen zum Debuggen und Testen.\n  Verwenden Sie Pfeiltasten zur Navigation, Rücktaste zum Löschen. Drücken Sie ESC zum Beenden.
 
 
 # U-Menu (Komfortfunktionen)
@@ -417,7 +400,6 @@ MENU_COMFORT=(U) Komfortfunktionen
 UMENU_TITLE=Komfortfunktionen Menü
 UMENU_SUBTITLE=Praktische Messwerkzeuge für Antennen- und Kabelanalyse
 UMENU_PROMPT=Komfort Menü
-UMENU_HELP=H drücken für Hilfe
 
 # U-Menu Einträge
 UMENU_1=1. Bandtauglichkeit prüfen (S11)
@@ -446,10 +428,6 @@ UMENU_12=12. Konfiguration
 UMENU_12_DESC=    Velocity Factor, SWR-Grenzwerte, etc. einstellen
 
 # Allgemeine Komfortfunktions-Meldungen
-CF_NO_DATA=Keine Messdaten verfügbar. Bitte zuerst einen Scan durchführen.
-CF_NEED_S11=Diese Funktion benötigt S11-Messdaten.
-CF_NEED_S21=Diese Funktion benötigt S21-Messdaten. Bitte im Through-Modus messen.
-CF_PRESS_ENTER=Enter drücken zum Fortfahren...
 
 # Bandtauglichkeit prüfen
 BAND_SUIT_TITLE=Bandtauglichkeit prüfen
@@ -537,10 +515,7 @@ CABLE_LEN_INST3=Sweep sollte breiten Frequenzbereich abdecken für beste Genauig
 CABLE_LEN_TERM=Kabel-Abschluss:
 CABLE_LEN_OPEN=1. Offen (fernes Ende nicht angeschlossen)
 CABLE_LEN_SHORT=2. Kurz (fernes Ende kurzgeschlossen)
-CABLE_LEN_SELECT_TYPE=Kabeltyp auswählen:
-CABLE_LEN_MANUAL_VF=Manuelle Eingabe:
 CABLE_LEN_VF=Verkürzungsfaktor eingeben (0.6-0.95): >
-CABLE_LEN_USING_CABLE=Verwende {0} mit VF = {1}
 CABLE_LEN_ANALYZING=Analysiere Phasenantwort...
 CABLE_LEN_RESULT=Geschätzte Kabellänge: {0} Meter ({1} Fuss)
 CABLE_LEN_CONFIDENCE=Konfidenz: {0}%
@@ -642,8 +617,6 @@ MARKER_ANALYZING=Analysiere Messdaten...
 MARKER_MIN_SWR=Marker 1: Minimum SWR bei {0} Hz - SWR {1}
 MARKER_X_ZERO=Marker 2: X am nächsten zu null bei {0} Hz - X {1} Ohm
 MARKER_MAX_S21=Marker 3: Maximum S21 bei {0} Hz - {1} dB
-MARKER_3DB_LOW=Marker 4: -3dB untere bei {0} Hz
-MARKER_3DB_HIGH=Marker 5: -3dB obere bei {0} Hz
 MARKER_PLACED=Marker erfolgreich platziert
 MARKER_NO_S21=Hinweis: S21-Marker nicht verfügbar (keine S21-Daten)
 
@@ -664,7 +637,6 @@ CONFIG_LOSS_SET=Kabelverlust auf {0} dB/m gesetzt
 OPTIONS_PROMPT=Optionen
 ACOUSTIC_PROMPT=Akustische Analyse
 AUDIO_CONFIG_PROMPT=Audio Konfiguration
-AUDIO_CONFIG_MIDI_PRESET_PROMPT=Preset wählen:
 
 # Kontinuierlicher Sweep Warnung im U-Menü
 UMENU_SWEEP_DISABLED=Hinweis: Kontinuierlicher Sweep wurde automatisch deaktiviert um Datenkonflikte zu vermeiden.
@@ -679,7 +651,6 @@ MEASURE_CONFIRM=Enter drücken wenn bereit zum Messen, oder ESC zum Abbrechen
 MEASURE_PERFORMING=Führe Messung durch...
 MEASURE_COMPLETE=Messung abgeschlossen. {0} Datenpunkte gesammelt.
 MEASURE_FAILED=Messung fehlgeschlagen
-MEASURE_CANCELED=Messung abgebrochen.
 
 # Messkonfigurations-Aufforderungen (neu für verbesserten Workflow)
 EXISTING_DATA_FOUND=Vorhandene Messdaten gefunden, die den aktuellen Bereich abdecken.
@@ -719,7 +690,6 @@ CABLE_PRESET_TITLE=Kabeltyp auswählen:
 CABLE_PRESET_SELECTED=Verwende {0}: VF = {1}
 
 # Erweiterte Konfiguration
-CONFIG_CABLE_LIST=Verfügbare Kabeltypen:
 CONFIG_CABLE_CUSTOM_VF=Velocity Factor eingeben (0.6-0.95): >
 CONFIG_CABLE_CUSTOM_LOSS=Verlust in dB/100m bei 100 MHz eingeben (optional, 0 zum Überspringen): >
 BAND_SUIT_PROMPT=Band auswählen
@@ -765,8 +735,6 @@ VOLUME_CONFIG_MASTER_SET=[Master-Lautstärke auf {0}% gesetzt]
 VOLUME_CONFIG_RULER_SET=[Lineal-Lautstärke auf {0}% gesetzt]
 VOLUME_CONFIG_ERROR_CURVE=[Fehler: Kurvennummer muss 1-5 sein]
 VOLUME_CONFIG_ERROR_VOLUME=[Fehler: Lautstärke muss zwischen 0 und 100 sein]
-VOLUME_CONFIG_ERROR_INVALID=[Fehler: Ungültige Nummer]
-VOLUME_CONFIG_CANCELLED=[Abgebrochen]
 
 # MIDI Instrumentenkonfiguration
 MIDI_CONFIG_TITLE={0} MIDI Instrument konfigurieren ({1} Modus)
@@ -774,7 +742,6 @@ MIDI_CONFIG_CURRENT=Aktuell: {0} ({1})
 MIDI_CONFIG_COMMANDS=Befehle:
 MIDI_CONFIG_ENTER_NUMBER=  Instrumentennummer eingeben (0-127)
 MIDI_CONFIG_SHOW_LIST=  L - Liste der verfügbaren MIDI-Instrumente anzeigen
-MIDI_CONFIG_ESC=  ESC - Abbrechen
 MIDI_CONFIG_PROMPT=> 
 MIDI_CONFIG_LIST_TITLE=MIDI Instrumentenliste (General MIDI)
 MIDI_CONFIG_PIANO=Klavier (0-7):
@@ -796,12 +763,9 @@ MIDI_CONFIG_SOUND_FX=Soundeffekte (120-127):
 MIDI_CONFIG_ENTER_AGAIN=Instrumentennummer eingeben (0-127), L für Liste, oder ESC zum Abbrechen:
 MIDI_CONFIG_SET=[{0} Instrument ({1} Modus) auf {2} gesetzt]
 MIDI_CONFIG_ERROR_RANGE=[Fehler: Nummer muss 0-127 sein]
-MIDI_CONFIG_CANCELLED=[Abgebrochen]
 MIDI_CONFIG_ERROR_INVALID=[Fehler: Ungültige Nummer]
 
 # Hauptprogramm-Meldungen
-MAIN_UTF8_OUTPUT_WARNING=Warnung: UTF-8-Konsolenausgabe konnte nicht gesetzt werden. Umlaute werden möglicherweise nicht korrekt angezeigt.
-MAIN_UTF8_INPUT_WARNING=Warnung: UTF-8-Konsoleneingabe konnte nicht gesetzt werden.
 MAIN_TEMPLATE_LOAD_WARNING=Warnung: {0}\nVerwende Standardwerte.
 MAIN_SERIAL_OPEN_FAILED=Serieller Port konnte nicht geöffnet werden: {0}
 MAIN_CAL_LOADED=Kalibrierungsprofil von Bank {0} geladen
@@ -809,7 +773,6 @@ MAIN_FAREWELL=\nNanoVNA-CLI-Accessible QRT, 73 DE DO9RE
 MAIN_CLOSING=Programm wird in 3 Sekunden geschlossen...
 
 # Portauswahl
-PORT_CANCELED=Abgebrochen.
 PORT_SELECTED=Port {0} ({1}) ausgewählt
 PORT_OPEN_FAILED=Fehler beim Öffnen von {0}: {1}
 
@@ -946,8 +909,6 @@ LOOP_PAUSE_CONFIG_SET=Loop-Pause auf {0} ms gesetzt
 LOOP_PAUSE_CONFIG_APPLIED=Änderung sofort angewendet - kein Neustart erforderlich
 LOOP_PAUSE_CONFIG_ERROR=Fehler: Loop-Pause muss zwischen 0 und 5000 ms liegen
 AUDIO_CONFIG_LOOP_PAUSE_CMD=  U - Loop-Pausendauer konfigurieren
-AUDIO_HELP_LOOP_PAUSE=U - Loop-Pausendauer konfigurieren (0-5000 ms)
-AUDIO_HELP_LOOP_PAUSE_DESC=    Bestimmt die Pause vor Loop-Wiederholung im kontinuierlichen Wiedergabemodus
 
 # Consolidated error and UI messages
 ERROR_NO_PORT=Fehler: Kein COM-Port ausgewählt. Verwenden Sie das (P)ort-Menü zur Auswahl.
@@ -961,7 +922,6 @@ ERROR_INVALID_SELECTION=Ungültige Auswahl
 # Loop-Spiegelung
 ACOUSTIC_LOOP_INVERTED=[Loop INVERTIERT: Wiedergabe AUßERHALB der Loop-Markierungen]
 ACOUSTIC_LOOP_NORMAL=[Loop NORMAL: Wiedergabe INNERHALB der Loop-Markierungen]
-HELP_ACOUSTIC_LOOP_INVERT=  I           Loop invertieren (außerhalb Loop-Markierungen abspielen)
 
 # Braille Export und Drucker-Einstellungen
 BRAILLE_EXPORT_TITLE=Export nach Braille
@@ -995,18 +955,8 @@ BRAILLE_PRINTER_WAIT=Bitte warten...
 BRAILLE_PRINT_SUCCESS=\n*** Druckauftrag erfolgreich gesendet! ***\nDie Braille-Grafiken wurden an den Drucker gesendet.
 
 # Export Modul Nachrichten
-EXPORT_NO_DATA=Keine Daten zum Exportieren
-EXPORT_CANNOT_OPEN_FILE=Kann Datei nicht öffnen: {0}
-EXPORT_FILE_WRITE_ERROR=Fehler beim Schreiben der Braille-Daten in die Datei
-EXPORT_NO_CURVES_SELECTED=Keine Kurven zum Export ausgewählt
 
 # CSV/TXT Export Header
-EXPORT_CSV_HEADER=freq_hz,s11_re,s11_im,swr,return_loss_db,r_ohm,x_ohm
-EXPORT_CSV_S21_HEADER=,s21_re,s21_im
-EXPORT_TXT_TITLE=Messdaten-Dump
-EXPORT_TXT_RANGE=Start: {0} Hz, Ende: {1} Hz, Schritt: {2} Hz
-EXPORT_TXT_POINTS=Punkte: {0}
-EXPORT_TXT_DATA_LINE=Freq: {0} Hz  SWR: {1}  RL: {2}  R: {3}  X: {4}
 
 # Taste für ESC-Anzeige
 KEY_ESC=ESC
@@ -1022,9 +972,6 @@ ACOUSTIC_STATUS_LINE_ON=[Statuszeile AKTIVIERT]
 ACOUSTIC_STATUS_LINE_OFF=[Statuszeile DEAKTIVIERT]
 ACOUSTIC_MIDI_MODE_GLIDING=[MIDI: Zu GLIDING-Modus mit gehaltenen Instrumenten gewechselt]
 ACOUSTIC_MIDI_MODE_DOTTED=[MIDI: Zu DOTTED-Modus mit perkussiven Instrumenten gewechselt]
-HELP_ACOUSTIC_X_RULER=  X           X-Achsen-Lineal umschalten (Impulse bei jedem Messpunkt)
-HELP_ACOUSTIC_STATUS_LINE=  N           Statuszeile umschalten (zeigt detaillierte Info während Wiedergabe)
-HELP_ACOUSTIC_GOTO=  G           Gehe zu spezifischer Frequenz/Position
 
 
 # MIDI Interpoliertes Panning (Mischtechniken)
@@ -1052,8 +999,6 @@ SMITH_MODE_IMPEDANCE=Impedanz Direkt
 SMITH_MODE_SWR=SWR-Kreise
 SMITH_MODE_TIME=Zeitdomäne + Smith-Hinweise
 SMITH_MODE_HYBRID=Hybrid Multi-Layer
-SMITH_VISUALIZATION_TITLE=Smith Diagramm Visualisierung
-SMITH_ENABLE_PROMPT=Smith-Visualisierung aktivieren? (j/n):
 SMITH_MODE_PROMPT=Visualisierungsmodus wählen:
 SMITH_MODE_1=1 - Kartesisch: Position im 3D-Raum (Re(Γ) → L/R, Im(Γ) → V/H)
 SMITH_MODE_2=2 - Polar: Rotation um Benutzer (∠Γ → Winkel, |Γ| → Entfernung)
@@ -1063,18 +1008,7 @@ SMITH_MODE_5=5 - Zeitdomäne: Akustische Analyse mit Smith-Hinweisen
 SMITH_MODE_6=6 - Hybrid Multi: Mehrere Ebenen gleichzeitig
 SMITH_CUES_ENABLED=[Smith räumliche Hinweise AKTIVIERT]
 SMITH_CUES_DISABLED=[Smith räumliche Hinweise DEAKTIVIERT]
-SMITH_MARKERS_ENABLED=[Smith-Marker AKTIVIERT]
-SMITH_MARKERS_DISABLED=[Smith-Marker DEAKTIVIERT]
-SMITH_CUES_VOLUME=Smith-Hinweise Lautstärke: {0}%
 SMITH_MODE_SWITCHED=[Smith-Modus gewechselt zu: {0}]
-SMITH_HELP_TITLE=Smith Diagramm Visualisierung Hilfe
-SMITH_HELP_INTRO=Smith Diagramm zeigt Impedanzanpassung akustisch.
-SMITH_HELP_CENTER=Zentrum = Perfekte Anpassung (50Ω, SWR 1.0)
-SMITH_HELP_EDGE=Rand = Schlechte Anpassung (hohes SWR)
-SMITH_HELP_HORIZONTAL=Horizontal (L-R) = Widerstandsniveau
-SMITH_HELP_VERTICAL=Vertikal (V-H) = Reaktanz (induktiv/kapazitiv)
-HELP_ACOUSTIC_SMITH=  V           Smith Diagramm Visualisierung umschalten
-HELP_ACOUSTIC_SMITH_MODE=  B           Smith-Visualisierungsmodus ändern (6 Modi verfügbar)
 SMITH_ENABLE_FIRST=[Aktivieren Sie zuerst die Smith-Visualisierung mit 'v']
 SMITH_MODE_HINT=[Drücke 'b' für Moduswechsel, 'h' für Smith-Hilfe]
 SMITH_MODE_SELECTION=Smith Visualisierungsmodus Auswahl
@@ -1448,8 +1382,6 @@ FEEDBACK_ATTACHMENTS_INFO=Die folgenden Dateien sollten angehängt werden:\n  - 
 ACOUSTIC_CURVE_SOLO=[Solo: {0}]
 ACOUSTIC_CURVE_UNSOLO=[{0} Solo deaktiviert]
 ACOUSTIC_SOLO_OFF=[Solo AUS - vorheriger Zustand wiederhergestellt]
-ACOUSTIC_FREEZE_BY_TOUCH=[Einfrieren durch Berührung]
-ACOUSTIC_FREEZE_BY_TOUCH_RELEASED=[Einfrieren durch Berührung beendet]
 ACOUSTIC_VOLUME_AT_MINIMUM=[Master-Lautstärke: Minimum erreicht]
 ACOUSTIC_VOLUME_AT_MAXIMUM=[Master-Lautstärke: Maximum erreicht]
 ACOUSTIC_CURVE_VOLUME_AT_MINIMUM=[{0} Lautstärke: Minimum erreicht]
@@ -1534,10 +1466,410 @@ MIDI_EXPORT_FAILED=[MIDI Export fehlgeschlagen]
 DOC_PATH_MANUAL=doc/manuals/USER_MANUAL_DE.html
 DOC_PATH_TRAINING=doc/training/de/Training_Index.html
 DOC_PATH_BETA=doc/beta-testing/BETA_TESTING_DE.html
-DOC_PATH_MAIN_INDEX=doc/README.html
 
 # Fehlermeldungen für Dokumentation
 ERROR_DOC_NOT_FOUND=Fehler: Dokumentationsdatei nicht gefunden: {0}
 ERROR_BROWSER_FAILED=Fehler: Konnte Browser nicht öffnen.
 DOC_OPENED=Dokumentation wird im Browser geöffnet...
 
+
+# Neue Übersetzungsschlüssel
+ACOUSTIC_CONTINUOUS=Kontinuierliche Wiedergabe umschalten
+ACOUSTIC_CURVE_PHASE=Phasenkurve
+ACOUSTIC_CURVE_RL=Rückflussdämpfungskurve
+ACOUSTIC_CURVE_SWR=SWR Kurve
+ACOUSTIC_CURVE_X=Reaktanzkurve
+ACOUSTIC_CURVE_Z=Impedanzkurve
+ACOUSTIC_EXPORT=Messung exportieren
+ACOUSTIC_FREEZE=Einfrieren
+ACOUSTIC_GOTO=Gehe zu Frequenz
+ACOUSTIC_LOOP_INVERT=Loop invertieren
+ACOUSTIC_LOOP_LEFT=Linken Loop-Marker setzen
+ACOUSTIC_LOOP_RIGHT=Rechten Loop-Marker setzen
+ACOUSTIC_LOOP_TOGGLE=Loop umschalten
+ACOUSTIC_LOOP_ZOOM=Loop-Zoom umschalten
+ACOUSTIC_MEASURE=Messung anzeigen
+ACOUSTIC_PLAY_PAUSE=Abspielen/Pause
+ACOUSTIC_SMITH=Smith-Diagramm umschalten
+ACOUSTIC_SMITH_MODE=Smith-Modus ändern
+ACOUSTIC_SPEED_DOWN=Geschwindigkeit verringern
+ACOUSTIC_SPEED_UP=Geschwindigkeit erhöhen
+ACOUSTIC_STATUS=Statuszeile umschalten
+ACOUSTIC_STOP=Stopp
+ACOUSTIC_TOGGLE_SMOOTH=Glatt/Punktiert umschalten
+ACOUSTIC_X_RULER=X-Achsen-Lineal umschalten
+ACOUSTIC_Y_RULER=Y-Achsen-Lineal
+AUDIO_CONFIG_INVERTED_LOOP_GAP_CMD=  G - Invertierte Loop-Lückendauer konfigurieren
+AUDIO_CONFIG_MIDI_CTRL_CMD=  C - MIDI Controller Konfiguration
+AUDIO_CONFIG_PREVIEW_SYNTH_CMD=  P - Aktuelle Synthesizer-Konfiguration vorhören
+AUDIO_CONFIG_REACTANCE_FX_CMD=  Z - Reaktanz (X) MIDI-Effekte konfigurieren (Induktivitäts-/Kapazitätssonifikation)
+AUDIO_CONFIG_REACTANCE_FX_SYNTH_CMD=  Z - Reaktanz (X) DSP-Effekte konfigurieren (Induktivitäts-/Kapazitätssonifikation)
+AUDIO_CONFIG_SPATIAL_WIZARD_CMD=  W - Räumliche Audio-Kalibrierung starten (empfohlen!)
+AUDIO_CONFIG_STATUS_LINE_CMD=  N - Statuszeilen-Einstellungen konfigurieren
+AUDIO_CONFIG_X_RULER_CMD=  X - X-Achsen-Lineal-Einstellungen konfigurieren
+AXIS_EVENTS_DISABLED=[Achsenkreuzungsereignisse DEAKTIVIERT]
+AXIS_EVENTS_ENABLED=[Achsenkreuzungsereignisse AKTIVIERT - hörbare Marker bei Achsenkreuzungen]
+BRAILLE_SETTINGS_PROMPT=Braille Einstellungen>
+CAL_LOAD_CANCELED=Abgebrochen.
+CAL_WIZARD_CANCELED=Kalibrierung nicht gespeichert.
+CENTER_PULSE_DISABLED=[Zentrumspuls DEAKTIVIERT]
+CENTER_PULSE_ENABLED=[Zentrumspuls AKTIVIERT - periodisches Referenzsignal]
+COMPARE_CLEAR=Schnappschüsse löschen
+COMPARE_RUN=A mit B vergleichen
+COMPARE_SAVE_A=Schnappschuss A speichern
+COMPARE_SAVE_B=Schnappschuss B speichern
+CONFIG_CABLE_PRESET=Kabeltyp-Voreinstellung auswählen
+CONFIG_LOSS=Kabelverlust einstellen
+CONFIG_SWR=SWR-Schwellwert einstellen
+CONFIG_VF=Verkürzungsfaktor einstellen
+ENSURE_DATA_PROMPT=Daten sicherstellen>
+ERROR_NO_ANALYZER=[Fehler: Audio-Analysator nicht verfügbar]
+ERROR_NO_SMITH=[Fehler: Smith-Visualisierer nicht verfügbar]
+EXPORT_LOOP_NO_ZOOM=(Loop aktiv bei Marker {0} bis {1}, aber Zoom aus)
+INVERTED_LOOP_GAP_CONFIG_APPLIED=[Änderung sofort angewendet - kein Neustart erforderlich]
+INVERTED_LOOP_GAP_CONFIG_CURRENT=Aktuelle invertierte Loop-Lücke: {0} ms
+INVERTED_LOOP_GAP_CONFIG_DESC=Wenn der Loop invertiert ist, wird der Abschnitt innerhalb der Loop-Marker übersprungen.\n
+INVERTED_LOOP_GAP_CONFIG_ERROR=[Fehler: Lückendauer muss zwischen 0 und 5000 ms liegen]
+INVERTED_LOOP_GAP_CONFIG_PROMPT=Lückendauer in Millisekunden eingeben (0-5000), oder ESC zum Abbrechen:
+INVERTED_LOOP_GAP_CONFIG_SET=[Invertierte Loop-Lücke auf {0} ms gesetzt]
+INVERTED_LOOP_GAP_CONFIG_TITLE=Invertierte Loop-Lücke Konfiguration
+INVERTED_LOOP_GAP_CONFIG_VALID_RANGE=Gültiger Bereich: 0 - 5000 ms (0 = sofortiges Überspringen)
+MAIN_DEVICE_VALIDATION_FAILED=Warnung: Gerätevalidierung fehlgeschlagen.\n{0}\n\n
+MAIN_MENU_ESC_INFO=[Info: Bereits auf Hauptmenü-Ebene. Q zum Beenden drücken.]
+MAIN_MENU_TITLE=Hauptmenü
+MAIN_PORT_NOT_DETECTED=Gespeicherter Port {0} wird derzeit nicht erkannt.\n
+MEASURE_START=Messung starten
+MIDI_CTRL_CONFIG_PROMPT=MIDI Ctrl Konfig>
+MIDI_MAPPING_PROMPT=MIDI Zuordnung>
+OPTIONS_BRAILLE=(R) Braille Drucker
+PRESS_ANY_KEY=Beliebige Taste drücken zum Fortfahren...
+RANGE_INVALID_RANGE=Ungültiger Bereich: Start muss kleiner als Ende sein
+RANGE_INVALID_STEP_LARGE=Ungültige Schrittweite: Schritt ist größer als der Bereich
+RANGE_INVALID_STEP_ZERO=Ungültige Schrittweite: muss größer als null sein
+REACTANCE_FX_COMMANDS=Befehle:
+REACTANCE_FX_DESC=Ordnet das Reaktanzvorzeichen Audio-Effekten zu für hörbare Induktivitäts-/Kapazitätsunterscheidung.\n
+REACTANCE_FX_HELP_TITLE=Reaktanz-Effekte Hilfe
+REACTANCE_FX_PROMPT=Reaktanz Fx>
+REACTANCE_FX_TITLE=Reaktanz (X) MIDI-Effekte Konfiguration
+RULER_CONFIG=Lineal Konfig>
+RULER_CONFIG_LENGTHENING_CMD=  L - Verlängerungsfaktor konfigurieren (100-500%)
+RULER_CONFIG_LENGTHENING_FACTOR=Verlängerungsfaktor: {0}%
+RULER_LENGTHENING_DESC=Der Verlängerungsfaktor steuert, wie viel länger die Töne bei ganzen Zahlen, 5, 10 und 15 im Vergleich zu halben Zahlen sind.\nHöhere Werte erzeugen mehr Unterscheidung zwischen verschiedenen Tontypen.
+RULER_LENGTHENING_ERROR=Fehler: Verlängerungsfaktor muss zwischen 100 und 500% liegen
+RULER_LENGTHENING_PROMPT=Verlängerungsfaktor in Prozent eingeben (100-500%), oder ESC zum Abbrechen:
+RULER_LENGTHENING_SET=Lineal-Verlängerungsfaktor auf {0}% gesetzt
+RULER_LENGTHENING_TITLE=Lineal-Verlängerungsfaktor konfigurieren
+SMITH_CONFIG_AUDIO_MODE=\nAudio-Modus: {0}
+SMITH_CONFIG_AXIS_EVENTS_CMD=  A - Achsenkreuzungsereignisse konfigurieren
+SMITH_CONFIG_AXIS_EVENTS_COMMANDS=Befehle:
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_DURATION=Dauer: {0} ms
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_PITCH=Tonhöhenbereich: {0}-{1} Hz
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_SOUND=Klangtyp: {0}
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_STATUS=Aktueller Status: {0}
+SMITH_CONFIG_AXIS_EVENTS_CURRENT_VOL=Lautstärke: {0}%
+SMITH_CONFIG_AXIS_EVENTS_DETAILS=  Lautstärke: {0}%, Tonhöhe: {1}-{2} Hz
+SMITH_CONFIG_AXIS_EVENTS_DURATION_CMD=  D - Dauer einstellen (50-500ms)
+SMITH_CONFIG_AXIS_EVENTS_DURATION_ERROR=[Fehler: Dauer muss 50-500ms betragen]
+SMITH_CONFIG_AXIS_EVENTS_DURATION_SET=[Achsenereignis-Dauer auf {0} ms gesetzt]
+SMITH_CONFIG_AXIS_EVENTS_ENTER_DURATION=Achsenereignis-Klangdauer eingeben (50-500ms, aktuell: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_MAX=Maximale Tonhöhe eingeben (400-2000 Hz, aktuell: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_MIN=Minimale Tonhöhe eingeben (200-1000 Hz, aktuell: {0}):
+SMITH_CONFIG_AXIS_EVENTS_ENTER_VOL=Achsenereignis-Lautstärke eingeben (10-100%, aktuell: {0}%):
+SMITH_CONFIG_AXIS_EVENTS_MENU=Achsenkreuzungsereignisse Konfiguration
+SMITH_CONFIG_AXIS_EVENTS_PITCH_CMD=  P - Tonhöhenbereich einstellen
+SMITH_CONFIG_AXIS_EVENTS_PITCH_ERROR=[Fehler: Ungültiger Tonhöhenbereich]
+SMITH_CONFIG_AXIS_EVENTS_PITCH_MENU=Tonhöhenbereich einstellen:
+SMITH_CONFIG_AXIS_EVENTS_PITCH_SET=[Tonhöhenbereich auf {0}-{1} Hz gesetzt]
+SMITH_CONFIG_AXIS_EVENTS_PROMPT=Smith Konfig Achsenereignisse>
+SMITH_CONFIG_AXIS_EVENTS_SOUND_1=  1 - Zupfen (saitenartig, natürlich - Standard)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_2=  2 - Sweep (reine Sinuswelle, gerichtet)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_3=  3 - Chirp (komplex, aufmerksamkeitserregend)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_4=  4 - Glocke (resonant, angenehm)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_5=  5 - Perkussion (scharf, markant)
+SMITH_CONFIG_AXIS_EVENTS_SOUND_CMD=  S - Klangtyp auswählen
+SMITH_CONFIG_AXIS_EVENTS_SOUND_MENU=Achsenkreuzungs-Klang auswählen
+SMITH_CONFIG_AXIS_EVENTS_SOUND_SET=[Achsenkreuzungs-Klang gesetzt auf: {0}]
+SMITH_CONFIG_AXIS_EVENTS_STATUS=Achsenereignisse: {0}
+SMITH_CONFIG_AXIS_EVENTS_TOGGLED=[Achsenereignisse: {0}]
+SMITH_CONFIG_AXIS_EVENTS_TOGGLE_CMD=  T - Achsenereignisse ein/aus umschalten
+SMITH_CONFIG_AXIS_EVENTS_VOLUME_CMD=  V - Lautstärke einstellen (10-100%)
+SMITH_CONFIG_AXIS_EVENTS_VOL_ERROR=[Fehler: Lautstärke muss 10-100 betragen]
+SMITH_CONFIG_AXIS_EVENTS_VOL_SET=[Achsenereignis-Lautstärke auf {0}% gesetzt]
+SMITH_CONFIG_CENTER_PULSE_CMD=  C - Zentrumspuls konfigurieren (Referenzsignal)
+SMITH_CONFIG_CENTER_PULSE_COMMANDS=Befehle:
+SMITH_CONFIG_CENTER_PULSE_CURRENT_INT=Intervall: {0} Sekunden
+SMITH_CONFIG_CENTER_PULSE_CURRENT_STATUS=Aktueller Status: {0}
+SMITH_CONFIG_CENTER_PULSE_CURRENT_VOL=Lautstärke: {0}%
+SMITH_CONFIG_CENTER_PULSE_CURRENT_WAVE=Wellenform: {0}
+SMITH_CONFIG_CENTER_PULSE_DETAILS=  Lautstärke: {0}%, Intervall: {1} Sekunden
+SMITH_CONFIG_CENTER_PULSE_ENTER_INT=Pulsintervall in Sekunden eingeben (0.5-2.0, aktuell: {0}):
+SMITH_CONFIG_CENTER_PULSE_ENTER_VOL=Zentrumspuls-Lautstärke eingeben (10-100%, aktuell: {0}%):
+SMITH_CONFIG_CENTER_PULSE_INTERVAL_CMD=  I - Intervall einstellen (0.5-2.0 Sekunden)
+SMITH_CONFIG_CENTER_PULSE_INT_ERROR=[Fehler: Intervall muss 0.5-2.0 betragen]
+SMITH_CONFIG_CENTER_PULSE_INT_SET=[Pulsintervall auf {0} Sekunden gesetzt]
+SMITH_CONFIG_CENTER_PULSE_MENU=Zentrumspuls Konfiguration
+SMITH_CONFIG_CENTER_PULSE_PROMPT=Smith Konfig Zentrumspuls>
+SMITH_CONFIG_CENTER_PULSE_STATUS=\nZentrumspuls: {0}
+SMITH_CONFIG_CENTER_PULSE_TOGGLED=[Zentrumspuls: {0}]
+SMITH_CONFIG_CENTER_PULSE_TOGGLE_CMD=  T - Zentrumspuls ein/aus umschalten
+SMITH_CONFIG_CENTER_PULSE_VOLUME_CMD=  V - Lautstärke einstellen (10-100%)
+SMITH_CONFIG_CENTER_PULSE_VOL_ERROR=[Fehler: Lautstärke muss 10-100 betragen]
+SMITH_CONFIG_CENTER_PULSE_VOL_SET=[Zentrumspuls-Lautstärke auf {0}% gesetzt]
+SMITH_CONFIG_CENTER_PULSE_WAVEFORM_CMD=  W - Wellenformtyp auswählen
+SMITH_CONFIG_CENTER_PULSE_WAVE_1=  1 - Klick (gefiltertes Rauschen - Standard, perkussiv)
+SMITH_CONFIG_CENTER_PULSE_WAVE_2=  2 - Sinuswelle (klar, musikalisch)
+SMITH_CONFIG_CENTER_PULSE_WAVE_3=  3 - Rechteckwelle (hell, synthetisch)
+SMITH_CONFIG_CENTER_PULSE_WAVE_4=  4 - Dreieckwelle (warm, weich)
+SMITH_CONFIG_CENTER_PULSE_WAVE_5=  5 - Sägezahnwelle (hell, voll)
+SMITH_CONFIG_CENTER_PULSE_WAVE_6=  6 - Pulswelle (scharf, elektronisch)
+SMITH_CONFIG_CENTER_PULSE_WAVE_MENU=Zentrumspuls-Wellenform auswählen
+SMITH_CONFIG_CENTER_PULSE_WAVE_SET=[Zentrumspuls-Wellenform gesetzt auf: {0}]
+SMITH_CONFIG_NOISE_TYPE_PROMPT=Smith Konfig Rauschtyp>
+SMITH_CONFIG_SOUND_TYPE_PROMPT=Smith Konfig Klangtyp>
+SMITH_CONFIG_STEREO_HINT=  Für vollen 360° Raumklang verwenden Sie ein 5.1 oder 7.1 Surround-Headset.
+SMITH_CONFIG_STEREO_NOTE=  Hinweis: Nur Links/Rechts-Panning im Stereomodus verfügbar.
+SMITH_CONFIG_SURROUND_ACTIVE=  Voller Raumklang (360°) ist aktiv!
+SMITH_CONFIG_SURROUND_CMD=  S - Surround-Sound-Parameter konfigurieren
+SMITH_CONFIG_SURROUND_HINT=  Verwenden Sie 'S' zum Konfigurieren der Surround-Sound-Parameter.
+SMITH_CONFIG_WAVEFORM_PROMPT=Smith Konfig Wellenform>
+SPATIAL_WIZARD_AMBIENT_VOLUME=\n1. Smith Umgebungshinweise (Hintergrund-Positionierung):\n
+SPATIAL_WIZARD_APPLY=Diese Einstellungen werden auf alle räumlichen Audio-Funktionen angewendet.
+SPATIAL_WIZARD_AXIS_SOUND=Achsenkreuzungsklänge (wenn Impedanz die Real-/Imaginärachse kreuzt):\n
+SPATIAL_WIZARD_CENTER_PULSE=Zentrumspuls (Referenzsignal im Smith-Diagramm-Zentrum):\n
+SPATIAL_WIZARD_COMPLETE=Kalibrierung abgeschlossen!
+SPATIAL_WIZARD_COMPLETED=[Kalibrierung abgeschlossen und gespeichert]
+SPATIAL_WIZARD_CORRECT=✓ Richtig!
+SPATIAL_WIZARD_CROSSFEED=Crossfeed hilft, vorne und hinten zu unterscheiden, indem eine kleine Menge\n
+SPATIAL_WIZARD_CROSSFEED_OPTION=   Option {0} (Crossfeed: {1}%):
+SPATIAL_WIZARD_CROSSFEED_VAL=Crossfeed-Anteil: {0}%
+SPATIAL_WIZARD_CURVE_VOL=Bevorzugte Kurvenlautstärke: {0}%
+SPATIAL_WIZARD_DETECTED=Erkannte Audio-Hardware: {0}
+SPATIAL_WIZARD_DIAG_ACCURACY=Diagonale Genauigkeit: {0}%
+SPATIAL_WIZARD_DISTANCE_TEST=Ich spiele Klänge in verschiedenen Entfernungen vom Zentrum ab.\n
+SPATIAL_WIZARD_EVENT_VOLUME=2. Achsenkreuzungsereignis-Klänge:\n
+SPATIAL_WIZARD_FAR_THRESHOLD=Fern-Schwellwert: {0}
+SPATIAL_WIZARD_FB_ACCURACY=Vorne-Hinten Genauigkeit: {0}%
+SPATIAL_WIZARD_FB_CROSSFEED_TEST=Welche Einstellung macht die Vorne/Hinten-Unterscheidung am DEUTLICHSTEN?\n
+SPATIAL_WIZARD_FB_TEST=Teste jetzt Vorne-Hinten-Wahrnehmung (schwieriger im Stereomodus)...
+SPATIAL_WIZARD_FRONT_BACK=\nWar der Klang eher VORNE (1) oder HINTEN (2)?\n
+SPATIAL_WIZARD_IDENTIFY=\nAus welcher Richtung kam der Klang?\n
+SPATIAL_WIZARD_INCORRECT=✗ Das kam von {0}
+SPATIAL_WIZARD_INCORRECT_FB=✗ Falsch
+SPATIAL_WIZARD_INCORRECT_LR=✗ Falsch
+SPATIAL_WIZARD_INTRO=Dieser Assistent wird:\n
+SPATIAL_WIZARD_INVALID_ANSWER=Ungültige Antwort. Bitte 1-8 oder R zum Wiederholen eingeben.\n
+SPATIAL_WIZARD_INVALID_CHOICE=[Ungültige Auswahl, verwende Standard]\n
+SPATIAL_WIZARD_LEFT_RIGHT=\nWar der Klang eher LINKS (1) oder RECHTS (2)?\n
+SPATIAL_WIZARD_LR_ACCURACY=Links-Rechts Genauigkeit: {0}%
+SPATIAL_WIZARD_NEAR_FAR=\nFühlte sich der Klang NAH (1) oder FERN (2) an?\n
+SPATIAL_WIZARD_NEAR_THRESHOLD=Nah-Schwellwert: {0}
+SPATIAL_WIZARD_PHASE1=Phase 1: Richtungswahrnehmungs-Kalibrierung
+SPATIAL_WIZARD_PHASE2=Phase 2: Entfernungswahrnehmungs-Kalibrierung
+SPATIAL_WIZARD_PHASE3=Phase 3: Lautstärke- und Klangvoreinstellungen
+SPATIAL_WIZARD_PHASE4=Phase 4: Klangtypauswahl
+SPATIAL_WIZARD_PHASE5=Phase 5: Psychoakustische Abstimmung (Stereomodus)
+SPATIAL_WIZARD_PLAYING=Spiele Testklang ab...
+SPATIAL_WIZARD_PLAYING_SHORT= Spiele Smith-Umgebungshinweis ab...\n
+SPATIAL_WIZARD_PRESS_PLAY=ENTER zum Abspielen drücken...
+SPATIAL_WIZARD_PSYCHO_INTRO=Stereomodus verwendet psychoakustische Techniken zur Simulation von 3D-Audio.\n
+SPATIAL_WIZARD_REPEATING=Wiederhole Klang...\n
+SPATIAL_WIZARD_REPEAT_PROMPT= (R zum Wiederholen, ENTER zum Fortfahren, ESC zum Abbrechen):
+SPATIAL_WIZARD_SAVED=Einstellungen erfolgreich gespeichert!
+SPATIAL_WIZARD_SELECT_CROSSFEED=\nWelche Option klang am besten? (1-5):
+SPATIAL_WIZARD_SELECT_SOUND=\nWelchen Klang bevorzugen Sie für Achsenkreuzungen? (1-5):
+SPATIAL_WIZARD_SELECT_VOLUME=\nWelche Lautstärke war am angenehmsten? (1-4):
+SPATIAL_WIZARD_SETTINGS_APPLIED=Einstellungen wurden auf den Smith-Analysator angewendet.
+SPATIAL_WIZARD_SOUND_OPTION=   {0}: {1} (Smith-Analysator-Klang) -
+SPATIAL_WIZARD_SOUND_TYPES=Wählen Sie nun Ihre bevorzugten Klänge für Smith-Analysator-Ereignisse.\n
+SPATIAL_WIZARD_STARTING=[Starte Räumliche Audio-Kalibrierung...]
+SPATIAL_WIZARD_START_PROMPT=ENTER zum Starten, oder ESC zum Abbrechen:
+SPATIAL_WIZARD_STEREO_DIR_TEST=Im Stereomodus testen wir Links-Rechts-Wahrnehmung und simulierte\n
+SPATIAL_WIZARD_STEREO_MODE=Stereomodus erkannt. Dieser Assistent kalibriert psychoakustische\n
+SPATIAL_WIZARD_SUMMARY=Ihr räumliches Audio-Profil:
+SPATIAL_WIZARD_SURROUND_DIR_TEST=Ich spiele Testklänge aus verschiedenen Richtungen ab.\n
+SPATIAL_WIZARD_SURROUND_MODE=Surround-Sound erkannt! Dieser Assistent kalibriert den vollen 3D-Raumklang\n
+SPATIAL_WIZARD_TEST_SOUND=\nTestklang {0} von 8
+SPATIAL_WIZARD_TITLE=Räumliche Audio-Kalibrierung
+SPATIAL_WIZARD_VOLUME_OPTION=   Option {0} ({1}%):
+SPATIAL_WIZARD_VOLUME_TEST=Stellen Sie nun Ihre bevorzugten Lautstärkepegel für Smith-Analysator-Klänge ein.\n
+STATUS_LINE_CONFIG=Statuszeile Konfig>
+STATUS_LINE_CONFIG_COMMANDS=Befehle:
+STATUS_LINE_CONFIG_DESC=Wählen Sie die Parameter für die Statuszeile:
+STATUS_LINE_CONFIG_FREQUENCY=  F - Frequenz: {0}
+STATUS_LINE_CONFIG_IMPEDANCE=  Z - Impedanz |Z|: {0}
+STATUS_LINE_CONFIG_PHASE=  H - Phase: {0}
+STATUS_LINE_CONFIG_POSITION=  P - Position: {0}
+STATUS_LINE_CONFIG_REACTANCE=  X - Reaktanz: {0}
+STATUS_LINE_CONFIG_RL=  R - Rückflussdämpfung: {0}
+STATUS_LINE_CONFIG_SWR=  S - SWR: {0}
+STATUS_LINE_CONFIG_TITLE=Statuszeilen-Konfiguration
+STATUS_LINE_CONFIG_TOGGLE=  P/F/S/R/Z/X/H - Jeweiligen Parameter umschalten
+STATUS_LINE_FREQUENCY_TOGGLED=Frequenzanzeige: {0}
+STATUS_LINE_IMPEDANCE_TOGGLED=Impedanz |Z| Anzeige: {0}
+STATUS_LINE_PHASE_TOGGLED=Phasenanzeige: {0}
+STATUS_LINE_POSITION_TOGGLED=Positionsanzeige: {0}
+STATUS_LINE_REACTANCE_TOGGLED=Reaktanzanzeige: {0}
+STATUS_LINE_RL_TOGGLED=Rückflussdämpfungsanzeige: {0}
+STATUS_LINE_SWR_TOGGLED=SWR-Anzeige: {0}
+SURROUND_CONFIG_BACK_CMD=  B - Hintere Distanz konfigurieren (50-200%)
+SURROUND_CONFIG_BACK_DIST=  Hinterer Distanzfaktor: {0}%
+SURROUND_CONFIG_BACK_SET=[Hintere Distanz gesetzt auf: {0}%]
+SURROUND_CONFIG_CENTER_CMD=  C - Zentrumsstärke konfigurieren (0-100%)
+SURROUND_CONFIG_CENTER_ERROR=[Fehler: Wert muss zwischen 0 und 100 liegen]
+SURROUND_CONFIG_CENTER_SET=[Zentrumsstärke gesetzt auf: {0}%]
+SURROUND_CONFIG_CENTER_STR=  Zentrumskanal-Stärke: {0}%
+SURROUND_CONFIG_COMMANDS=Befehle:
+SURROUND_CONFIG_CURRENT=Aktuelle Einstellungen:
+SURROUND_CONFIG_ENTER_BACK=Hinteren Distanzfaktor eingeben (50-200%, aktuell: {0}%):
+SURROUND_CONFIG_ENTER_CENTER=Zentrumsstärke eingeben (0-100%, aktuell: {0}%):
+SURROUND_CONFIG_ENTER_FB_SEP=Vorne/Hinten-Trennung eingeben (50-200%, aktuell: {0}%):
+SURROUND_CONFIG_ENTER_FRONT=Vorderen Distanzfaktor eingeben (50-200%, aktuell: {0}%):
+SURROUND_CONFIG_ENTER_SIDE=Seitlichen Distanzfaktor eingeben (50-200%, aktuell: {0}%):
+SURROUND_CONFIG_ENTER_SIDE_EMP=Seitenkanal-Betonung eingeben (50-200%, aktuell: {0}%):
+SURROUND_CONFIG_FADING=  Überblendkurve: {0}
+SURROUND_CONFIG_FADING_1=  1 - Linear (gleichmäßige wahrgenommene Bewegung)
+SURROUND_CONFIG_FADING_2=  2 - Logarithmisch (mehr Betonung auf Zentrum)
+SURROUND_CONFIG_FADING_3=  3 - Exponentiell (mehr Betonung auf Ränder)
+SURROUND_CONFIG_FADING_4=  4 - Sinus (sanfter, natürlicher Übergang)
+SURROUND_CONFIG_FADING_CMD=  V - Überblendkurve konfigurieren (Linear/Log/Exp/Sinus)
+SURROUND_CONFIG_FADING_MENU=Überblendkurve auswählen
+SURROUND_CONFIG_FADING_PROMPT=Surround Konfig Überblendung>
+SURROUND_CONFIG_FADING_SET=[Überblendkurve geändert auf: {0}]
+SURROUND_CONFIG_FB_SEP=  Vorne/Hinten-Trennung: {0}%
+SURROUND_CONFIG_FB_SEP_CMD=  S - Vorne/Hinten-Trennung konfigurieren (50-200%)
+SURROUND_CONFIG_FB_SEP_SET=[V/H-Trennung gesetzt auf: {0}%]
+SURROUND_CONFIG_FRONT_CMD=  F - Vordere Distanz konfigurieren (50-200%)
+SURROUND_CONFIG_FRONT_DIST=  Vorderer Distanzfaktor: {0}%
+SURROUND_CONFIG_FRONT_SET=[Vordere Distanz gesetzt auf: {0}%]
+SURROUND_CONFIG_HELP_BACK=B - Hintere Distanz: Wahrgenommene Entfernung zu hinteren Lautsprechern (50-200%)
+SURROUND_CONFIG_HELP_CENTER=C - Zentrumsstärke: Zentrumskanal-Stärke (0-100%, 0=aus)
+SURROUND_CONFIG_HELP_DESC=Konfigurieren Sie räumliche Audio-Parameter für optimale Smith-Diagramm-Lokalisierung.
+SURROUND_CONFIG_HELP_FADING=V - Überblendkurve: Räumliche Bewegungswahrnehmungskurve
+SURROUND_CONFIG_HELP_FB_SEP=S - V/H-Trennung: Vorne/Hinten-Unterscheidungsverstärkung (50-200%)
+SURROUND_CONFIG_HELP_FRONT=F - Vordere Distanz: Wahrgenommene Entfernung zu vorderen Lautsprechern (50-200%)
+SURROUND_CONFIG_HELP_RESET=R - Alle Einstellungen auf Standard zurücksetzen
+SURROUND_CONFIG_HELP_SIDE=I - Seitliche Distanz: Wahrgenommene Entfernung zu seitlichen Lautsprechern (50-200%)
+SURROUND_CONFIG_HELP_SIDE_EMP=E - Seitenbetonung: 90°-Lokalisierungsbetonung (50-200%)
+SURROUND_CONFIG_HELP_TIP=Tipp: Beginnen Sie mit den Standardwerten und passen Sie die Vorne/Hinten-Trennung an, wenn
+SURROUND_CONFIG_HELP_TIP2=     vorne und hinten zu ähnlich klingen.
+SURROUND_CONFIG_HELP_TITLE=Surround-Konfiguration Hilfe
+SURROUND_CONFIG_NO_SMITH=[Fehler: Smith-Visualisierer nicht verfügbar]
+SURROUND_CONFIG_PROMPT=Surround Konfig>
+SURROUND_CONFIG_RANGE_ERROR=[Fehler: Wert muss zwischen 50 und 200 liegen]
+SURROUND_CONFIG_RESET_CMD=  R - Auf Standard zurücksetzen
+SURROUND_CONFIG_RESET_DONE=[Surround-Einstellungen auf Standard zurückgesetzt]
+SURROUND_CONFIG_SIDE_CMD=  I - Seitliche Distanz konfigurieren (50-200%)
+SURROUND_CONFIG_SIDE_DIST=  Seitlicher Distanzfaktor: {0}%
+SURROUND_CONFIG_SIDE_EMP=  Seitenkanal-Betonung: {0}%
+SURROUND_CONFIG_SIDE_EMP_CMD=  E - Seitenkanal-Betonung konfigurieren (50-200%)
+SURROUND_CONFIG_SIDE_EMP_SET=[Seitenbetonung gesetzt auf: {0}%]
+SURROUND_CONFIG_SIDE_SET=[Seitliche Distanz gesetzt auf: {0}%]
+SURROUND_CONFIG_TITLE=Surround-Sound Konfiguration
+SYNTH_ERROR_PREVIEW_FAILED=[Fehler: Synthesizer konnte nicht für Vorschau geöffnet werden]
+SYNTH_RENDERING_WAV=[Rendere Audio in WAV-Datei...]
+SYNTH_WAV_FAILED=[WAV-Rendering fehlgeschlagen]
+SYNTH_WAV_SUCCESS=[WAV-Datei gespeichert: {0}]
+TABLE_CUSTOMIZE=Spalten anpassen
+TABLE_GOTO=Gehe zu
+TABLE_NEXT=Nächste Seite
+TABLE_PREV=Vorherige Seite
+VOLUME_CONFIG_ENTER_X_RULER=X-Achsen-Lineal-Lautstärke eingeben (0-100%), oder ESC zum Abbrechen:
+VOLUME_CONFIG_X_RULER_SET=[X-Achsen-Lineal-Lautstärke gesetzt auf: {0}%]
+VOLUME_X_RULER=X-Achsen-Lineal Lautstärke (X): {0}%
+WEB_INTERFACE_START=Starten
+WEB_INTERFACE_STOP=Stoppen
+X_RULER_CONFIG=X-Lineal Konfig>
+X_RULER_CONFIG_COMMANDS=Befehle:
+X_RULER_CONFIG_DRUM_CMD=  M - MIDI Drum-Note konfigurieren (35-81)
+X_RULER_CONFIG_DURATION=Blip-Dauer: {0} ms
+X_RULER_CONFIG_DURATION_CMD=  D - Blip-Dauer konfigurieren (30-200 ms)
+X_RULER_CONFIG_MIDI_DRUM=MIDI Drum-Note: {0}
+X_RULER_CONFIG_NOISE_CMD=  N - Rauschtyp konfigurieren (Weiß/Rosa/Klick)
+X_RULER_CONFIG_NOISE_TYPE=Rauschtyp: {0}
+X_RULER_CONFIG_TITLE=X-Achsen-Lineal Konfiguration
+X_RULER_DRUM_DESC=Wählen Sie die MIDI Drum-Note für X-Achsen-Lineal-Blips.\nGängige Drums: 35=Akustische Bassdrum, 36=Bassdrum 1, 38=Akustische Snare, 42=Geschlossene Hi-Hat, 46=Offene Hi-Hat
+X_RULER_DRUM_ERROR=Fehler: MIDI Drum-Note muss zwischen 35 und 81 liegen
+X_RULER_DRUM_PROMPT=MIDI Drum-Note eingeben (35-81), oder ESC zum Abbrechen:
+X_RULER_DRUM_SET=X-Achsen-Lineal MIDI Drum-Note gesetzt auf: {0}
+X_RULER_DRUM_TITLE=X-Achsen-Lineal MIDI Drum konfigurieren
+X_RULER_DURATION_DESC=Die Blip-Dauer steuert die Länge der Rauschimpulse an jedem Messpunkt.
+X_RULER_DURATION_ERROR=Fehler: Blip-Dauer muss zwischen 30 und 200 ms liegen
+X_RULER_DURATION_PROMPT=Blip-Dauer in Millisekunden eingeben (30-200), oder ESC zum Abbrechen:
+X_RULER_DURATION_SET=X-Achsen-Lineal Blip-Dauer auf {0} ms gesetzt
+X_RULER_DURATION_TITLE=X-Achsen-Lineal Blip-Dauer konfigurieren
+X_RULER_NOISE_DESC=Wählen Sie den Rauschtyp für X-Achsen-Lineal-Blips:\n  0 = Weißes Rauschen (hell, volles Spektrum)\n  1 = Rosa Rauschen (wärmer, gefiltert)\n  2 = Klick (kurzer Impuls)
+X_RULER_NOISE_ERROR=Fehler: Rauschtyp muss 0, 1 oder 2 sein
+X_RULER_NOISE_PROMPT=Rauschtyp eingeben (0-2), oder ESC zum Abbrechen:
+X_RULER_NOISE_SET=X-Achsen-Lineal Rauschtyp gesetzt auf: {0}
+X_RULER_NOISE_TITLE=X-Achsen-Lineal Rauschtyp konfigurieren
+
+# Reactance Effects Menu translations
+REACTANCE_FX_SYNTH_TITLE=Reaktanz (X) Synthesizer DSP-Effekte Konfiguration
+REACTANCE_FX_STATUS_LABEL=Reaktanz-Effekte:
+REACTANCE_FX_STATUS_ENABLED=AKTIVIERT
+REACTANCE_FX_STATUS_DISABLED=DEAKTIVIERT
+REACTANCE_FX_DEADZONE_LABEL=  Totzone: +/-{0} Ohm
+REACTANCE_FX_MAX_LABEL=  Max. Reaktanz für vollen Effekt: {0} Ohm
+REACTANCE_FX_MIDI_GLIDING_HEADER=Gleitender Modus (gehaltene Instrumente)
+REACTANCE_FX_MIDI_DOTTED_HEADER=Punktierter Modus (perkussive Instrumente)
+REACTANCE_FX_SYNTH_SMOOTH_HEADER=Glatter Modus
+REACTANCE_FX_SYNTH_DOTTED_HEADER=Punktierter Modus
+REACTANCE_FX_CAPACITIVE_LABEL=Kapazitiver Effekt (X<0):
+REACTANCE_FX_INDUCTIVE_LABEL=Induktiver Effekt (X>0):
+REACTANCE_FX_MAX_VALUE_LABEL=    Max. Wert: {0}/127, Skalierung: {1}
+REACTANCE_FX_MAX_DEPTH_LABEL=    Max. Tiefe: {0}%, Skalierung: {1}
+REACTANCE_FX_CMD_TOGGLE=  E - Reaktanz-Effekte EIN/AUS umschalten
+REACTANCE_FX_CMD_DEADZONE=  D - Totzone einstellen (Ohm um Null)
+REACTANCE_FX_CMD_MAX=  M - Maximale Reaktanz für vollen Effekt einstellen (Ohm)
+REACTANCE_FX_CMD_GLIDING_CAP=  1 - GLEITENDEN Modus konfigurieren: kapazitiver Effekt (X<0)
+REACTANCE_FX_CMD_GLIDING_IND=  2 - GLEITENDEN Modus konfigurieren: induktiver Effekt (X>0)
+REACTANCE_FX_CMD_SMOOTH_CAP=  1 - GLATTEN Modus konfigurieren: kapazitiver Effekt (X<0)
+REACTANCE_FX_CMD_SMOOTH_IND=  2 - GLATTEN Modus konfigurieren: induktiver Effekt (X>0)
+REACTANCE_FX_CMD_DOTTED_CAP=  3 - PUNKTIERTEN Modus konfigurieren: kapazitiver Effekt (X<0)
+REACTANCE_FX_CMD_DOTTED_IND=  4 - PUNKTIERTEN Modus konfigurieren: induktiver Effekt (X>0)
+REACTANCE_FX_CMD_HELP=  H - Hilfe (Skalierungskurven-Beschreibungen)
+REACTANCE_FX_CMD_BACK=  ESC - Zurück
+REACTANCE_FX_CONFIGURE_HEADING=Konfiguriere {0}
+REACTANCE_FX_MIDI_CURRENT=  Aktuell: {0}, Max={1}/127, Skalierung={2}
+REACTANCE_FX_MIDI_EFFECTS_LIST=  Verfügbare Effekttypen:\n    0 = Reverb (CC 91) - räumlicher, raumfüllender Klang\n    1 = Tremolo/Modulation (CC 1) - Oszillation, Vibration\n    2 = Chorus (CC 93) - Verbreiterung, Verdickung\n    3 = Vibrato Depth (CC 77) - Tonhöhen-Oszillationsintensität\n    4 = Vibrato Rate (CC 76) - Tonhöhen-Oszillationsgeschwindigkeit\n    5 = Detune/Celeste (CC 94) - subtile Tonhöhenverschiebung\n    6 = Brightness (CC 74) - Klangfarben-/Filteränderung\n    7 = Expression (CC 11) - dynamische Lautstärkemodulation
+REACTANCE_FX_ENTER_EFFECT_TYPE_MIDI=  Effekttyp-Nummer eingeben (0-7), oder ESC zum Abbrechen:
+REACTANCE_FX_EFFECT_SET_MIDI=  Effekt gesetzt auf: {0}
+REACTANCE_FX_ERROR_INVALID_EFFECT_MIDI=  [Fehler: Ungültiger Effekttyp, muss 0-7 sein]
+REACTANCE_FX_ERROR_INVALID_NUMBER=  [Fehler: Ungültige Zahl]
+REACTANCE_FX_ENTER_MAX_CC=  Maximalen CC-Wert eingeben (0-127, aktuell={0}), oder ESC zum Beibehalten:
+REACTANCE_FX_MAX_VALUE_SET=  Max. Wert gesetzt auf: {0}
+REACTANCE_FX_ERROR_RANGE_0_127=  [Fehler: Muss 0-127 sein]
+REACTANCE_FX_SCALING_LIST=  Verfügbare Skalierungskurven:
+REACTANCE_FX_ENTER_SCALING=  Skalierungstyp eingeben (0-4, aktuell={0}), oder ESC zum Beibehalten:
+REACTANCE_FX_SCALING_SET=  Skalierung gesetzt auf: {0}
+REACTANCE_FX_ERROR_RANGE_0_4=  [Fehler: Muss 0-4 sein]
+REACTANCE_FX_SAVED=  [Konfiguration gespeichert]
+REACTANCE_FX_CANCELLED=\n[Abgebrochen]
+REACTANCE_FX_SYNTH_CURRENT=  Aktuell: {0}, Max. Tiefe={1}%, Skalierung={2}
+REACTANCE_FX_SYNTH_EFFECTS_LIST=  Verfügbare DSP-Effekttypen:\n    0 = AM Tremolo - periodische Lautstärkeoszillation (Vibration -> Induktivität)\n    1 = Echo/Reverb - verzögerungsbasierter Raumeffekt (raumfüllend -> Kapazität)\n    2 = Ringmodulation - metallische, inharmonische Töne (markanter Klang)\n    3 = Filter Sweep - Tiefpassfilter-Verdunkelung (Kapazitätsladung)\n    4 = Noise Mix - fügt Rauschen proportional zur Reaktanz hinzu\n    5 = Bitcrush - digitale Verzerrung, Auflösungsverlust
+REACTANCE_FX_ENTER_EFFECT_TYPE_SYNTH=  Effekttyp-Nummer eingeben (0-5), oder ESC zum Abbrechen:
+REACTANCE_FX_EFFECT_SET_SYNTH=  Effekt gesetzt auf: {0}
+REACTANCE_FX_ERROR_INVALID_EFFECT_SYNTH=  [Fehler: Ungültiger Effekttyp, muss 0-5 sein]
+REACTANCE_FX_ENTER_MAX_DEPTH=  Maximale Effekttiefe in Prozent eingeben (0-100, aktuell={0}), oder ESC zum Beibehalten:
+REACTANCE_FX_MAX_DEPTH_SET=  Max. Tiefe gesetzt auf: {0}%
+REACTANCE_FX_ERROR_RANGE_0_100=  [Fehler: Muss 0-100 sein]
+REACTANCE_FX_DEADZONE_PROMPT=  Totzone in Ohm eingeben (0-100, aktuell={0}):
+REACTANCE_FX_DEADZONE_SET=  Totzone gesetzt auf: +/-{0} Ohm
+REACTANCE_FX_MAX_PROMPT=  Max. Reaktanz für vollen Effekt in Ohm eingeben (10-1000, aktuell={0}):
+REACTANCE_FX_MAX_SET=  Max. Reaktanz gesetzt auf: {0} Ohm
+REACTANCE_FX_ERROR_RANGE_10_1000=  [Fehler: Muss 10-1000 sein]
+REACTANCE_FX_LABEL_GLIDING_CAP=Gleitender Modus - Kapazitiv (X<0)
+REACTANCE_FX_LABEL_GLIDING_IND=Gleitender Modus - Induktiv (X>0)
+REACTANCE_FX_LABEL_SMOOTH_CAP=Glatter Modus - Kapazitiv (X<0)
+REACTANCE_FX_LABEL_SMOOTH_IND=Glatter Modus - Induktiv (X>0)
+REACTANCE_FX_LABEL_DOTTED_CAP=Punktierter Modus - Kapazitiv (X<0)
+REACTANCE_FX_LABEL_DOTTED_IND=Punktierter Modus - Induktiv (X>0)
+REACTANCE_FX_HELP_CONCEPT=\n  === Konzept ===\n  Positive Reaktanz (X > 0 Ohm) zeigt INDUKTIVITÄT an (Spulen, Magnetfelder).\n  Negative Reaktanz (X < 0 Ohm) zeigt KAPAZITÄT an (Kondensatoren, elektrische Felder).\n  Diese Funktion ordnet diese Audioeffekten zu, damit Sie den Unterschied HÖREN können:\n    - Kapazität -> Raum-/Raumeffekt (z.B. Reverb/Echo = einen Raum füllen)\n    - Induktivität -> Oszillationseffekt (z.B. Tremolo = Vibration/Magnetfeld)
+REACTANCE_FX_HELP_DEADZONE=  === Totzone ===\n  Eine konfigurierbare Zone um X=0, in der KEINE Effekte angewendet werden.\n  Dies hält rein ohmsche Impedanzen sauber und unbeeinflusst.\n  Empfohlen: 3-10 Ohm je nach Messrauschen.
+REACTANCE_FX_HELP_MIDI_MODES=  === Gleitend vs. Punktiert (MIDI) ===\n  Effekte verhalten sich unterschiedlich bei gehaltenen vs. perkussiven Instrumenten:\n  - Gleitend (gehalten): Reverb möglicherweise weniger hörbar, Tremolo ist deutlicher\n  - Punktiert (perkussiv): Reverb-Nachklang sehr hörbar, Tremolo möglicherweise subtil\n  Konfigurieren Sie jeden Modus unabhängig für beste Ergebnisse.
+REACTANCE_FX_HELP_SYNTH_MODES=  === Glatt vs. Punktiert (Synthesizer) ===\n  DSP-Effekte werden direkt auf den PCM-Wellenformpuffer angewendet.\n  - Glatter Modus: Kontinuierliches Signal — Echo/Tremolo bauen sich gleichmäßig auf\n  - Punktierter Modus: Kurze Impulse — einige Effekte (Echo) hinterlassen hörbare Nachklänge\n  Konfigurieren Sie jeden Modus unabhängig für beste Ergebnisse.
+REACTANCE_FX_HELP_DSP_EFFECTS=  === DSP-Effekttypen (Synthesizer) ===\n  0 = AM Tremolo: Lautstärkeoszillation bei ~6 Hz. Zuordnung zu Induktivität (Vibration).\n      Am besten im glatten Modus, wo Oszillation deutlich hörbar ist.\n  1 = Echo/Reverb: Verzögerungsbasierter Raumeffekt. Zuordnung zu Kapazität (Füllung).\n      Erzeugt raumähnlichen räumlichen Eindruck. Nachklang hörbar im punktierten Modus.\n  2 = Ringmodulation: Metallische, inharmonische Klangänderung.\n      Sehr markant — erzeugt fremdartige/metallische Qualität. Beide Modi.\n  3 = Filter Sweep: Tiefpassfilter, der den Klang verdunkelt.\n      Simuliert Kapazitätsladung (Absorption hoher Frequenzen).\n  4 = Noise Mix: Fügt weißes Rauschen proportional zur Reaktanz hinzu.\n      Einfach aber effektiver Indikator. Funktioniert auf allen Plattformen.\n  5 = Bitcrush: Reduziert die Bittiefe für digitale Verzerrung.\n      Kreative Alternative — Auflösungsverlust als Reaktanz-Indikator.
+REACTANCE_FX_HELP_SCALING=  === Skalierungskurven ===
+REACTANCE_FX_HELP_PLATFORM_MIDI=  === Plattform-Hinweise (MIDI) ===\n  Windows (GS Wavetable): Unterstützt Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n    Begrenzter Effektbereich. Reverb und Modulation sind am wirksamsten.\n  macOS (DLS Synth): Volle GM-Effektunterstützung. Alle CC-Parameter funktionieren gut.\n    Effekte waren zuvor für saubere Ausgabe deaktiviert - jetzt nur auf Reaktanz-Kanal aktiviert.\n  Linux (FluidSynth/TiMidity): Abhängig vom Soundfont. Die meisten Effekte werden unterstützt.
+REACTANCE_FX_HELP_PLATFORM_SYNTH=  === Plattform-Hinweise (Synthesizer) ===\n  Alle DSP-Effekte funktionieren identisch auf Windows (WaveOut), macOS (PortAudio)\n  und Linux (PortAudio). Keine Plattform-Einschränkungen für native DSP-Verarbeitung.
+REACTANCE_FX_BACK=\n[Zurück zur Audio-Konfiguration...]

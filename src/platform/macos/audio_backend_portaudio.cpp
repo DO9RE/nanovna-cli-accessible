@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstring>
 #include <mutex>
+#include <atomic>
 
 /**
  * PortAudio backend for macOS and Linux
@@ -20,6 +21,7 @@ private:
     int currentChannels = 0;
     std::mutex streamMutex;
     std::chrono::steady_clock::time_point lastPlayTime;
+    std::atomic<bool> abortRequested{false};
     
     void closeStream() {
         if (persistentStream) {
@@ -102,6 +104,22 @@ public:
         }
     }
     
+    void abort() override {
+        // Signal abort to unblock any ongoing Pa_WriteStream call
+        abortRequested.store(true);
+        // Pa_AbortStream immediately terminates the stream without waiting
+        // for pending buffers to complete - safe to call from another thread
+        // We don't hold streamMutex here to avoid deadlock with playBuffer
+        PaStream* stream = persistentStream;
+        if (stream) {
+            Pa_AbortStream(stream);
+        }
+    }
+    
+    void resetAbort() override {
+        abortRequested.store(false);
+    }
+    
     bool playBuffer(
         const int16_t* buffer,
         int samples,
@@ -119,12 +137,22 @@ public:
             return false;
         }
         
+        // Check abort flag before starting a new write
+        if (abortRequested.load()) {
+            return false;
+        }
+        
         // Task 2.5: Validate bitsPerSample parameter (only 16-bit supported)
         if (bitsPerSample != 16) {
             return false;  // PortAudio backend only supports 16-bit samples
         }
         
         std::lock_guard<std::mutex> lock(streamMutex);
+        
+        // Re-check abort after acquiring lock
+        if (abortRequested.load()) {
+            return false;
+        }
         
         // Check if stream has been idle and should be closed
         auto now = std::chrono::steady_clock::now();

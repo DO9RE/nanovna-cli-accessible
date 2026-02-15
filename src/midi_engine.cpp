@@ -799,3 +799,123 @@ void MIDIEngine::setLogger(Logger* logger) {
         logger->log("MIDI", msg);
     }
 }
+
+uint8_t MIDIEngine::effectTypeToCC(AppConfig::ReactanceEffectType type) {
+    switch (type) {
+        case AppConfig::ReactanceEffectType::REVERB:        return 91;  // Reverb Send Level
+        case AppConfig::ReactanceEffectType::TREMOLO:       return 1;   // Modulation Wheel
+        case AppConfig::ReactanceEffectType::CHORUS:        return 93;  // Chorus Send Level
+        case AppConfig::ReactanceEffectType::VIBRATO_DEPTH: return 77;  // Vibrato Depth
+        case AppConfig::ReactanceEffectType::VIBRATO_RATE:  return 76;  // Vibrato Rate
+        case AppConfig::ReactanceEffectType::DETUNE:        return 94;  // Detune/Celeste
+        case AppConfig::ReactanceEffectType::BRIGHTNESS:    return 74;  // Brightness/Filter
+        case AppConfig::ReactanceEffectType::EXPRESSION:    return 11;  // Expression
+        default: return 91;  // Default to reverb
+    }
+}
+
+double MIDIEngine::applyScaling(double normalizedValue, AppConfig::EffectScaling scaling) {
+    // Input and output are in range 0.0-1.0
+    double v = std::clamp(normalizedValue, 0.0, 1.0);
+    switch (scaling) {
+        case AppConfig::EffectScaling::LINEAR:
+            return v;
+        case AppConfig::EffectScaling::SQUARE_ROOT:
+            // Fast initial rise, gentle at high values - matches natural perception
+            return std::sqrt(v);
+        case AppConfig::EffectScaling::EXPONENTIAL:
+            // Subtle at low values, dramatic at high - emphasizes strong reactance
+            return v * v;
+        case AppConfig::EffectScaling::LOGARITHMIC:
+            // Strong initial rise, compressed at high values
+            return std::log1p(v * 9.0) / std::log(10.0);  // log10(1 + 9*v), maps 0→0, 1→1
+        case AppConfig::EffectScaling::S_CURVE:
+            // Smooth sigmoid transition with plateau at extremes
+            return v * v * (3.0 - 2.0 * v);  // Hermite interpolation (smoothstep)
+        default:
+            return v;
+    }
+}
+
+void MIDIEngine::applyReactanceEffects(double reactanceOhms,
+                                        const AppConfig::ReactanceModeEffectConfig& config,
+                                        double deadzone, double maxOhms) {
+    if (!opened) return;
+    
+    // Reactance channel is curve index 3 → MIDI channel 3
+    const int reactanceChannel = 3;
+    uint8_t status = 0xB0 | (reactanceChannel & 0x0F);
+    
+    double absX = std::fabs(reactanceOhms);
+    
+    // Within dead zone: reset all effects to zero
+    if (absX <= deadzone) {
+        // Send zero for both effect types to ensure clean signal
+        sendMIDIMessage(status, effectTypeToCC(config.capacitive_effect), 0);
+        if (effectTypeToCC(config.inductive_effect) != effectTypeToCC(config.capacitive_effect)) {
+            sendMIDIMessage(status, effectTypeToCC(config.inductive_effect), 0);
+        }
+        return;
+    }
+    
+    // Calculate normalized intensity (0.0-1.0) from dead zone edge to max
+    double effectiveRange = maxOhms - deadzone;
+    if (effectiveRange <= 0.0) effectiveRange = 1.0;
+    double normalizedIntensity = std::clamp((absX - deadzone) / effectiveRange, 0.0, 1.0);
+    
+    if (reactanceOhms < 0.0) {
+        // Capacitive (X < 0): apply capacitive effect, reset inductive
+        double scaled = applyScaling(normalizedIntensity, config.capacitive_scaling);
+        uint8_t ccValue = static_cast<uint8_t>(std::clamp(scaled * config.capacitive_max_value, 0.0, 127.0));
+        sendMIDIMessage(status, effectTypeToCC(config.capacitive_effect), ccValue);
+        // Reset inductive effect (only if different CC)
+        if (effectTypeToCC(config.inductive_effect) != effectTypeToCC(config.capacitive_effect)) {
+            sendMIDIMessage(status, effectTypeToCC(config.inductive_effect), 0);
+        }
+        
+        if (logger) {
+            char msg[512];
+            snprintf(msg, sizeof(msg), "Reactance effect: X=%.1f Ω (capacitive), CC %d = %d (scaling: %.2f)",
+                     reactanceOhms, effectTypeToCC(config.capacitive_effect), ccValue, scaled);
+            logger->log("MIDI", msg);
+        }
+    } else {
+        // Inductive (X > 0): apply inductive effect, reset capacitive
+        double scaled = applyScaling(normalizedIntensity, config.inductive_scaling);
+        uint8_t ccValue = static_cast<uint8_t>(std::clamp(scaled * config.inductive_max_value, 0.0, 127.0));
+        sendMIDIMessage(status, effectTypeToCC(config.inductive_effect), ccValue);
+        // Reset capacitive effect (only if different CC)
+        if (effectTypeToCC(config.capacitive_effect) != effectTypeToCC(config.inductive_effect)) {
+            sendMIDIMessage(status, effectTypeToCC(config.capacitive_effect), 0);
+        }
+        
+        if (logger) {
+            char msg[512];
+            snprintf(msg, sizeof(msg), "Reactance effect: X=%.1f Ω (inductive), CC %d = %d (scaling: %.2f)",
+                     reactanceOhms, effectTypeToCC(config.inductive_effect), ccValue, scaled);
+            logger->log("MIDI", msg);
+        }
+    }
+}
+
+void MIDIEngine::resetReactanceEffects() {
+    if (!opened) return;
+    
+    // Reactance channel is curve index 3 → MIDI channel 3
+    const int reactanceChannel = 3;
+    uint8_t status = 0xB0 | (reactanceChannel & 0x0F);
+    
+    // Reset all possible effect CCs on reactance channel
+    sendMIDIMessage(status, 1, 0);    // CC 1: Modulation Wheel
+    sendMIDIMessage(status, 11, 0);   // CC 11: Expression (reset to off - will be set by volume control)
+    sendMIDIMessage(status, 74, 0);   // CC 74: Brightness
+    sendMIDIMessage(status, 76, 0);   // CC 76: Vibrato Rate
+    sendMIDIMessage(status, 77, 0);   // CC 77: Vibrato Depth
+    sendMIDIMessage(status, 91, 0);   // CC 91: Reverb Send Level
+    sendMIDIMessage(status, 93, 0);   // CC 93: Chorus Send Level
+    sendMIDIMessage(status, 94, 0);   // CC 94: Detune/Celeste
+    
+    if (logger) {
+        logger->log("MIDI", "Reactance effects reset to zero on channel 3");
+    }
+}

@@ -91,6 +91,89 @@ struct AppConfig {
     bool midi_interpolated_pan_mode = false;      // Enable volume-based pan interpolation for higher spatial resolution
     double midi_interpolation_strength = 0.3;     // Interpolation strength (0.0-1.0, default 0.3 = 30% volume modulation)
     
+    // Reactance MIDI Effect Configuration
+    // Maps reactance sign/magnitude to MIDI effects for audible inductance/capacitance distinction
+    // Positive reactance (X > 0) = Inductive → Tremolo/Modulation effect
+    // Negative reactance (X < 0) = Capacitive → Reverb effect
+    // Separate configurations for gliding (sustained) and dotted (percussive) modes
+    
+    // Scaling curve types for effect intensity
+    enum class EffectScaling {
+        LINEAR = 0,        // Linear: proportional increase, even response
+        SQUARE_ROOT = 1,   // Square root: fast initial rise, gentle at high values (natural perception)
+        EXPONENTIAL = 2,   // Exponential: subtle at low values, dramatic at high values
+        LOGARITHMIC = 3,   // Logarithmic: strong initial rise, compressed at high values
+        S_CURVE = 4        // S-curve (sigmoid): smooth transition with plateau at extremes
+    };
+    
+    // MIDI CC effect types available for reactance sonification
+    enum class ReactanceEffectType {
+        REVERB = 0,        // CC 91: Reverb Send Level (spatial, room-filling → capacitance)
+        TREMOLO = 1,       // CC 1: Modulation Wheel (oscillation, vibration → inductance)
+        CHORUS = 2,        // CC 93: Chorus Send Level (widening, thickening)
+        VIBRATO_DEPTH = 3, // CC 77: Vibrato Depth (pitch oscillation intensity)
+        VIBRATO_RATE = 4,  // CC 76: Vibrato Rate (pitch oscillation speed)
+        DETUNE = 5,        // CC 94: Detune/Celeste (subtle pitch shifting)
+        BRIGHTNESS = 6,    // CC 74: Brightness/Filter cutoff (timbral change)
+        EXPRESSION = 7     // CC 11: Expression (dynamic volume modulation)
+    };
+    
+    struct ReactanceModeEffectConfig {
+        // Capacitive effect (X < 0): applied when reactance is negative
+        ReactanceEffectType capacitive_effect = ReactanceEffectType::REVERB;
+        int capacitive_max_value = 100;          // Maximum CC value at full capacitance (0-127)
+        EffectScaling capacitive_scaling = EffectScaling::SQUARE_ROOT;
+        
+        // Inductive effect (X > 0): applied when reactance is positive
+        ReactanceEffectType inductive_effect = ReactanceEffectType::TREMOLO;
+        int inductive_max_value = 100;           // Maximum CC value at full inductance (0-127)
+        EffectScaling inductive_scaling = EffectScaling::SQUARE_ROOT;
+    };
+    
+    // Master enable for reactance effects
+    bool reactance_effects_enabled = true;
+    
+    // Dead zone: range around X=0 where no effects are applied (in Ohms)
+    // Values within ±deadzone are treated as purely resistive (no audible effect)
+    double reactance_deadzone_ohms = 5.0;  // Default: ±5 Ohm dead zone
+    
+    // Maximum reactance value for full effect intensity (in Ohms)
+    // Values beyond this are clamped to max effect
+    double reactance_max_ohms = 300.0;     // Default: 300 Ohm = full effect
+    
+    // Separate effect configurations for each playback mode
+    // Sustained instruments (gliding) respond differently to effects than percussive (dotted)
+    ReactanceModeEffectConfig reactance_effects_gliding;   // Config for gliding/smooth mode
+    ReactanceModeEffectConfig reactance_effects_dotted;    // Config for dotted/percussive mode
+    
+    // Synthesizer DSP effect types for reactance sonification (non-MIDI)
+    // These are native PCM buffer effects applied by the SynthesizerEngine
+    // Designed to match the MIDI approach: capacitance = spatial/filling, inductance = oscillation
+    enum class SynthReactanceEffectType {
+        AM_TREMOLO = 0,     // Amplitude modulation/tremolo: periodic volume oscillation → inductance (vibration)
+        ECHO = 1,           // Delay-based echo/reverb simulation: spatial, room-filling → capacitance
+        RING_MOD = 2,       // Ring modulation: metallic, harmonic distortion (distinctive timbre change)
+        FILTER_SWEEP = 3,   // Low-pass filter sweep: brightness change (getting duller = capacitance charging)
+        NOISE_MIX = 4,      // White noise mixing: adds noise proportional to effect → hiss indicates reactance
+        BITCRUSH = 5        // Bit-depth reduction: digital distortion, resolution loss (creative alternative)
+    };
+    
+    struct SynthReactanceModeEffectConfig {
+        // Capacitive effect (X < 0): applied when reactance is negative
+        SynthReactanceEffectType capacitive_effect = SynthReactanceEffectType::ECHO;
+        int capacitive_max_percent = 80;          // Maximum effect depth in percent (0-100)
+        EffectScaling capacitive_scaling = EffectScaling::SQUARE_ROOT;
+        
+        // Inductive effect (X > 0): applied when reactance is positive
+        SynthReactanceEffectType inductive_effect = SynthReactanceEffectType::AM_TREMOLO;
+        int inductive_max_percent = 80;           // Maximum effect depth in percent (0-100)
+        EffectScaling inductive_scaling = EffectScaling::SQUARE_ROOT;
+    };
+    
+    // Separate synth effect configurations for each playback mode
+    SynthReactanceModeEffectConfig synth_reactance_effects_smooth;   // Config for smooth/gliding mode
+    SynthReactanceModeEffectConfig synth_reactance_effects_dotted;   // Config for dotted mode
+    
     // Dotted mode settings
     int dotted_duration_ms = 30;  // Duration of each dot in milliseconds (30-500ms)
     int dotted_pause_ms = 60;      // Duration of pause between dots in milliseconds (10-500ms)

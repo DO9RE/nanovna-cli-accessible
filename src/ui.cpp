@@ -19,6 +19,7 @@
 #include <limits>
 #include <filesystem>
 #include <cstdlib>
+#include <cmath>
 
 #if defined(_WIN32)
 #include <windows.h> // For GetAsyncKeyState, ShellExecuteA
@@ -1788,6 +1789,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             print(translation.get("MIDI_ERROR_OPEN_FAILED_FALLBACK", "Warning: Failed to open MIDI engine, falling back to Synthesizer.") + "\n");
             // Fall back to synthesizer
             auto synthEngine = std::make_shared<SynthesizerEngine>();
+            synthEngine->setLogger(logger);
             // Configure waveforms for each curve from config
             for (int i = 0; i < 5; i++) {
                 synthEngine->setCurveWaveform(i, cfg.synth_waveforms[i]);
@@ -1820,6 +1822,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     } else {
         // Use synthesizer engine (default)
         auto synthEngine = std::make_shared<SynthesizerEngine>();
+        synthEngine->setLogger(logger);
         // Configure waveforms for each curve from config
         for (int i = 0; i < 5; i++) {
             synthEngine->setCurveWaveform(i, cfg.synth_waveforms[i]);
@@ -1905,6 +1908,15 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     analyzer.setRulerCustomSoundSynth(cfg.ruler_custom_sound_synth);
     analyzer.setRulerCustomSoundMidiGliding(cfg.ruler_custom_sound_midi_gliding);
     analyzer.setRulerCustomSoundMidiDotted(cfg.ruler_custom_sound_midi_dotted);
+    
+    // Set reactance MIDI effect configuration
+    analyzer.setReactanceEffectsEnabled(cfg.reactance_effects_enabled);
+    analyzer.setReactanceDeadzone(cfg.reactance_deadzone_ohms);
+    analyzer.setReactanceMaxOhms(cfg.reactance_max_ohms);
+    analyzer.setReactanceEffectsGliding(cfg.reactance_effects_gliding);
+    analyzer.setReactanceEffectsDotted(cfg.reactance_effects_dotted);
+    analyzer.setSynthReactanceEffectsSmooth(cfg.synth_reactance_effects_smooth);
+    analyzer.setSynthReactanceEffectsDotted(cfg.synth_reactance_effects_dotted);
     
     // Set continuous replay if configured
     if (cfg.continuous_replay && !analyzer.isContinuousReplay()) {
@@ -3231,6 +3243,37 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 print(translation.format("ACOUSTIC_SWR", "SWR: {0}", pt->swr) + "\n");
                                 print(translation.format("ACOUSTIC_RETURN_LOSS", "Return Loss: {0} dB", pt->rl) + "\n");
                                 print(translation.format("ACOUSTIC_IMPEDANCE", "Impedance: {0} + j{1}", pt->R, pt->X) + " " + ohmUnit + "\n");
+                                
+                                // Graded reactance classification hint
+                                {
+                                    double absX = std::fabs(pt->X);
+                                    std::string reactanceHint;
+                                    if (absX < 1.0) {
+                                        reactanceHint = translation.get("REACTANCE_HINT_RESONANT", "Resonant (X ~ 0)");
+                                    } else if (absX < 5.0) {
+                                        if (pt->X > 0)
+                                            reactanceHint = translation.get("REACTANCE_HINT_NEARLY_RESONANT_INDUCTIVE", "Nearly resonant (slightly inductive)");
+                                        else
+                                            reactanceHint = translation.get("REACTANCE_HINT_NEARLY_RESONANT_CAPACITIVE", "Nearly resonant (slightly capacitive)");
+                                    } else if (absX < 20.0) {
+                                        if (pt->X > 0)
+                                            reactanceHint = translation.get("REACTANCE_HINT_SLIGHTLY_INDUCTIVE", "Slightly inductive");
+                                        else
+                                            reactanceHint = translation.get("REACTANCE_HINT_SLIGHTLY_CAPACITIVE", "Slightly capacitive");
+                                    } else if (absX < 100.0) {
+                                        if (pt->X > 0)
+                                            reactanceHint = translation.get("REACTANCE_HINT_INDUCTIVE", "Inductive");
+                                        else
+                                            reactanceHint = translation.get("REACTANCE_HINT_CAPACITIVE", "Capacitive");
+                                    } else {
+                                        if (pt->X > 0)
+                                            reactanceHint = translation.get("REACTANCE_HINT_STRONGLY_INDUCTIVE", "Strongly inductive");
+                                        else
+                                            reactanceHint = translation.get("REACTANCE_HINT_STRONGLY_CAPACITIVE", "Strongly capacitive");
+                                    }
+                                    print(translation.format("ACOUSTIC_REACTANCE_HINT", "Reactance character: {0}", reactanceHint) + "\n");
+                                }
+                                
                                 print(translation.format("ACOUSTIC_MAGNITUDE", "Magnitude |Z|: {0}", pt->impedance_mag) + " " + ohmUnit + "\n");
                                 print(translation.format("ACOUSTIC_PHASE", "Phase: {0}", pt->phase_deg) + " " + degUnit + "\n");
                                 print(translation.format("ACOUSTIC_S11", "S11: {0} + j{1}", pt->s11_re, pt->s11_im) + "\n");
@@ -3373,6 +3416,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                     analyzer.stopYAxisRuler();  // Stop ruler thread first to prevent race condition
                                     analyzer.stop();  // Stop current playback
                                     auto synthEngine = std::make_shared<SynthesizerEngine>();
+                                    synthEngine->setLogger(logger);
                                     // Configure waveforms for each curve from config
                                     for (int i = 0; i < 5; i++) {
                                         synthEngine->setCurveWaveform(i, cfg.synth_waveforms[i]);
@@ -3391,6 +3435,15 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                         analyzer.setCurveVolume(i, cfg.curve_volume_midi[i]);
                                     }
                                 }
+                                
+                                // Update reactance effect configuration (both MIDI and Synth)
+                                analyzer.setReactanceEffectsEnabled(cfg.reactance_effects_enabled);
+                                analyzer.setReactanceDeadzone(cfg.reactance_deadzone_ohms);
+                                analyzer.setReactanceMaxOhms(cfg.reactance_max_ohms);
+                                analyzer.setReactanceEffectsGliding(cfg.reactance_effects_gliding);
+                                analyzer.setReactanceEffectsDotted(cfg.reactance_effects_dotted);
+                                analyzer.setSynthReactanceEffectsSmooth(cfg.synth_reactance_effects_smooth);
+                                analyzer.setSynthReactanceEffectsDotted(cfg.synth_reactance_effects_dotted);
                             }
                         }
                         // Re-initialize MIDI controller if settings changed in config screen
@@ -5651,6 +5704,13 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
         print(translation.get("AUDIO_CONFIG_MIDI_INTERP_STRENGTH_CMD", "  T - Set MIDI interpolation strength") + "\n");
     }
     
+    // Reactance effects available for both engine types
+    if (cfg.audio_engine == AudioEngineType::MIDI) {
+        print(translation.get("AUDIO_CONFIG_REACTANCE_FX_CMD", "  Z - Configure Reactance (X) MIDI effects (inductance/capacitance sonification)") + "\n");
+    } else {
+        print(translation.get("AUDIO_CONFIG_REACTANCE_FX_SYNTH_CMD", "  Z - Configure Reactance (X) DSP effects (inductance/capacitance sonification)") + "\n");
+    }
+    
     // Context-sensitive preview message
     if (cfg.audio_engine == AudioEngineType::MIDI) {
         print(translation.get("AUDIO_CONFIG_PREVIEW_CMD", "  P - Preview current MIDI configuration") + "\n");
@@ -7191,6 +7251,536 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     }
                     break;
                 
+                case 'z':  // Reactance Effects Configuration (works for both MIDI and Synth modes)
+                    {
+                        const bool isMidi = (cfg.audio_engine == AudioEngineType::MIDI);
+                        
+                        // Helper lambdas for effect/scaling names
+                        auto getEffectName = [](AppConfig::ReactanceEffectType t) -> std::string {
+                            switch (t) {
+                                case AppConfig::ReactanceEffectType::REVERB: return "Reverb (CC 91)";
+                                case AppConfig::ReactanceEffectType::TREMOLO: return "Tremolo/Modulation (CC 1)";
+                                case AppConfig::ReactanceEffectType::CHORUS: return "Chorus (CC 93)";
+                                case AppConfig::ReactanceEffectType::VIBRATO_DEPTH: return "Vibrato Depth (CC 77)";
+                                case AppConfig::ReactanceEffectType::VIBRATO_RATE: return "Vibrato Rate (CC 76)";
+                                case AppConfig::ReactanceEffectType::DETUNE: return "Detune/Celeste (CC 94)";
+                                case AppConfig::ReactanceEffectType::BRIGHTNESS: return "Brightness (CC 74)";
+                                case AppConfig::ReactanceEffectType::EXPRESSION: return "Expression (CC 11)";
+                                default: return "Unknown";
+                            }
+                        };
+                        
+                        auto getSynthEffectName = [](AppConfig::SynthReactanceEffectType t) -> std::string {
+                            switch (t) {
+                                case AppConfig::SynthReactanceEffectType::AM_TREMOLO: return "AM Tremolo (amplitude modulation)";
+                                case AppConfig::SynthReactanceEffectType::ECHO: return "Echo/Reverb (delay-based)";
+                                case AppConfig::SynthReactanceEffectType::RING_MOD: return "Ring Modulation (metallic)";
+                                case AppConfig::SynthReactanceEffectType::FILTER_SWEEP: return "Filter Sweep (low-pass)";
+                                case AppConfig::SynthReactanceEffectType::NOISE_MIX: return "Noise Mix (hiss)";
+                                case AppConfig::SynthReactanceEffectType::BITCRUSH: return "Bitcrush (digital distortion)";
+                                default: return "Unknown";
+                            }
+                        };
+                        
+                        auto getScalingName = [](AppConfig::EffectScaling s) -> std::string {
+                            switch (s) {
+                                case AppConfig::EffectScaling::LINEAR: return "Linear";
+                                case AppConfig::EffectScaling::SQUARE_ROOT: return "Square Root";
+                                case AppConfig::EffectScaling::EXPONENTIAL: return "Exponential";
+                                case AppConfig::EffectScaling::LOGARITHMIC: return "Logarithmic";
+                                case AppConfig::EffectScaling::S_CURVE: return "S-Curve (Sigmoid)";
+                                default: return "Unknown";
+                            }
+                        };
+                        
+                        auto getScalingDescription = [](AppConfig::EffectScaling s) -> std::string {
+                            switch (s) {
+                                case AppConfig::EffectScaling::LINEAR:
+                                    return "  Proportional: effect grows evenly with reactance value";
+                                case AppConfig::EffectScaling::SQUARE_ROOT:
+                                    return "  Natural perception: fast initial response, gentle at high values\n  (Recommended: matches human hearing sensitivity)";
+                                case AppConfig::EffectScaling::EXPONENTIAL:
+                                    return "  Dramatic: subtle at low reactance, strong increase at high values\n  (Good for emphasizing extreme inductance/capacitance)";
+                                case AppConfig::EffectScaling::LOGARITHMIC:
+                                    return "  Compressed: strong initial response, compressed at high values\n  (Good for quickly hearing small reactance changes)";
+                                case AppConfig::EffectScaling::S_CURVE:
+                                    return "  Smooth: gradual start, steep middle, plateau at extremes\n  (Good for clear distinction between moderate and extreme values)";
+                                default: return "";
+                            }
+                        };
+                        
+                        // Display current reactance effects configuration
+                        auto showReactanceConfig = [&]() {
+                            if (isMidi) {
+                                print("\n" + formatHeading(translation.get("REACTANCE_FX_TITLE", "Reactance (X) MIDI Effects Configuration")));
+                            } else {
+                                print("\n" + formatHeading(translation.get("REACTANCE_FX_SYNTH_TITLE", "Reactance (X) Synthesizer DSP Effects Configuration")));
+                            }
+                            print(translation.get("REACTANCE_FX_DESC",
+                                "Maps reactance sign to audio effects for audible inductance/capacitance distinction.\n"
+                                "Positive reactance (X > 0) = Inductive component -> oscillation/vibration effect\n"
+                                "Negative reactance (X < 0) = Capacitive component -> spatial/room-filling effect\n"
+                                "The dead zone around X=0 keeps the signal clean for purely resistive impedances.\n") + "\n");
+                            
+                            print(std::string("  ") + translation.get("REACTANCE_FX_STATUS_LABEL", "Reactance effects:") + " " + (cfg.reactance_effects_enabled ? translation.get("REACTANCE_FX_STATUS_ENABLED", "ENABLED") : translation.get("REACTANCE_FX_STATUS_DISABLED", "DISABLED")) + "\n");
+                            print(translation.format("REACTANCE_FX_DEADZONE_LABEL", "  Dead zone: +/-{0} Ohm", std::to_string(static_cast<int>(cfg.reactance_deadzone_ohms))) + "\n");
+                            print(translation.format("REACTANCE_FX_MAX_LABEL", "  Max reactance for full effect: {0} Ohm", std::to_string(static_cast<int>(cfg.reactance_max_ohms))) + "\n\n");
+                            
+                            if (isMidi) {
+                                // MIDI mode config display
+                                print("  --- " + translation.get("REACTANCE_FX_MIDI_GLIDING_HEADER", "Gliding mode (sustained instruments)") + " ---\n");
+                                print("  " + translation.get("REACTANCE_FX_CAPACITIVE_LABEL", "Capacitive effect (X<0):") + " " + getEffectName(cfg.reactance_effects_gliding.capacitive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_VALUE_LABEL", "    Max value: {0}/127, Scaling: {1}", std::to_string(cfg.reactance_effects_gliding.capacitive_max_value), getScalingName(cfg.reactance_effects_gliding.capacitive_scaling)) + "\n");
+                                print("  " + translation.get("REACTANCE_FX_INDUCTIVE_LABEL", "Inductive effect (X>0):") + " " + getEffectName(cfg.reactance_effects_gliding.inductive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_VALUE_LABEL", "    Max value: {0}/127, Scaling: {1}", std::to_string(cfg.reactance_effects_gliding.inductive_max_value), getScalingName(cfg.reactance_effects_gliding.inductive_scaling)) + "\n\n");
+                                
+                                print("  --- " + translation.get("REACTANCE_FX_MIDI_DOTTED_HEADER", "Dotted mode (percussive instruments)") + " ---\n");
+                                print("  " + translation.get("REACTANCE_FX_CAPACITIVE_LABEL", "Capacitive effect (X<0):") + " " + getEffectName(cfg.reactance_effects_dotted.capacitive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_VALUE_LABEL", "    Max value: {0}/127, Scaling: {1}", std::to_string(cfg.reactance_effects_dotted.capacitive_max_value), getScalingName(cfg.reactance_effects_dotted.capacitive_scaling)) + "\n");
+                                print("  " + translation.get("REACTANCE_FX_INDUCTIVE_LABEL", "Inductive effect (X>0):") + " " + getEffectName(cfg.reactance_effects_dotted.inductive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_VALUE_LABEL", "    Max value: {0}/127, Scaling: {1}", std::to_string(cfg.reactance_effects_dotted.inductive_max_value), getScalingName(cfg.reactance_effects_dotted.inductive_scaling)) + "\n\n");
+                            } else {
+                                // Synth mode config display
+                                print("  --- " + translation.get("REACTANCE_FX_SYNTH_SMOOTH_HEADER", "Smooth mode") + " ---\n");
+                                print("  " + translation.get("REACTANCE_FX_CAPACITIVE_LABEL", "Capacitive effect (X<0):") + " " + getSynthEffectName(cfg.synth_reactance_effects_smooth.capacitive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_DEPTH_LABEL", "    Max depth: {0}%, Scaling: {1}", std::to_string(cfg.synth_reactance_effects_smooth.capacitive_max_percent), getScalingName(cfg.synth_reactance_effects_smooth.capacitive_scaling)) + "\n");
+                                print("  " + translation.get("REACTANCE_FX_INDUCTIVE_LABEL", "Inductive effect (X>0):") + " " + getSynthEffectName(cfg.synth_reactance_effects_smooth.inductive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_DEPTH_LABEL", "    Max depth: {0}%, Scaling: {1}", std::to_string(cfg.synth_reactance_effects_smooth.inductive_max_percent), getScalingName(cfg.synth_reactance_effects_smooth.inductive_scaling)) + "\n\n");
+                                
+                                print("  --- " + translation.get("REACTANCE_FX_SYNTH_DOTTED_HEADER", "Dotted mode") + " ---\n");
+                                print("  " + translation.get("REACTANCE_FX_CAPACITIVE_LABEL", "Capacitive effect (X<0):") + " " + getSynthEffectName(cfg.synth_reactance_effects_dotted.capacitive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_DEPTH_LABEL", "    Max depth: {0}%, Scaling: {1}", std::to_string(cfg.synth_reactance_effects_dotted.capacitive_max_percent), getScalingName(cfg.synth_reactance_effects_dotted.capacitive_scaling)) + "\n");
+                                print("  " + translation.get("REACTANCE_FX_INDUCTIVE_LABEL", "Inductive effect (X>0):") + " " + getSynthEffectName(cfg.synth_reactance_effects_dotted.inductive_effect) + "\n");
+                                print(translation.format("REACTANCE_FX_MAX_DEPTH_LABEL", "    Max depth: {0}%, Scaling: {1}", std::to_string(cfg.synth_reactance_effects_dotted.inductive_max_percent), getScalingName(cfg.synth_reactance_effects_dotted.inductive_scaling)) + "\n\n");
+                            }
+                            
+                            print(translation.get("REACTANCE_FX_COMMANDS", "Commands:") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_TOGGLE", "  E - Toggle reactance effects ON/OFF") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_DEADZONE", "  D - Set dead zone size (Ohms around zero)") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_MAX", "  M - Set maximum reactance for full effect (Ohms)") + "\n");
+                            if (isMidi) {
+                                print(translation.get("REACTANCE_FX_CMD_GLIDING_CAP", "  1 - Configure GLIDING mode: capacitive effect (X<0)") + "\n");
+                                print(translation.get("REACTANCE_FX_CMD_GLIDING_IND", "  2 - Configure GLIDING mode: inductive effect (X>0)") + "\n");
+                            } else {
+                                print(translation.get("REACTANCE_FX_CMD_SMOOTH_CAP", "  1 - Configure SMOOTH mode: capacitive effect (X<0)") + "\n");
+                                print(translation.get("REACTANCE_FX_CMD_SMOOTH_IND", "  2 - Configure SMOOTH mode: inductive effect (X>0)") + "\n");
+                            }
+                            print(translation.get("REACTANCE_FX_CMD_DOTTED_CAP", "  3 - Configure DOTTED mode: capacitive effect (X<0)") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_DOTTED_IND", "  4 - Configure DOTTED mode: inductive effect (X>0)") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_HELP", "  H - Help (scaling curve descriptions)") + "\n");
+                            print(translation.get("REACTANCE_FX_CMD_BACK", "  ESC - Back") + "\n\n");
+                        };
+                        
+                        // Sub-function to configure one effect (effect type, max value, scaling)
+                        auto configureOneEffect = [&](const std::string& label,
+                                                       AppConfig::ReactanceEffectType& effectType,
+                                                       int& maxValue,
+                                                       AppConfig::EffectScaling& scaling) {
+                            print("\n" + formatHeading(translation.format("REACTANCE_FX_CONFIGURE_HEADING", "Configure {0}", label)));
+                            print(translation.format("REACTANCE_FX_MIDI_CURRENT", "  Current: {0}, Max={1}/127, Scaling={2}", getEffectName(effectType), std::to_string(maxValue), getScalingName(scaling)) + "\n\n");
+                            
+                            // Step 1: Choose effect type
+                            print(translation.get("REACTANCE_FX_MIDI_EFFECTS_LIST", "  Available effect types:\n    0 = Reverb (CC 91) - spatial, room-filling sound\n    1 = Tremolo/Modulation (CC 1) - oscillation, vibration\n    2 = Chorus (CC 93) - widening, thickening\n    3 = Vibrato Depth (CC 77) - pitch oscillation intensity\n    4 = Vibrato Rate (CC 76) - pitch oscillation speed\n    5 = Detune/Celeste (CC 94) - subtle pitch shifting\n    6 = Brightness (CC 74) - timbral/filter change\n    7 = Expression (CC 11) - dynamic volume modulation") + "\n");
+                            print(translation.get("REACTANCE_FX_ENTER_EFFECT_TYPE_MIDI", "  Enter effect type number (0-7), or ESC to cancel:") + " " + getDepthIndicator(5) + " ");
+                            
+                            std::string input;
+                            bool inputting = true;
+                            bool cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print(translation.get("REACTANCE_FX_CANCELLED", "\n[Cancelled]") + "\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (cancelled || input.empty()) return;
+                            
+                            try {
+                                int e = std::stoi(input);
+                                if (e >= 0 && e <= 7) {
+                                    effectType = static_cast<AppConfig::ReactanceEffectType>(e);
+                                    print(translation.format("REACTANCE_FX_EFFECT_SET_MIDI", "  Effect set to: {0}", getEffectName(effectType)) + "\n");
+                                } else {
+                                    print(translation.get("REACTANCE_FX_ERROR_INVALID_EFFECT_MIDI", "  [Error: Invalid effect type, must be 0-7]") + "\n");
+                                    return;
+                                }
+                            } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); return; }
+                            
+                            // Step 2: Max CC value
+                            print(translation.format("REACTANCE_FX_ENTER_MAX_CC", "  Enter maximum CC value (0-127, current={0}), or ESC to keep:", std::to_string(maxValue)) + " " + getDepthIndicator(5) + " ");
+                            input.clear();
+                            inputting = true; cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (!cancelled && !input.empty()) {
+                                try {
+                                    int m = std::stoi(input);
+                                    if (m >= 0 && m <= 127) {
+                                        maxValue = m;
+                                        print(translation.format("REACTANCE_FX_MAX_VALUE_SET", "  Max value set to: {0}", std::to_string(maxValue)) + "\n");
+                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_0_127", "  [Error: Must be 0-127]") + "\n"); }
+                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                            }
+                            
+                            // Step 3: Scaling curve
+                            print(translation.get("REACTANCE_FX_SCALING_LIST", "  Available scaling curves:") + "\n");
+                            for (int s = 0; s <= 4; s++) {
+                                auto sc = static_cast<AppConfig::EffectScaling>(s);
+                                print("    " + std::to_string(s) + " = " + getScalingName(sc) + "\n");
+                                print(getScalingDescription(sc) + "\n");
+                            }
+                            print(translation.format("REACTANCE_FX_ENTER_SCALING", "  Enter scaling type (0-4, current={0}), or ESC to keep:", std::to_string(static_cast<int>(scaling))) + " " + getDepthIndicator(5) + " ");
+                            input.clear();
+                            inputting = true; cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (!cancelled && !input.empty()) {
+                                try {
+                                    int s = std::stoi(input);
+                                    if (s >= 0 && s <= 4) {
+                                        scaling = static_cast<AppConfig::EffectScaling>(s);
+                                        print(translation.format("REACTANCE_FX_SCALING_SET", "  Scaling set to: {0}", getScalingName(scaling)) + "\n");
+                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_0_4", "  [Error: Must be 0-4]") + "\n"); }
+                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                            }
+                            
+                            saveSettings();
+                            print(translation.get("REACTANCE_FX_SAVED", "  [Configuration saved]") + "\n");
+                        };
+                        
+                        // Sub-function to configure one synth DSP effect
+                        auto configureSynthEffect = [&](const std::string& label,
+                                                        AppConfig::SynthReactanceEffectType& effectType,
+                                                        int& maxPercent,
+                                                        AppConfig::EffectScaling& scaling) {
+                            print("\n" + formatHeading(translation.format("REACTANCE_FX_CONFIGURE_HEADING", "Configure {0}", label)));
+                            print(translation.format("REACTANCE_FX_SYNTH_CURRENT", "  Current: {0}, Max depth={1}%, Scaling={2}", getSynthEffectName(effectType), std::to_string(maxPercent), getScalingName(scaling)) + "\n\n");
+                            
+                            // Step 1: Choose effect type
+                            print(translation.get("REACTANCE_FX_SYNTH_EFFECTS_LIST", "  Available DSP effect types:\n    0 = AM Tremolo - periodic volume oscillation (vibration -> inductance)\n    1 = Echo/Reverb - delay-based spatial effect (room-filling -> capacitance)\n    2 = Ring Modulation - metallic, inharmonic tones (distinctive timbre)\n    3 = Filter Sweep - low-pass filter darkening (capacitance charging)\n    4 = Noise Mix - adds hiss proportional to reactance\n    5 = Bitcrush - digital distortion, resolution loss") + "\n");
+                            print(translation.get("REACTANCE_FX_ENTER_EFFECT_TYPE_SYNTH", "  Enter effect type number (0-5), or ESC to cancel:") + " " + getDepthIndicator(5) + " ");
+                            
+                            std::string input;
+                            bool inputting = true;
+                            bool cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print(translation.get("REACTANCE_FX_CANCELLED", "\n[Cancelled]") + "\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (cancelled || input.empty()) return;
+                            
+                            try {
+                                int e = std::stoi(input);
+                                if (e >= 0 && e <= 5) {
+                                    effectType = static_cast<AppConfig::SynthReactanceEffectType>(e);
+                                    print(translation.format("REACTANCE_FX_EFFECT_SET_SYNTH", "  Effect set to: {0}", getSynthEffectName(effectType)) + "\n");
+                                } else {
+                                    print(translation.get("REACTANCE_FX_ERROR_INVALID_EFFECT_SYNTH", "  [Error: Invalid effect type, must be 0-5]") + "\n");
+                                    return;
+                                }
+                            } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); return; }
+                            
+                            // Step 2: Max effect depth percent
+                            print(translation.format("REACTANCE_FX_ENTER_MAX_DEPTH", "  Enter maximum effect depth in percent (0-100, current={0}), or ESC to keep:", std::to_string(maxPercent)) + " " + getDepthIndicator(5) + " ");
+                            input.clear();
+                            inputting = true; cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (!cancelled && !input.empty()) {
+                                try {
+                                    int m = std::stoi(input);
+                                    if (m >= 0 && m <= 100) {
+                                        maxPercent = m;
+                                        print(translation.format("REACTANCE_FX_MAX_DEPTH_SET", "  Max depth set to: {0}%", std::to_string(maxPercent)) + "\n");
+                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_0_100", "  [Error: Must be 0-100]") + "\n"); }
+                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                            }
+                            
+                            // Step 3: Scaling curve
+                            print(translation.get("REACTANCE_FX_SCALING_LIST", "  Available scaling curves:") + "\n");
+                            for (int s = 0; s <= 4; s++) {
+                                auto sc = static_cast<AppConfig::EffectScaling>(s);
+                                print("    " + std::to_string(s) + " = " + getScalingName(sc) + "\n");
+                                print(getScalingDescription(sc) + "\n");
+                            }
+                            print(translation.format("REACTANCE_FX_ENTER_SCALING", "  Enter scaling type (0-4, current={0}), or ESC to keep:", std::to_string(static_cast<int>(scaling))) + " " + getDepthIndicator(5) + " ");
+                            input.clear();
+                            inputting = true; cancelled = false;
+                            while (inputting) {
+                                if (consoleInput->kbhit()) {
+                                    int ch = consoleInput->getch();
+                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                    else if (ch >= '0' && ch <= '9') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                }
+                            }
+                            if (!cancelled && !input.empty()) {
+                                try {
+                                    int s = std::stoi(input);
+                                    if (s >= 0 && s <= 4) {
+                                        scaling = static_cast<AppConfig::EffectScaling>(s);
+                                        print(translation.format("REACTANCE_FX_SCALING_SET", "  Scaling set to: {0}", getScalingName(scaling)) + "\n");
+                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_0_4", "  [Error: Must be 0-4]") + "\n"); }
+                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                            }
+                            
+                            saveSettings();
+                            print(translation.get("REACTANCE_FX_SAVED", "  [Configuration saved]") + "\n");
+                        };
+                        
+                        showReactanceConfig();
+                        
+                        bool rxRunning = true;
+                        print(getPromptWithDepth("REACTANCE_FX_PROMPT", 4) + " ");
+                        
+                        while (rxRunning) {
+                            if (consoleInput->kbhit()) {
+                                int rxCh = consoleInput->getch();
+                                if (rxCh == 0 || rxCh == 224) { if (consoleInput->kbhit()) consoleInput->getch(); continue; }
+                                
+                                char rxKey = static_cast<char>(rxCh);
+                                if (rxKey >= 'A' && rxKey <= 'Z') rxKey = rxKey - 'A' + 'a';
+                                
+                                switch (rxKey) {
+                                    case 'e':  // Toggle enable
+                                        cfg.reactance_effects_enabled = !cfg.reactance_effects_enabled;
+                                        print("E\n  " + translation.get("REACTANCE_FX_STATUS_LABEL", "Reactance effects:") + " " + std::string(cfg.reactance_effects_enabled ? translation.get("REACTANCE_FX_STATUS_ENABLED", "ENABLED") : translation.get("REACTANCE_FX_STATUS_DISABLED", "DISABLED")) + "\n");
+                                        if (!cfg.reactance_effects_enabled && isMidi) {
+                                            // Reset effects on the MIDI reactance channel when disabling
+                                            auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(analyzer->getAudioEngine());
+                                            if (midiEngine) {
+                                                midiEngine->resetReactanceEffects();
+                                            }
+                                        }
+                                        saveSettings();
+                                        break;
+                                    
+                                    case 'd':  // Dead zone
+                                        {
+                                            print("D\n" + translation.format("REACTANCE_FX_DEADZONE_PROMPT", "  Enter dead zone size in Ohms (0-100, current={0}):", std::to_string(static_cast<int>(cfg.reactance_deadzone_ohms))) + " " + getDepthIndicator(5) + " ");
+                                            std::string input;
+                                            bool inputting = true;
+                                            bool cancelled = false;
+                                            while (inputting) {
+                                                if (consoleInput->kbhit()) {
+                                                    int ch = consoleInput->getch();
+                                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                                    else if ((ch >= '0' && ch <= '9') || ch == '.') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                                }
+                                            }
+                                            if (!cancelled && !input.empty()) {
+                                                try {
+                                                    double d = std::stod(input);
+                                                    if (d >= 0.0 && d <= 100.0) {
+                                                        cfg.reactance_deadzone_ohms = d;
+                                                        print(translation.format("REACTANCE_FX_DEADZONE_SET", "  Dead zone set to: +/-{0} Ohm", std::to_string(static_cast<int>(d))) + "\n");
+                                                        saveSettings();
+                                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_0_100", "  [Error: Must be 0-100]") + "\n"); }
+                                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                                            }
+                                        }
+                                        break;
+                                    
+                                    case 'm':  // Max reactance
+                                        {
+                                            print("M\n" + translation.format("REACTANCE_FX_MAX_PROMPT", "  Enter max reactance for full effect in Ohms (10-1000, current={0}):", std::to_string(static_cast<int>(cfg.reactance_max_ohms))) + " " + getDepthIndicator(5) + " ");
+                                            std::string input;
+                                            bool inputting = true;
+                                            bool cancelled = false;
+                                            while (inputting) {
+                                                if (consoleInput->kbhit()) {
+                                                    int ch = consoleInput->getch();
+                                                    if (ch == 27) { print("\n"); cancelled = true; inputting = false; }
+                                                    else if (ch == '\r' || ch == '\n') { print("\n"); inputting = false; }
+                                                    else if ((ch >= '0' && ch <= '9') || ch == '.') { input += static_cast<char>(ch); print(std::string(1, static_cast<char>(ch))); }
+                                                    else if (ch == 8 && !input.empty()) { input.pop_back(); print("\b \b"); }
+                                                }
+                                            }
+                                            if (!cancelled && !input.empty()) {
+                                                try {
+                                                    double d = std::stod(input);
+                                                    if (d >= 10.0 && d <= 1000.0) {
+                                                        cfg.reactance_max_ohms = d;
+                                                        print(translation.format("REACTANCE_FX_MAX_SET", "  Max reactance set to: {0} Ohm", std::to_string(static_cast<int>(d))) + "\n");
+                                                        saveSettings();
+                                                    } else { print(translation.get("REACTANCE_FX_ERROR_RANGE_10_1000", "  [Error: Must be 10-1000]") + "\n"); }
+                                                } catch (...) { print(translation.get("REACTANCE_FX_ERROR_INVALID_NUMBER", "  [Error: Invalid number]") + "\n"); }
+                                            }
+                                        }
+                                        break;
+                                    
+                                    case '1':  // Smooth/Gliding capacitive
+                                        print("1\n");
+                                        if (isMidi) {
+                                            configureOneEffect(translation.get("REACTANCE_FX_LABEL_GLIDING_CAP", "Gliding Mode - Capacitive (X<0)"),
+                                                cfg.reactance_effects_gliding.capacitive_effect,
+                                                cfg.reactance_effects_gliding.capacitive_max_value,
+                                                cfg.reactance_effects_gliding.capacitive_scaling);
+                                        } else {
+                                            configureSynthEffect(translation.get("REACTANCE_FX_LABEL_SMOOTH_CAP", "Smooth Mode - Capacitive (X<0)"),
+                                                cfg.synth_reactance_effects_smooth.capacitive_effect,
+                                                cfg.synth_reactance_effects_smooth.capacitive_max_percent,
+                                                cfg.synth_reactance_effects_smooth.capacitive_scaling);
+                                        }
+                                        break;
+                                    
+                                    case '2':  // Smooth/Gliding inductive
+                                        print("2\n");
+                                        if (isMidi) {
+                                            configureOneEffect(translation.get("REACTANCE_FX_LABEL_GLIDING_IND", "Gliding Mode - Inductive (X>0)"),
+                                                cfg.reactance_effects_gliding.inductive_effect,
+                                                cfg.reactance_effects_gliding.inductive_max_value,
+                                                cfg.reactance_effects_gliding.inductive_scaling);
+                                        } else {
+                                            configureSynthEffect(translation.get("REACTANCE_FX_LABEL_SMOOTH_IND", "Smooth Mode - Inductive (X>0)"),
+                                                cfg.synth_reactance_effects_smooth.inductive_effect,
+                                                cfg.synth_reactance_effects_smooth.inductive_max_percent,
+                                                cfg.synth_reactance_effects_smooth.inductive_scaling);
+                                        }
+                                        break;
+                                    
+                                    case '3':  // Dotted capacitive
+                                        print("3\n");
+                                        if (isMidi) {
+                                            configureOneEffect(translation.get("REACTANCE_FX_LABEL_DOTTED_CAP", "Dotted Mode - Capacitive (X<0)"),
+                                                cfg.reactance_effects_dotted.capacitive_effect,
+                                                cfg.reactance_effects_dotted.capacitive_max_value,
+                                                cfg.reactance_effects_dotted.capacitive_scaling);
+                                        } else {
+                                            configureSynthEffect(translation.get("REACTANCE_FX_LABEL_DOTTED_CAP", "Dotted Mode - Capacitive (X<0)"),
+                                                cfg.synth_reactance_effects_dotted.capacitive_effect,
+                                                cfg.synth_reactance_effects_dotted.capacitive_max_percent,
+                                                cfg.synth_reactance_effects_dotted.capacitive_scaling);
+                                        }
+                                        break;
+                                    
+                                    case '4':  // Dotted inductive
+                                        print("4\n");
+                                        if (isMidi) {
+                                            configureOneEffect(translation.get("REACTANCE_FX_LABEL_DOTTED_IND", "Dotted Mode - Inductive (X>0)"),
+                                                cfg.reactance_effects_dotted.inductive_effect,
+                                                cfg.reactance_effects_dotted.inductive_max_value,
+                                                cfg.reactance_effects_dotted.inductive_scaling);
+                                        } else {
+                                            configureSynthEffect(translation.get("REACTANCE_FX_LABEL_DOTTED_IND", "Dotted Mode - Inductive (X>0)"),
+                                                cfg.synth_reactance_effects_dotted.inductive_effect,
+                                                cfg.synth_reactance_effects_dotted.inductive_max_percent,
+                                                cfg.synth_reactance_effects_dotted.inductive_scaling);
+                                        }
+                                        break;
+                                    
+                                    case 'h':  // Help
+                                        print("H\n");
+                                        print(formatHeading(translation.get("REACTANCE_FX_HELP_TITLE", "Reactance Effects Help")));
+                                        print(translation.get("REACTANCE_FX_HELP_CONCEPT",
+                                            "\n  === Concept ===\n"
+                                            "  Positive reactance (X > 0 Ohm) indicates INDUCTANCE (coils, magnetic fields).\n"
+                                            "  Negative reactance (X < 0 Ohm) indicates CAPACITANCE (capacitors, electric fields).\n"
+                                            "  This feature maps these to audio effects so you can HEAR the difference:\n"
+                                            "    - Capacitance -> Room/spatial effect (e.g., Reverb/Echo = filling a space)\n"
+                                            "    - Inductance  -> Oscillation effect (e.g., Tremolo = vibration/magnetic field)") + "\n\n");
+                                        print(translation.get("REACTANCE_FX_HELP_DEADZONE",
+                                            "  === Dead Zone ===\n"
+                                            "  A configurable zone around X=0 where NO effects are applied.\n"
+                                            "  This keeps purely resistive impedances clean and unaffected.\n"
+                                            "  Recommended: 3-10 Ohm depending on measurement noise.") + "\n\n");
+                                        if (isMidi) {
+                                            print(translation.get("REACTANCE_FX_HELP_MIDI_MODES",
+                                                "  === Gliding vs. Dotted Mode (MIDI) ===\n"
+                                                "  Effects behave differently with sustained vs. percussive instruments:\n"
+                                                "  - Gliding (sustained): Reverb may be less noticeable, Tremolo is clearer\n"
+                                                "  - Dotted (percussive): Reverb tail is very audible, Tremolo may be subtle\n"
+                                                "  Configure each mode independently for best results.") + "\n\n");
+                                        } else {
+                                            print(translation.get("REACTANCE_FX_HELP_SYNTH_MODES",
+                                                "  === Smooth vs. Dotted Mode (Synthesizer) ===\n"
+                                                "  DSP effects are applied directly to the PCM waveform buffer.\n"
+                                                "  - Smooth mode: Continuous signal — Echo/Tremolo build up smoothly\n"
+                                                "  - Dotted mode: Short bursts — some effects (Echo) leave audible tails\n"
+                                                "  Configure each mode independently for best results.") + "\n\n");
+                                            print(translation.get("REACTANCE_FX_HELP_DSP_EFFECTS",
+                                                "  === DSP Effect Types (Synthesizer) ===\n"
+                                                "  0 = AM Tremolo: Volume oscillation at ~6 Hz. Maps to inductance (vibration).\n"
+                                                "      Best in smooth mode where oscillation is clearly audible.\n"
+                                                "  1 = Echo/Reverb: Delay-based spatial effect. Maps to capacitance (filling).\n"
+                                                "      Creates room-like spatial impression. Tail audible in dotted mode.\n"
+                                                "  2 = Ring Modulation: Metallic, inharmonic timbre change.\n"
+                                                "      Very distinctive — creates alien/metallic quality. Both modes.\n"
+                                                "  3 = Filter Sweep: Low-pass filter that darkens the sound.\n"
+                                                "      Simulates capacitance charging (absorbing high frequencies).\n"
+                                                "  4 = Noise Mix: Adds white noise hiss proportional to reactance.\n"
+                                                "      Simple but effective indicator. Works on all platforms.\n"
+                                                "  5 = Bitcrush: Reduces bit depth for digital distortion.\n"
+                                                "      Creative alternative — resolution loss as reactance indicator.") + "\n\n");
+                                        }
+                                        print(translation.get("REACTANCE_FX_HELP_SCALING", "  === Scaling Curves ===") + "\n");
+                                        for (int s = 0; s <= 4; s++) {
+                                            auto sc = static_cast<AppConfig::EffectScaling>(s);
+                                            print("  " + std::to_string(s) + " = " + getScalingName(sc) + "\n");
+                                            print(getScalingDescription(sc) + "\n\n");
+                                        }
+                                        if (isMidi) {
+                                            print(translation.get("REACTANCE_FX_HELP_PLATFORM_MIDI",
+                                                "  === Platform Notes (MIDI) ===\n"
+                                                "  Windows (GS Wavetable): Supports Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n"
+                                                "    Limited effect range. Reverb and Modulation are most effective.\n"
+                                                "  macOS (DLS Synth): Full GM effects support. All CC parameters work well.\n"
+                                                "    Effects were previously disabled for clean output - now enabled only on reactance channel.\n"
+                                                "  Linux (FluidSynth/TiMidity): Depends on soundfont. Most effects supported.") + "\n\n");
+                                        } else {
+                                            print(translation.get("REACTANCE_FX_HELP_PLATFORM_SYNTH",
+                                                "  === Platform Notes (Synthesizer) ===\n"
+                                                "  All DSP effects work identically on Windows (WaveOut), macOS (PortAudio),\n"
+                                                "  and Linux (PortAudio). No platform limitations for native DSP processing.") + "\n\n");
+                                        }
+                                        break;
+                                    
+                                    case 27:  // ESC - Back
+                                        rxRunning = false;
+                                        print(translation.get("REACTANCE_FX_BACK", "\n[Returning to audio configuration...]") + "\n");
+                                        break;
+                                }
+                                
+                                if (rxRunning) {
+                                    print(getPromptWithDepth("REACTANCE_FX_PROMPT", 4) + " ");
+                                }
+                            }
+                            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                        }
+                    }
+                    break;
+                
                 case 'h':  // Help
                     print(formatHeading(translation.get("AUDIO_HELP_TITLE", "Audio Configuration Help")));
                     print(translation.get("AUDIO_HELP_ENGINE", "E - Toggle between Synthesizer and MIDI audio engines") + "\n");
@@ -7215,6 +7805,10 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                     print(translation.get("AUDIO_HELP_MIDI_GLIDING", "      Gliding preset: String Ensemble, Church Organ, Drawbar Organ, Violin, Lead 2") + "\n");
                     print(translation.get("AUDIO_HELP_MIDI_DOTTED", "      Dotted preset: Vibraphone, Marimba, Xylophone, Tubular Bells, Celesta\n") + "\n");
                     print(translation.get("AUDIO_HELP_PREVIEW", "P - Preview MIDI instruments (plays each curve)") + "\n");
+                    print("Z - Configure Reactance effects (inductance/capacitance sonification)\n");
+                    print("    MIDI mode: Maps reactance sign to CC effects (Reverb, Tremolo, Chorus, etc.)\n");
+                    print("    Synth mode: Maps reactance sign to DSP effects (Echo, AM Tremolo, Ring Mod, etc.)\n");
+                    print("    Separate configurations for Smooth/Gliding and Dotted modes\n\n");
                     print(translation.get("AUDIO_HELP_ESC", "ESC - Back to acoustic analysis\n") + "\n");
                     print(translation.get("AUDIO_HELP_MIDI_TITLE", "MIDI Instruments:") + "\n");
                     print(translation.get("AUDIO_HELP_MIDI_RANGE", "  Enter a number 0-127 for General MIDI instruments") + "\n");

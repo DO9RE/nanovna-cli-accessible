@@ -1,5 +1,6 @@
 #pragma once
 #include "audio_engine_interface.h"
+#include "config.h"
 #include "logger.h"
 #include <mutex>
 #include <cstdint>
@@ -170,6 +171,29 @@ public:
      */
     double getInterpolationStrength() const { return interpolationStrength; }
     
+    /**
+     * Apply reactance-based MIDI effects to the reactance channel (curve index 3)
+     * Sends appropriate CC messages based on reactance value sign and magnitude:
+     * - Positive X (inductive): applies inductive effect (e.g., tremolo/modulation)
+     * - Negative X (capacitive): applies capacitive effect (e.g., reverb)
+     * - Within dead zone: no effects applied
+     * Effects are only applied to the reactance channel, other channels remain clean.
+     * 
+     * @param reactanceOhms Raw reactance value in Ohms (positive = inductive, negative = capacitive)
+     * @param config Mode-specific effect configuration (gliding or dotted)
+     * @param deadzone Dead zone in Ohms around 0 where no effects are applied
+     * @param maxOhms Maximum reactance value for full effect intensity
+     */
+    void applyReactanceEffects(double reactanceOhms, 
+                               const struct AppConfig::ReactanceModeEffectConfig& config,
+                               double deadzone, double maxOhms);
+    
+    /**
+     * Reset all effects on the reactance channel to zero
+     * Called when reactance effects are disabled or when switching modes
+     */
+    void resetReactanceEffects();
+    
     // Number of curves/channels supported
     static constexpr int NUM_CURVES = 5;
 
@@ -299,4 +323,19 @@ private:
         uint8_t baseVolume,
         uint8_t& outPan, 
         uint8_t& outVolume);
+    
+    /**
+     * Convert ReactanceEffectType to MIDI CC number
+     * @param type The effect type
+     * @return MIDI CC number for this effect
+     */
+    static uint8_t effectTypeToCC(AppConfig::ReactanceEffectType type);
+    
+    /**
+     * Apply scaling curve to a normalized value (0.0-1.0)
+     * @param normalizedValue Input value (0.0-1.0)
+     * @param scaling Scaling curve type
+     * @return Scaled value (0.0-1.0)
+     */
+    static double applyScaling(double normalizedValue, AppConfig::EffectScaling scaling);
 };

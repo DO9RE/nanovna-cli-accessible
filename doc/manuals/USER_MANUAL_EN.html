@@ -733,6 +733,18 @@ make -j$(nproc)</code></pre>
 <li>Select MIDI instruments per curve</li>
 <li>Preview sounds before applying</li>
 </ul>
+<p><strong>Reactance MIDI Effects (Z key in Audio Configuration):</strong></p>
+<p>When using the MIDI engine, you can map the sign and magnitude of reactance (X) to MIDI effects,
+so you can <em>hear</em> whether a component is inductive or capacitive:</p>
+<ul>
+<li><strong>Capacitive reactance (X &lt; 0)</strong>: mapped to a spatial/room-filling effect (default: Reverb) — think of a capacitor &quot;filling up&quot;</li>
+<li><strong>Inductive reactance (X &gt; 0)</strong>: mapped to an oscillation/vibration effect (default: Tremolo/Modulation) — think of a coil &quot;vibrating&quot;</li>
+<li><strong>Dead zone</strong>: A configurable range around X=0 where no effects are applied, keeping purely resistive impedances clean</li>
+<li><strong>Separate Gliding/Dotted configuration</strong>: Sustained instruments (gliding mode) and percussive instruments (dotted mode) respond differently to effects — configure each independently</li>
+<li><strong>8 effect types</strong>: Reverb, Tremolo, Chorus, Vibrato Depth, Vibrato Rate, Detune, Brightness, Expression</li>
+<li><strong>5 scaling curves</strong>: Linear, Square Root (recommended), Exponential, Logarithmic, S-Curve — each with different perceptual characteristics</li>
+<li><strong>Platform notes</strong>: Windows GS Wavetable supports Reverb/Chorus/Modulation; macOS DLS Synth supports all; Linux depends on soundfont</li>
+</ul>
 <h3>Smith Diagram Visualization:</h3>
 <p>Experience impedance matching through 3D spatial audio representation of the Smith Chart.</p>
 <p><strong>What is Smith Diagram Visualization?</strong></p>

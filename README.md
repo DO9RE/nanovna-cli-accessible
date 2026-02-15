@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.1-beta (2026-02-15 16:12:07)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-15 22:13:27)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -85,6 +85,12 @@ Experience impedance matching through 3D spatial audio:
 - Loop markers for focused analysis
 - Continuous sweep mode with live updates
 - Position scrubbing with arrow keys
+
+**Reactance MIDI Effects (Z key in Audio Config):**
+- Hear inductance vs. capacitance through MIDI effects on the reactance curve
+- Capacitive (X<0) → Reverb (room-filling), Inductive (X>0) → Tremolo (oscillation)
+- Configurable dead zone, 8 effect types, 5 scaling curves
+- Separate settings for Gliding (sustained) and Dotted (percussive) modes
 
 ### 📊 Measurement & Data
 - S11 and S21 parameter support
@@ -337,8 +343,9 @@ This is a cross-platform application with platform-specific backends:
 
 The current beta is available for multiple platforms:
 
-## Windows Version (v0.6.1-beta)
-**[📥 nanovna-cli-accessible-beta-windows-0.6.1-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.6.1-beta.zip)**
+## Windows Version (v0.6.2-beta)
+**[📥 nanovna-cli-accessible-beta-windows-0.6.2-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.6.2-beta.zip)**
 
 ## macOS Version (v0.6.0-beta)
+> ⚠️ **Note:** This is an older version. Version 0.6.2-beta for macOS has not been built yet.
 **[📥 nanovna-cli-accessible-beta-macos-0.6.0-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-macos-0.6.0-beta.zip)**
