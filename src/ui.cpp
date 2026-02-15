@@ -5630,6 +5630,11 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     print(translation.get("AUDIO_CONFIG_LOOP_PAUSE_CMD", "  U - Configure Loop pause duration") + "\n");
     print(translation.get("AUDIO_CONFIG_INVERTED_LOOP_GAP_CMD", "  G - Configure inverted loop Gap duration") + "\n");
     
+    // Reactance effects menu (MIDI mode only)
+    if (cfg.audio_engine == AudioEngineType::MIDI) {
+        print(translation.get("AUDIO_CONFIG_REACTANCE_EFFECTS_CMD", "  O - Reactance effects cOnfiguration (MIDI mode)") + "\n");
+    }
+    
     // Context-sensitive commands for 1-5 keys
     if (cfg.audio_engine == AudioEngineType::SYNTHESIZER) {
         print(translation.get("AUDIO_CONFIG_SYNTH_CURVE_CMD", "  1-5 - Configure Waveform for each curve (Synthesizer mode)") + "\n");
@@ -5884,6 +5889,13 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                 case 'g':  // Inverted loop gap configuration
                     print("G\n");
                     runInvertedLoopGapConfigurationScreen(analyzer);
+                    break;
+                
+                case 'o':  // Reactance effects configuration (MIDI mode only)
+                    if (cfg.audio_engine == AudioEngineType::MIDI) {
+                        print("O\n");
+                        runReactanceEffectsConfigurationScreen(analyzer);
+                    }
                     break;
                 
                 case '1':

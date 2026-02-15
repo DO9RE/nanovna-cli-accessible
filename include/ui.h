@@ -88,6 +88,7 @@ private:
     bool runFreezePauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Freeze pause submenu
     bool runLoopPauseConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Loop pause submenu
     bool runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Inverted loop gap submenu
+    bool runReactanceEffectsConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // Reactance effects configuration (NEW)
     bool runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer = nullptr);  // MIDI controller config submenu
     bool runMidiMappingScreen();  // MIDI mapping assignment screen
     bool readNumericInput(const std::string& prompt, int& result, int depth = 0);  // Helper for numeric input with ESC (depth adds depth indicator)
