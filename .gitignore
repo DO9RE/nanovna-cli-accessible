@@ -29,3 +29,5 @@ Export/*
 .DS_Store
 Thumbs.db
 demos/*.mp3
+/_codeql_build_dir/
+/build/
