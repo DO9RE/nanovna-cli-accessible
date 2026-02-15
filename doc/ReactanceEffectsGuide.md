@@ -348,7 +348,7 @@ Reactance effects are included when exporting to MIDI files! This means:
 
 ## Further Reading
 
-* **NanoVNA Training Scenarios:** See `Training/` directory for acoustic analysis exercises
+* **NanoVNA Training Scenarios:** See `doc/training/` directory for acoustic analysis exercises (if available)
 * **MIDI CC Standard:** [MIDI Association - Control Change Messages](https://www.midi.org/)
 * **Reactance Theory:** Smith Chart guides in `doc/` directory
 

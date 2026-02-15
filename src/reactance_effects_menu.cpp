@@ -283,7 +283,25 @@ bool ConsoleUI::runReactanceEffectsConfigurationScreen(AcousticAnalyzer* analyze
                     {
                         print("R\n\n");
                         print(translation.get("REACTANCE_EFFECTS_RESET_CONFIRM", "Reset to default values? (Y/N): "));
-                        int confirm = consoleInput->getch();
+                        
+                        int confirm = 0;
+                        bool hasConfirmInput = false;
+                        
+                        // Check for web interface input first
+                        if (webServer && webServer->isRunning() && webServer->hasInput()) {
+                            std::string webInput = webServer->readInput();
+                            if (!webInput.empty()) {
+                                confirm = static_cast<unsigned char>(webInput[0]);
+                                hasConfirmInput = true;
+                            }
+                        }
+                        
+                        // Check for keyboard input if no web input
+                        if (!hasConfirmInput) {
+                            confirm = consoleInput->getch();
+                            hasConfirmInput = true;
+                        }
+                        
                         if (confirm == 'y' || confirm == 'Y') {
                             print("Y\n");
                             if (isConfiguringSmoothMode) {

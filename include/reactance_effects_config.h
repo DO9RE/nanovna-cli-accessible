@@ -18,6 +18,9 @@
 
 namespace ReactanceEffects {
 
+    // Maximum reactance value for mapping calculations (in Ohms)
+    constexpr double MAX_REACTANCE_OHMS = 300.0;
+
     /**
      * Available MIDI CC parameters for reactance representation
      */

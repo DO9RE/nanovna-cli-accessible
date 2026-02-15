@@ -421,51 +421,68 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
             try {
                 int cc = std::stoi(v);
                 if (cc >= 0 && cc <= 127) cfg.reactance_dotted_capacitive_cc = cc;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                // Log error but continue with default value
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_dotted_capacitive_cc value: ") + v);
+            }
         }
         else if (k == "reactance_dotted_inductive_cc") {
             try {
                 int cc = std::stoi(v);
                 if (cc >= 0 && cc <= 127) cfg.reactance_dotted_inductive_cc = cc;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_dotted_inductive_cc value: ") + v);
+            }
         }
         else if (k == "reactance_dotted_deadzone_enabled") cfg.reactance_dotted_deadzone_enabled = (v == "1" || v == "true");
         else if (k == "reactance_dotted_deadzone_size") {
             try {
                 double size = std::stod(v);
                 if (size >= 0.0 && size <= 100.0) cfg.reactance_dotted_deadzone_size = size;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_dotted_deadzone_size value: ") + v);
+            }
         }
         else if (k == "reactance_dotted_mapping_function") {
             try {
                 int func = std::stoi(v);
                 if (func >= 0 && func <= 3) cfg.reactance_dotted_mapping_function = func;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_dotted_mapping_function value: ") + v);
+            }
         }
         else if (k == "reactance_smooth_capacitive_cc") {
             try {
                 int cc = std::stoi(v);
                 if (cc >= 0 && cc <= 127) cfg.reactance_smooth_capacitive_cc = cc;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_smooth_capacitive_cc value: ") + v);
+            }
         }
         else if (k == "reactance_smooth_inductive_cc") {
             try {
                 int cc = std::stoi(v);
                 if (cc >= 0 && cc <= 127) cfg.reactance_smooth_inductive_cc = cc;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_smooth_inductive_cc value: ") + v);
+            }
         }
         else if (k == "reactance_smooth_deadzone_enabled") cfg.reactance_smooth_deadzone_enabled = (v == "1" || v == "true");
         else if (k == "reactance_smooth_deadzone_size") {
             try {
                 double size = std::stod(v);
                 if (size >= 0.0 && size <= 100.0) cfg.reactance_smooth_deadzone_size = size;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_smooth_deadzone_size value: ") + v);
+            }
         }
         else if (k == "reactance_smooth_mapping_function") {
             try {
                 int func = std::stoi(v);
                 if (func >= 0 && func <= 3) cfg.reactance_smooth_mapping_function = func;
-            } catch (...) {}
+            } catch (const std::exception& e) {
+                if (logger) logger->log("CONFIG", std::string("Invalid reactance_smooth_mapping_function value: ") + v);
+            }
         }
         
         else if (k == "table_columns") {

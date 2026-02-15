@@ -92,8 +92,8 @@ int calculateCCValue(double reactanceX, bool isCapacitive, const ModeConfig& con
     // Get the absolute value for mapping
     double absX = std::fabs(reactanceX);
     
-    // Clamp to reasonable range (0-300 Ohms)
-    absX = std::max(0.0, std::min(absX, 300.0));
+    // Clamp to reasonable range (0-MAX_REACTANCE_OHMS)
+    absX = std::max(0.0, std::min(absX, MAX_REACTANCE_OHMS));
     
     // Apply mapping function
     double normalizedValue = 0.0;
@@ -101,25 +101,25 @@ int calculateCCValue(double reactanceX, bool isCapacitive, const ModeConfig& con
     switch (config.mappingFunc) {
         case MappingFunction::LINEAR:
             // Direct proportional mapping
-            normalizedValue = absX / 300.0;
+            normalizedValue = absX / MAX_REACTANCE_OHMS;
             break;
             
         case MappingFunction::LOGARITHMIC:
             // Logarithmic: stronger response for small values
             // log10(1 + |X| / 30.0) / log10(11.0)
             // At X=0: log10(1)/log10(11) = 0
-            // At X=300: log10(11)/log10(11) = 1
+            // At X=MAX_REACTANCE_OHMS: log10(11)/log10(11) = 1
             normalizedValue = std::log10(1.0 + absX / 30.0) / std::log10(11.0);
             break;
             
         case MappingFunction::EXPONENTIAL:
             // Exponential: stronger response for large values
-            normalizedValue = (absX / 300.0) * (absX / 300.0);
+            normalizedValue = (absX / MAX_REACTANCE_OHMS) * (absX / MAX_REACTANCE_OHMS);
             break;
             
         case MappingFunction::SQUARE_ROOT:
             // Square root: softer response
-            normalizedValue = std::sqrt(absX / 300.0);
+            normalizedValue = std::sqrt(absX / MAX_REACTANCE_OHMS);
             break;
     }
     
