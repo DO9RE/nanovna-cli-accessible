@@ -92,6 +92,14 @@ if (WIN32 AND MINGW)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static")
 endif()
 
+# MSVC-specific settings (Visual Studio)
+if (MSVC)
+  # Prevent windows.h from defining min/max macros that conflict with std::min/std::max
+  add_definitions(-DNOMINMAX)
+  # Enable C++ exception handling
+  add_compile_options(/EHsc)
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/platform/interface)
 

@@ -10,6 +10,16 @@
 #include <thread>
 #include <chrono>
 
+// Ensure cfg.step is valid for the current start/end range.
+// Auto-calculates a reasonable step (~100 points) if step is 0 or too large.
+static void ensureValidStep(AppConfig& cfg) {
+    if (cfg.start_freq < cfg.end_freq &&
+        (cfg.step == 0 || cfg.step > (cfg.end_freq - cfg.start_freq) / 2)) {
+        cfg.step = (cfg.end_freq - cfg.start_freq) / 100;
+        if (cfg.step == 0) cfg.step = 1000;
+    }
+}
+
 // Helper function to generate prompts with depth indication
 std::string ConsoleUI::getPromptWithDepth(const std::string& promptKey, int depth) const {
     std::string prompt = translation.get(promptKey, promptKey);
@@ -117,6 +127,7 @@ bool ConsoleUI::configureMeasurementSettings() {
             // Full sweep across all bands
             cfg.start_freq = bands.front().start_hz;
             cfg.end_freq = bands.back().end_hz;
+            ensureValidStep(cfg);
             print(translation.format("CONFIG_MEASURE_SET_ALL", "Set range: {0} Hz to {1} Hz (all bands)", 
                 cfg.start_freq, cfg.end_freq) + "\n");
             return true;
@@ -133,6 +144,7 @@ bool ConsoleUI::configureMeasurementSettings() {
                 getBandWithMargin(band, 5.0, scan_start, scan_end);  // 5% margin
                 cfg.start_freq = scan_start;
                 cfg.end_freq = scan_end;
+                ensureValidStep(cfg);
                 
                 print(translation.format("CONFIG_MEASURE_SET_BAND", "Set range for {0}: {1} Hz to {2} Hz", 
                     band.name, cfg.start_freq, cfg.end_freq) + "\n");
@@ -195,6 +207,7 @@ bool ConsoleUI::configureMeasurementSettings() {
                 // Both steps complete successfully
                 cfg.start_freq = start;
                 cfg.end_freq = end;
+                ensureValidStep(cfg);
                 goto frequency_input_complete;  // Exit both loops
             }
             // If we get here, user pressed Escape in step 2, loop back to step 1
@@ -447,6 +460,9 @@ bool ConsoleUI::ensureMeasurementData(std::vector<MeasurementPoint>& pts, NanoVN
         return false;
     }
     print("\n");
+    
+    // Ensure step is valid before measuring
+    ensureValidStep(cfg);
     
     // Perform measurement using existing functions
     print(translation.get("MEASURE_PERFORMING", "Performing measurement...") + "\n");
@@ -986,6 +1002,9 @@ void ConsoleUI::bandSuitabilityCheck(std::vector<MeasurementPoint>& pts, NanoVNA
                 }
                 print("\n");
                 
+                // Ensure step is valid before measuring
+                ensureValidStep(cfg);
+                
                 // Perform measurement using existing functions
                 print(translation.get("MEASURE_PERFORMING", "Performing measurement...") + "\n");
                 auto newPts = performMeasurementWithTiming(proto, cfg.start_freq, cfg.end_freq, cfg.step);
@@ -1093,6 +1112,8 @@ void ConsoleUI::bandSuitabilityCheck(std::vector<MeasurementPoint>& pts, NanoVNA
             if (result.swr_bandwidth.bandwidth_hz > 0) {
                 print(translation.format("BAND_SUIT_BW", "  2:1 SWR Bandwidth: {0} kHz ({1} Hz to {2} Hz)", 
                     result.swr_bandwidth.bandwidth_khz(), result.swr_bandwidth.freq_low_hz, result.swr_bandwidth.freq_high_hz) + "\n");
+            } else {
+                print(translation.get("BAND_SUIT_NO_BW", "  No 2:1 bandwidth found in this band") + "\n");
             }
             
             if (result.passed) {

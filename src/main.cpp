@@ -172,6 +172,23 @@ int main(int argc, char** argv) {
 
     // Connect if port provided
     if (!cfg.serial_port.empty()) {
+        // Check if saved port is currently available before trying to open it
+        auto detectedPorts = SerialComm::listAvailablePorts();
+        bool portDetected = false;
+        for (const auto& p : detectedPorts) {
+            if (p == cfg.serial_port) {
+                portDetected = true;
+                break;
+            }
+        }
+        
+        if (!portDetected) {
+            // Saved port not currently detected — skip opening to avoid long timeout
+            logger.log("COMM", "Saved port " + cfg.serial_port + " not detected, skipping auto-connect");
+            std::cerr << mainTranslation.format("MAIN_PORT_NOT_DETECTED",
+                "Saved port {0} is not currently detected.\n"
+                "Use 'P' in the main menu to select an available port.", cfg.serial_port) << "\n";
+        } else {
         std::string err;
         if (!serial.openPort(cfg.serial_port, cfg.baud, err)) {
             logger.log("COMM", std::string("Serial open failed: ") + err);
@@ -203,6 +220,7 @@ int main(int argc, char** argv) {
                     }
                 }
             }
+        }
         }
     }
 

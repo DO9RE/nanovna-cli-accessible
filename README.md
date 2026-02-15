@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.0-beta (2026-02-14 23:40:55)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.1-beta (2026-02-15 16:12:07)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -337,8 +337,8 @@ This is a cross-platform application with platform-specific backends:
 
 The current beta is available for multiple platforms:
 
-## Windows Version (v0.6.0-beta)
-**[📥 nanovna-cli-accessible-beta-windows-0.6.0-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.6.0-beta.zip)**
+## Windows Version (v0.6.1-beta)
+**[📥 nanovna-cli-accessible-beta-windows-0.6.1-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.6.1-beta.zip)**
 
 ## macOS Version (v0.6.0-beta)
 **[📥 nanovna-cli-accessible-beta-macos-0.6.0-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-macos-0.6.0-beta.zip)**

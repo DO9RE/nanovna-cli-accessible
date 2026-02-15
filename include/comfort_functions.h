@@ -108,10 +108,10 @@ struct ResonancePoint {
 };
 
 struct BandwidthRange {
-    uint64_t freq_low_hz;
-    uint64_t freq_high_hz;
-    uint64_t bandwidth_hz;
-    uint64_t center_hz;
+    uint64_t freq_low_hz = 0;
+    uint64_t freq_high_hz = 0;
+    uint64_t bandwidth_hz = 0;
+    uint64_t center_hz = 0;
     
     double bandwidth_khz() const { return bandwidth_hz / 1000.0; }
     double bandwidth_mhz() const { return bandwidth_hz / 1000000.0; }
@@ -119,11 +119,11 @@ struct BandwidthRange {
 
 struct BandSuitabilityResult {
     std::string band_name;
-    double swr_at_center;
-    double min_swr;
-    uint64_t min_swr_freq_hz;
-    double rl_at_center_db;
-    bool passed;  // Based on threshold
+    double swr_at_center = 0.0;
+    double min_swr = 0.0;
+    uint64_t min_swr_freq_hz = 0;
+    double rl_at_center_db = 0.0;
+    bool passed = false;  // Based on threshold
     BandwidthRange swr_bandwidth;  // 2:1 bandwidth if available
 };
 
