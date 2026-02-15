@@ -1541,3 +1541,64 @@ ERROR_DOC_NOT_FOUND=Fehler: Dokumentationsdatei nicht gefunden: {0}
 ERROR_BROWSER_FAILED=Fehler: Konnte Browser nicht öffnen.
 DOC_OPENED=Dokumentation wird im Browser geöffnet...
 
+
+# ========================================
+# Reaktanz-Effekte Konfiguration
+# ========================================
+REACTANCE_EFFECTS_TITLE=Reaktanz-Effekte Konfiguration
+REACTANCE_EFFECTS_MODE=Konfigurationsmodus: {0}
+REACTANCE_EFFECTS_CURRENT=Aktuelle Einstellungen:
+REACTANCE_EFFECTS_CAPACITIVE=  Kapazitiv (X < 0): {0}
+REACTANCE_EFFECTS_INDUCTIVE=  Induktiv (X > 0): {0}
+REACTANCE_EFFECTS_DEADZONE=  Totzone: {0} (Größe: {1} Ω)
+REACTANCE_EFFECTS_MAPPING=  Zuordnungsfunktion: {0}
+REACTANCE_EFFECTS_COMMANDS=Befehle:
+REACTANCE_EFFECTS_MODE_CMD=  M - Modus umschalten (Gepunktet/Gleitend)
+REACTANCE_EFFECTS_CAPACITIVE_CMD=  C - Kapazitiven Effekt konfigurieren
+REACTANCE_EFFECTS_INDUCTIVE_CMD=  I - Induktiven Effekt konfigurieren
+REACTANCE_EFFECTS_DEADZONE_CMD=  D - Totzone umschalten
+REACTANCE_EFFECTS_DEADZONE_SIZE_CMD=  Z - Totzonengröße konfigurieren
+REACTANCE_EFFECTS_MAPPING_CMD=  F - Zuordnungsfunktion auswählen
+REACTANCE_EFFECTS_TEST_CMD=  T - Effekte testen (Demo-Töne abspielen)
+REACTANCE_EFFECTS_RESET_CMD=  R - Auf Standardwerte zurücksetzen
+REACTANCE_EFFECTS_PROMPT=Reaktanz-Effekte> 
+
+# Moduswechsel
+REACTANCE_EFFECTS_MODE_SWITCHED=[Zu {0}-Modus gewechselt]
+
+# CC-Parameter Auswahl
+REACTANCE_EFFECTS_CAPACITIVE_TITLE=Kapazitiven Effekt konfigurieren
+REACTANCE_EFFECTS_INDUCTIVE_TITLE=Induktiven Effekt konfigurieren
+REACTANCE_EFFECTS_SELECT_CC=MIDI CC-Parameter auswählen:
+REACTANCE_EFFECTS_CC_PROMPT=Auswahl eingeben (0-5), oder ESC zum Abbrechen:
+REACTANCE_EFFECTS_CC_SET=[{0}-Effekt auf {1} gesetzt]
+REACTANCE_EFFECTS_INVALID_SELECTION=[Ungültige Auswahl]
+
+# Totzonen-Konfiguration
+REACTANCE_EFFECTS_DEADZONE_TOGGLED=[Totzone {0}]
+REACTANCE_EFFECTS_DEADZONE_SIZE_TITLE=Totzonengröße konfigurieren
+REACTANCE_EFFECTS_DEADZONE_SIZE_DESC=Die Totzonengröße bestimmt den Bereich um X=0, in dem keine Effekte angewendet werden.\nDies hilft, Oszillationen zu vermeiden, wenn die Reaktanz nahe Null ist.
+REACTANCE_EFFECTS_DEADZONE_SIZE_RANGE=Gültiger Bereich: 0 - 100 Ω
+REACTANCE_EFFECTS_DEADZONE_SIZE_PROMPT=Totzonengröße in Ohm eingeben (0-100), oder ESC zum Abbrechen:
+REACTANCE_EFFECTS_DEADZONE_SIZE_SET=[Totzonengröße auf {0} Ω gesetzt]
+REACTANCE_EFFECTS_DEADZONE_SIZE_ERROR=[Fehler: Größe muss zwischen 0 und 100 Ω liegen]
+
+# Zuordnungsfunktion Auswahl
+REACTANCE_EFFECTS_MAPPING_TITLE=Zuordnungsfunktion auswählen
+REACTANCE_EFFECTS_MAPPING_DESC=Zuordnungsfunktionen:
+REACTANCE_EFFECTS_MAPPING_PROMPT=Funktion eingeben (0-3), oder ESC zum Abbrechen:
+REACTANCE_EFFECTS_MAPPING_SET=[Zuordnungsfunktion auf {0} gesetzt]
+REACTANCE_EFFECTS_MAPPING_ERROR=[Fehler: Funktion muss 0-3 sein]
+
+# Test und Zurücksetzen
+REACTANCE_EFFECTS_TEST=[Test-Effekte noch nicht implementiert - demnächst verfügbar!]
+REACTANCE_EFFECTS_RESET_CONFIRM=Auf Standardwerte zurücksetzen? (J/N): 
+REACTANCE_EFFECTS_RESET_DONE=[Auf Standardwerte zurückgesetzt]
+REACTANCE_EFFECTS_RESET_CANCELLED=[Abgebrochen]
+
+# Hilfetext
+REACTANCE_EFFECTS_HELP_TITLE=Reaktanz-Effekte Hilfe
+REACTANCE_EFFECTS_HELP_TEXT=Reaktanz-Effekte helfen Ihnen, kapazitive von induktiver Reaktanz nach Gehör zu unterscheiden.\n\n- Kapazitiv (X < 0): Verwenden Sie einen Effekt (z.B. Hall)\n- Induktiv (X > 0): Verwenden Sie einen anderen Effekt (z.B. Chorus)\n\nTotzone: Erzeugt eine neutrale Zone um X=0, in der keine Effekte angewendet werden.\n\nZuordnungsfunktionen steuern, wie Reaktanzwerte auf Effektintensität abgebildet werden:\n- Linear: Direkt proportional (gut für Präzision)\n- Logarithmisch: Besser für kleine Reaktanzänderungen\n- Exponentiell: Betont große Reaktanzwerte\n- Quadratwurzel: Sanftere, allmählichere Reaktion\n\nDiese Effekte gelten NUR für die Reaktanz-Kurve (Kurve 3).
+
+# Audio-Konfigurationsmenü
+AUDIO_CONFIG_REACTANCE_EFFECTS_CMD=  O - Reaktanz-Effekte kOnfiguration (MIDI-Modus)

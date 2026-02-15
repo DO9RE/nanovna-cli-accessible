@@ -1537,3 +1537,64 @@ ERROR_DOC_NOT_FOUND=Error: Documentation file not found: {0}
 ERROR_BROWSER_FAILED=Error: Could not open browser.
 DOC_OPENED=Opening documentation in browser...
 
+
+# ========================================
+# Reactance Effects Configuration
+# ========================================
+REACTANCE_EFFECTS_TITLE=Reactance Effects Configuration
+REACTANCE_EFFECTS_MODE=Configuring mode: {0}
+REACTANCE_EFFECTS_CURRENT=Current Settings:
+REACTANCE_EFFECTS_CAPACITIVE=  Capacitive (X < 0): {0}
+REACTANCE_EFFECTS_INDUCTIVE=  Inductive (X > 0): {0}
+REACTANCE_EFFECTS_DEADZONE=  Deadzone: {0} (Size: {1} Ω)
+REACTANCE_EFFECTS_MAPPING=  Mapping Function: {0}
+REACTANCE_EFFECTS_COMMANDS=Commands:
+REACTANCE_EFFECTS_MODE_CMD=  M - Toggle Mode (Dotted/Smooth)
+REACTANCE_EFFECTS_CAPACITIVE_CMD=  C - Configure Capacitive effect
+REACTANCE_EFFECTS_INDUCTIVE_CMD=  I - Configure Inductive effect
+REACTANCE_EFFECTS_DEADZONE_CMD=  D - Toggle Deadzone
+REACTANCE_EFFECTS_DEADZONE_SIZE_CMD=  Z - Configure deadZone size
+REACTANCE_EFFECTS_MAPPING_CMD=  F - Select mapping Function
+REACTANCE_EFFECTS_TEST_CMD=  T - Test effects (play demo tones)
+REACTANCE_EFFECTS_RESET_CMD=  R - Reset to defaults
+REACTANCE_EFFECTS_PROMPT=Reactance Effects> 
+
+# Mode switching
+REACTANCE_EFFECTS_MODE_SWITCHED=[Switched to {0} mode]
+
+# CC Parameter selection
+REACTANCE_EFFECTS_CAPACITIVE_TITLE=Configure Capacitive Effect
+REACTANCE_EFFECTS_INDUCTIVE_TITLE=Configure Inductive Effect
+REACTANCE_EFFECTS_SELECT_CC=Select MIDI CC parameter:
+REACTANCE_EFFECTS_CC_PROMPT=Enter selection (0-5), or press ESC to cancel:
+REACTANCE_EFFECTS_CC_SET=[{0} effect set to: {1}]
+REACTANCE_EFFECTS_INVALID_SELECTION=[Invalid selection]
+
+# Deadzone configuration
+REACTANCE_EFFECTS_DEADZONE_TOGGLED=[Deadzone {0}]
+REACTANCE_EFFECTS_DEADZONE_SIZE_TITLE=Configure Deadzone Size
+REACTANCE_EFFECTS_DEADZONE_SIZE_DESC=Deadzone size determines the range around X=0 where effects are not applied.\nThis helps avoid oscillation when reactance is near zero.
+REACTANCE_EFFECTS_DEADZONE_SIZE_RANGE=Valid range: 0 - 100 Ω
+REACTANCE_EFFECTS_DEADZONE_SIZE_PROMPT=Enter deadzone size in Ohms (0-100), or press ESC to cancel:
+REACTANCE_EFFECTS_DEADZONE_SIZE_SET=[Deadzone size set to {0} Ω]
+REACTANCE_EFFECTS_DEADZONE_SIZE_ERROR=[Error: Size must be between 0 and 100 Ω]
+
+# Mapping function selection
+REACTANCE_EFFECTS_MAPPING_TITLE=Select Mapping Function
+REACTANCE_EFFECTS_MAPPING_DESC=Mapping functions:
+REACTANCE_EFFECTS_MAPPING_PROMPT=Enter function (0-3), or press ESC to cancel:
+REACTANCE_EFFECTS_MAPPING_SET=[Mapping function set to: {0}]
+REACTANCE_EFFECTS_MAPPING_ERROR=[Error: Function must be 0-3]
+
+# Test and reset
+REACTANCE_EFFECTS_TEST=[Test effects not yet implemented - coming soon!]
+REACTANCE_EFFECTS_RESET_CONFIRM=Reset to default values? (Y/N): 
+REACTANCE_EFFECTS_RESET_DONE=[Reset to defaults]
+REACTANCE_EFFECTS_RESET_CANCELLED=[Cancelled]
+
+# Help text
+REACTANCE_EFFECTS_HELP_TITLE=Reactance Effects Help
+REACTANCE_EFFECTS_HELP_TEXT=Reactance effects help you distinguish capacitive from inductive reactance by ear.\n\n- Capacitive (X < 0): Use one effect (e.g., Reverb)\n- Inductive (X > 0): Use another effect (e.g., Chorus)\n\nDeadzone: Creates a neutral zone around X=0 where no effects are applied.\n\nMapping functions control how reactance values map to effect intensity:\n- Linear: Direct proportional (good for precision)\n- Logarithmic: Better for hearing small reactance changes\n- Exponential: Emphasizes large reactance values\n- Square Root: Softer, more gradual response\n\nThese effects ONLY apply to the Reactance curve (curve 3).
+
+# Audio configuration menu
+AUDIO_CONFIG_REACTANCE_EFFECTS_CMD=  O - Reactance effects cOnfiguration (MIDI mode)
