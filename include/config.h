@@ -336,4 +336,19 @@ struct AppConfig {
     std::string midi_controller_preset = "";  // Preset filename (e.g., "behringer_x_touch_compact.cfg")
     bool midi_controller_feedback = true;     // Send motor fader feedback to controller
     bool midi_controller_freeze_by_touch = false;  // Freeze playback when motor fader is touched
+    
+    // Reactance Effects settings
+    // Dotted mode configuration
+    int reactance_dotted_capacitive_cc = 91;   // CC for capacitive reactance in dotted mode (default: Reverb)
+    int reactance_dotted_inductive_cc = 93;    // CC for inductive reactance in dotted mode (default: Chorus)
+    bool reactance_dotted_deadzone_enabled = true;  // Enable deadzone in dotted mode
+    double reactance_dotted_deadzone_size = 5.0;    // Deadzone size in Ohms for dotted mode
+    int reactance_dotted_mapping_function = 0;      // Mapping function for dotted mode (0=Linear, 1=Log, 2=Exp, 3=Sqrt)
+    
+    // Smooth mode configuration
+    int reactance_smooth_capacitive_cc = 91;   // CC for capacitive reactance in smooth mode (default: Reverb)
+    int reactance_smooth_inductive_cc = 93;    // CC for inductive reactance in smooth mode (default: Chorus)
+    bool reactance_smooth_deadzone_enabled = true;  // Enable deadzone in smooth mode
+    double reactance_smooth_deadzone_size = 5.0;    // Deadzone size in Ohms for smooth mode
+    int reactance_smooth_mapping_function = 0;      // Mapping function for smooth mode (0=Linear, 1=Log, 2=Exp, 3=Sqrt)
 };

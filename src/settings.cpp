@@ -416,6 +416,57 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         else if (k == "midi_controller_preset") cfg.midi_controller_preset = v;
         else if (k == "midi_controller_feedback") cfg.midi_controller_feedback = (v == "1" || v == "true");
         else if (k == "midi_controller_freeze_by_touch") cfg.midi_controller_freeze_by_touch = (v == "1" || v == "true");
+        // Reactance effects configuration
+        else if (k == "reactance_dotted_capacitive_cc") {
+            try {
+                int cc = std::stoi(v);
+                if (cc >= 0 && cc <= 127) cfg.reactance_dotted_capacitive_cc = cc;
+            } catch (...) {}
+        }
+        else if (k == "reactance_dotted_inductive_cc") {
+            try {
+                int cc = std::stoi(v);
+                if (cc >= 0 && cc <= 127) cfg.reactance_dotted_inductive_cc = cc;
+            } catch (...) {}
+        }
+        else if (k == "reactance_dotted_deadzone_enabled") cfg.reactance_dotted_deadzone_enabled = (v == "1" || v == "true");
+        else if (k == "reactance_dotted_deadzone_size") {
+            try {
+                double size = std::stod(v);
+                if (size >= 0.0 && size <= 100.0) cfg.reactance_dotted_deadzone_size = size;
+            } catch (...) {}
+        }
+        else if (k == "reactance_dotted_mapping_function") {
+            try {
+                int func = std::stoi(v);
+                if (func >= 0 && func <= 3) cfg.reactance_dotted_mapping_function = func;
+            } catch (...) {}
+        }
+        else if (k == "reactance_smooth_capacitive_cc") {
+            try {
+                int cc = std::stoi(v);
+                if (cc >= 0 && cc <= 127) cfg.reactance_smooth_capacitive_cc = cc;
+            } catch (...) {}
+        }
+        else if (k == "reactance_smooth_inductive_cc") {
+            try {
+                int cc = std::stoi(v);
+                if (cc >= 0 && cc <= 127) cfg.reactance_smooth_inductive_cc = cc;
+            } catch (...) {}
+        }
+        else if (k == "reactance_smooth_deadzone_enabled") cfg.reactance_smooth_deadzone_enabled = (v == "1" || v == "true");
+        else if (k == "reactance_smooth_deadzone_size") {
+            try {
+                double size = std::stod(v);
+                if (size >= 0.0 && size <= 100.0) cfg.reactance_smooth_deadzone_size = size;
+            } catch (...) {}
+        }
+        else if (k == "reactance_smooth_mapping_function") {
+            try {
+                int func = std::stoi(v);
+                if (func >= 0 && func <= 3) cfg.reactance_smooth_mapping_function = func;
+            } catch (...) {}
+        }
         
         else if (k == "table_columns") {
             // Parse comma-separated list of columns
@@ -777,6 +828,18 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "midi_controller_preset=" << cfg.midi_controller_preset << "  # MIDI mapping preset filename\n";
     ofs << "midi_controller_feedback=" << (cfg.midi_controller_feedback ? "1" : "0") << "  # Send motor fader feedback\n";
     ofs << "midi_controller_freeze_by_touch=" << (cfg.midi_controller_freeze_by_touch ? "1" : "0") << "  # Freeze playback when fader touched\n";
+    
+    ofs << "\n# Reactance Effects Configuration\n";
+    ofs << "reactance_dotted_capacitive_cc=" << cfg.reactance_dotted_capacitive_cc << "  # CC for capacitive reactance in dotted mode (0-127)\n";
+    ofs << "reactance_dotted_inductive_cc=" << cfg.reactance_dotted_inductive_cc << "  # CC for inductive reactance in dotted mode (0-127)\n";
+    ofs << "reactance_dotted_deadzone_enabled=" << (cfg.reactance_dotted_deadzone_enabled ? "1" : "0") << "  # Enable deadzone in dotted mode\n";
+    ofs << "reactance_dotted_deadzone_size=" << cfg.reactance_dotted_deadzone_size << "  # Deadzone size in Ohms for dotted mode\n";
+    ofs << "reactance_dotted_mapping_function=" << cfg.reactance_dotted_mapping_function << "  # Mapping function for dotted mode (0=Linear, 1=Log, 2=Exp, 3=Sqrt)\n";
+    ofs << "reactance_smooth_capacitive_cc=" << cfg.reactance_smooth_capacitive_cc << "  # CC for capacitive reactance in smooth mode (0-127)\n";
+    ofs << "reactance_smooth_inductive_cc=" << cfg.reactance_smooth_inductive_cc << "  # CC for inductive reactance in smooth mode (0-127)\n";
+    ofs << "reactance_smooth_deadzone_enabled=" << (cfg.reactance_smooth_deadzone_enabled ? "1" : "0") << "  # Enable deadzone in smooth mode\n";
+    ofs << "reactance_smooth_deadzone_size=" << cfg.reactance_smooth_deadzone_size << "  # Deadzone size in Ohms for smooth mode\n";
+    ofs << "reactance_smooth_mapping_function=" << cfg.reactance_smooth_mapping_function << "  # Mapping function for smooth mode (0=Linear, 1=Log, 2=Exp, 3=Sqrt)\n";
     
     ofs << "\n# Table view preferences\n";
     ofs << "table_columns=";
