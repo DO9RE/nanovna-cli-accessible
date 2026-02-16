@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-15 23:29:09)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 01:05:18)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -339,6 +339,7 @@ This is a cross-platform application with platform-specific backends:
 - **macOS**: PortAudio (external dependency), CoreMIDI/AudioUnit, termios/POSIX, IOKit
 - **Linux**: PortAudio (external dependency), ALSA Sequencer, termios/POSIX, sysfs
 
+<!-- BETA_DOWNLOADS_START -->
 # Beta Version Download
 
 The current beta is available for multiple platforms:
@@ -348,3 +349,7 @@ The current beta is available for multiple platforms:
 
 ## macOS Version (v0.6.2-beta)
 **[📥 nanovna-cli-accessible-beta-macos-0.6.2-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-macos-0.6.2-beta.zip)**
+
+## Linux Version
+> ⚠️ **Not yet available.** The Linux build for version 0.6.2-beta has not been created yet. Please check back later.
+<!-- BETA_DOWNLOADS_END -->
