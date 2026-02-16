@@ -312,9 +312,9 @@ void SynthesizerEngine::generateXAxisRulerAudio(
     }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Synthesizer Reactance DSP Effects
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 double SynthesizerEngine::applyScaling(double normalizedValue, AppConfig::EffectScaling scaling) {
     double v = std::clamp(normalizedValue, 0.0, 1.0);

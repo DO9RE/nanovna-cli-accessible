@@ -209,7 +209,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     }
     print("\n\n");
     
-    // ===== PHASE 1: Direction Perception Tests =====
+    // Phase 1: Direction Perception Tests
     print("─────────────────────────────────────────────────────────\n");
     print(translation.get("SPATIAL_WIZARD_PHASE1", "Phase 1: Direction Perception Calibration") + "\n");
     print("─────────────────────────────────────────────────────────\n\n");
@@ -452,7 +452,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
         cfg.spatial_calibration.diagonal_accuracy = 0.5;  // Default for stereo
     }
     
-    // ===== PHASE 2: Near/Far Perception =====
+    // Phase 2: Near/Far Perception
     print("\n\n─────────────────────────────────────────────────────────\n");
     print(translation.get("SPATIAL_WIZARD_PHASE2", "Phase 2: Distance Perception Calibration") + "\n");
     print("─────────────────────────────────────────────────────────\n\n");
@@ -538,7 +538,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     cfg.spatial_calibration.far_threshold = 0.75 - (farThresholdVotes * 0.05);
     cfg.spatial_calibration.distance_sensitivity = 0.5;  // Default
     
-    // ===== PHASE 3: Volume Preferences =====
+    // Phase 3: Volume Preferences
     print("\n\n─────────────────────────────────────────────────────────\n");
     print(translation.get("SPATIAL_WIZARD_PHASE3", "Phase 3: Volume and Sound Preferences") + "\n");
     print("─────────────────────────────────────────────────────────\n\n");
@@ -618,7 +618,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     
     cfg.spatial_calibration.preferred_event_volume = eventVolumes[eventChoice - 1];
     
-    // ===== PHASE 4: Sound Type Preferences =====
+    // Phase 4: Sound Type Preferences
     print("\n\n─────────────────────────────────────────────────────────\n");
     print(translation.get("SPATIAL_WIZARD_PHASE4", "Phase 4: Sound Type Selection") + "\n");
     print("─────────────────────────────────────────────────────────\n\n");
@@ -718,7 +718,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     
     cfg.spatial_calibration.preferred_center_pulse_waveform = pulseChoice - 1;
     
-    // ===== PHASE 5: Psychoacoustic Parameters (Stereo Mode Only) =====
+    // Phase 5: Psychoacoustic Parameters (Stereo Mode Only)
     if (!hasSurround) {
         print("\n\n─────────────────────────────────────────────────────────\n");
         print(translation.get("SPATIAL_WIZARD_PHASE5", "Phase 5: Psychoacoustic Tuning (Stereo Mode)") + "\n");
@@ -779,7 +779,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
         cfg.spatial_calibration.side_emphasis = 0.8;  // Constant for most users
     }
     
-    // ===== Completion =====
+    // Completion
     print("\n\n");
     print(formatHeading(translation.get("SPATIAL_WIZARD_COMPLETE", "Calibration Complete!")));
     print("\n");
@@ -814,7 +814,7 @@ bool ConsoleUI::runSpatialAudioCalibrationWizard(AcousticAnalyzer* analyzer) {
     // Mark as calibrated
     cfg.spatial_audio_calibrated = true;
     
-    // ===== Apply wizard settings to actual program configuration =====
+    // Apply wizard settings to actual program configuration
     // Map preferred sound types to actual config
     cfg.axis_crossing_sound = static_cast<AppConfig::AxisCrossingSound>(
         cfg.spatial_calibration.preferred_axis_crossing_sound);

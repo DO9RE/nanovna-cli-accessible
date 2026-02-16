@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 01:05:18)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 06:10:35)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -150,6 +150,30 @@ Access the application from any browser on your local network:
 
 ### Windows Installation
 Requires Windows with MSYS2/MinGW-w64 or Visual Studio.
+
+#### VS Code Build Workflow (recommended for contributors)
+
+**Install once:**
+
+1. **MSYS2 MinGW64 toolchain** (recommended Windows path):
+```bash
+pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-make
+```
+2. **VS Code extensions:**
+  - `ms-vscode.cmake-tools`
+  - `ms-vscode.cpptools`
+
+**Build in VS Code using presets:**
+
+1. Open workspace in VS Code
+2. `Ctrl+Shift+P` → **CMake: Select Configure Preset**
+3. Choose one of:
+  - `Windows (MSYS2 MinGW64, default path)` (uses `C:/msys64/...`)
+  - `Windows (MinGW from PATH)` (for custom MinGW setup)
+4. `Ctrl+Shift+P` → **CMake: Configure**
+5. `Ctrl+Shift+P` → **CMake: Build**
+
+The presets are defined in `CMakePresets.json`, so no per-user `.vscode` setup is required.
 
 ```bash
 # Using the provided build script (recommended)

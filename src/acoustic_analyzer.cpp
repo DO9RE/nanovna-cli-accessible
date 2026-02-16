@@ -3616,9 +3616,9 @@ bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
         noteDurationTicks = pointDeltaTicks > 1 ? pointDeltaTicks - 1 : 1;
     }
     
-    // ============================================
+    // --------------------------------------------
     // Track 0: Tempo/conductor track
-    // ============================================
+    // --------------------------------------------
     if (!midiWriter.beginTrack()) {
         if (logger) logger->log("ACOUSTIC", "Failed to begin tempo track: " + midiWriter.getLastError());
         return false;
@@ -3637,9 +3637,9 @@ bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
         return false;
     }
     
-    // ============================================
+    // --------------------------------------------
     // One track per enabled curve
-    // ============================================
+    // --------------------------------------------
     for (int curveIdx : enabledCurves) {
         int midiChannel = (curveIdx < 4) ? curveIdx : (curveIdx + 1);  // Skip channel 9 (drums)
         int program = midiEngine->getCurveInstrument(curveIdx);
@@ -3670,9 +3670,9 @@ bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
         }
         
         if (isGliding) {
-            // ============================================
+            // --------------------------------------------
             // GLIDING MODE: Reference note + pitch bend only (matches playback)
-            // ============================================
+            // --------------------------------------------
             
             // Start reference note at beginning
             double firstPitch = getCurvePitch(curveIdx, measurementData[0]);
@@ -3724,9 +3724,9 @@ bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
                 return false;
             }
         } else {
-            // ============================================
+            // --------------------------------------------
             // DOTTED MODE: Note on/off per point (matches playback)
-            // ============================================
+            // --------------------------------------------
             for (size_t i = 0; i < numPoints; i++) {
                 const MeasurementPoint& pt = measurementData[i];
                 double pitchHz = getCurvePitch(curveIdx, pt);
@@ -3783,9 +3783,9 @@ bool AcousticAnalyzer::exportMIDIFile(const std::string& outputPath) {
         }
     }
     
-    // ============================================
+    // --------------------------------------------
     // X-Axis Ruler Track (if enabled)
-    // ============================================
+    // --------------------------------------------
     if (includeXAxisRuler) {
         const int drumChannel = 9;
         int drumNote = xAxisRulerMidiDrum;

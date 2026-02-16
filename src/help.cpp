@@ -117,9 +117,8 @@ Playback Control:
   +/-         Increase/decrease playback time (in seconds)
 
 Navigation:
-  Left/Right         Move ±1 point
-  Ctrl+Left/Right    Move ±10 points
-  Ctrl+Shift+L/R     Move ±100 points
+  Left/Right         Move by current jump width
+  Up/Down            Adjust jump width (1/10/100/500/1000 points)
 
 Loop Control:
   L           Set left loop marker

@@ -5244,9 +5244,9 @@ bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer
     return false;  // No changes that require re-initialization
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // MIDI Controller Configuration Screen
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer) {
     clearScreen();
@@ -7704,33 +7704,33 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                         print("H\n");
                                         print(formatHeading(translation.get("REACTANCE_FX_HELP_TITLE", "Reactance Effects Help")));
                                         print(translation.get("REACTANCE_FX_HELP_CONCEPT",
-                                            "\n  === Concept ===\n"
+                                            "\n  Concept:\n"
                                             "  Positive reactance (X > 0 Ohm) indicates INDUCTANCE (coils, magnetic fields).\n"
                                             "  Negative reactance (X < 0 Ohm) indicates CAPACITANCE (capacitors, electric fields).\n"
                                             "  This feature maps these to audio effects so you can HEAR the difference:\n"
                                             "    - Capacitance -> Room/spatial effect (e.g., Reverb/Echo = filling a space)\n"
                                             "    - Inductance  -> Oscillation effect (e.g., Tremolo = vibration/magnetic field)") + "\n\n");
                                         print(translation.get("REACTANCE_FX_HELP_DEADZONE",
-                                            "  === Dead Zone ===\n"
+                                            "  Dead Zone:\n"
                                             "  A configurable zone around X=0 where NO effects are applied.\n"
                                             "  This keeps purely resistive impedances clean and unaffected.\n"
                                             "  Recommended: 3-10 Ohm depending on measurement noise.") + "\n\n");
                                         if (isMidi) {
                                             print(translation.get("REACTANCE_FX_HELP_MIDI_MODES",
-                                                "  === Gliding vs. Dotted Mode (MIDI) ===\n"
+                                                "  Gliding vs. Dotted Mode (MIDI):\n"
                                                 "  Effects behave differently with sustained vs. percussive instruments:\n"
                                                 "  - Gliding (sustained): Reverb may be less noticeable, Tremolo is clearer\n"
                                                 "  - Dotted (percussive): Reverb tail is very audible, Tremolo may be subtle\n"
                                                 "  Configure each mode independently for best results.") + "\n\n");
                                         } else {
                                             print(translation.get("REACTANCE_FX_HELP_SYNTH_MODES",
-                                                "  === Smooth vs. Dotted Mode (Synthesizer) ===\n"
+                                                "  Smooth vs. Dotted Mode (Synthesizer):\n"
                                                 "  DSP effects are applied directly to the PCM waveform buffer.\n"
                                                 "  - Smooth mode: Continuous signal — Echo/Tremolo build up smoothly\n"
                                                 "  - Dotted mode: Short bursts — some effects (Echo) leave audible tails\n"
                                                 "  Configure each mode independently for best results.") + "\n\n");
                                             print(translation.get("REACTANCE_FX_HELP_DSP_EFFECTS",
-                                                "  === DSP Effect Types (Synthesizer) ===\n"
+                                                "  DSP Effect Types (Synthesizer):\n"
                                                 "  0 = AM Tremolo: Volume oscillation at ~6 Hz. Maps to inductance (vibration).\n"
                                                 "      Best in smooth mode where oscillation is clearly audible.\n"
                                                 "  1 = Echo/Reverb: Delay-based spatial effect. Maps to capacitance (filling).\n"
@@ -7744,7 +7744,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 "  5 = Bitcrush: Reduces bit depth for digital distortion.\n"
                                                 "      Creative alternative — resolution loss as reactance indicator.") + "\n\n");
                                         }
-                                        print(translation.get("REACTANCE_FX_HELP_SCALING", "  === Scaling Curves ===") + "\n");
+                                        print(translation.get("REACTANCE_FX_HELP_SCALING", "  Scaling Curves:") + "\n");
                                         for (int s = 0; s <= 4; s++) {
                                             auto sc = static_cast<AppConfig::EffectScaling>(s);
                                             print("  " + std::to_string(s) + " = " + getScalingName(sc) + "\n");
@@ -7752,7 +7752,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                         }
                                         if (isMidi) {
                                             print(translation.get("REACTANCE_FX_HELP_PLATFORM_MIDI",
-                                                "  === Platform Notes (MIDI) ===\n"
+                                                "  Platform Notes (MIDI):\n"
                                                 "  Windows (GS Wavetable): Supports Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n"
                                                 "    Limited effect range. Reverb and Modulation are most effective.\n"
                                                 "  macOS (DLS Synth): Full GM effects support. All CC parameters work well.\n"
@@ -7760,7 +7760,7 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                                                 "  Linux (FluidSynth/TiMidity): Depends on soundfont. Most effects supported.") + "\n\n");
                                         } else {
                                             print(translation.get("REACTANCE_FX_HELP_PLATFORM_SYNTH",
-                                                "  === Platform Notes (Synthesizer) ===\n"
+                                                "  Platform Notes (Synthesizer):\n"
                                                 "  All DSP effects work identically on Windows (WaveOut), macOS (PortAudio),\n"
                                                 "  and Linux (PortAudio). No platform limitations for native DSP processing.") + "\n\n");
                                         }

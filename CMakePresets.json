@@ -1,0 +1,79 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 10,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "msys2-mingw64-release",
+      "displayName": "Windows (MSYS2 MinGW64, default path)",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "C:/msys64/mingw64/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "C:/msys64/mingw64/bin/g++.exe",
+        "CMAKE_MAKE_PROGRAM": "C:/msys64/mingw64/bin/mingw32-make.exe"
+      },
+      "environment": {
+        "PATH": "C:/msys64/mingw64/bin;C:/msys64/usr/bin;$penv{PATH}",
+        "MSYSTEM": "MINGW64",
+        "CHERE_INVOKING": "1"
+      }
+    },
+    {
+      "name": "mingw-path-release",
+      "displayName": "Windows (MinGW from PATH)",
+      "generator": "MinGW Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_MAKE_PROGRAM": "mingw32-make"
+      }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux (Unix Makefiles)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "macos-release",
+      "displayName": "macOS (Unix Makefiles)",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "msys2-mingw64-release-build",
+      "displayName": "Build: Windows (MSYS2 MinGW64)",
+      "configurePreset": "msys2-mingw64-release"
+    },
+    {
+      "name": "mingw-path-release-build",
+      "displayName": "Build: Windows (MinGW from PATH)",
+      "configurePreset": "mingw-path-release"
+    },
+    {
+      "name": "linux-release-build",
+      "displayName": "Build: Linux",
+      "configurePreset": "linux-release"
+    },
+    {
+      "name": "macos-release-build",
+      "displayName": "Build: macOS",
+      "configurePreset": "macos-release"
+    }
+  ]
+}

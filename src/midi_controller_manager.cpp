@@ -5,9 +5,9 @@
 #include <filesystem>
 #include <cmath>
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Value conversion helpers
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 int MidiControllerManager::percentToMidi(int percent, int maxPercent) {
     if (percent <= 0) return 0;
@@ -33,9 +33,9 @@ int MidiControllerManager::normalizedToMidi(double value) {
     return static_cast<int>(std::round(127.0 * value));
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Command/function name helpers
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 std::string MidiControllerManager::getCommandName(MidiAppCommand cmd) {
     switch (cmd) {
@@ -109,9 +109,9 @@ std::string MidiControllerManager::getCCFunctionName(MidiCCFunction func) {
     }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Stable key names for config file (human-readable, no numeric IDs)
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 std::string MidiControllerManager::getCommandKeyName(MidiAppCommand cmd) {
     switch (cmd) {
@@ -201,9 +201,9 @@ MidiCCFunction MidiControllerManager::resolveCCFunctionKeyName(const std::string
     return MidiCCFunction::NONE;
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Constructor / Destructor
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 MidiControllerManager::MidiControllerManager() {
     controllerInput.reset(createMidiControllerInput());
@@ -222,9 +222,9 @@ void MidiControllerManager::setLogger(Logger* log) {
     logger = log;
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Device management
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 std::vector<MidiDeviceInfo> MidiControllerManager::listDevices() {
     if (!controllerInput) return {};
@@ -273,9 +273,9 @@ std::string MidiControllerManager::getDeviceName() const {
     return "";
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Callback registration
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 void MidiControllerManager::setCommandCallback(MidiCommandCallback callback) {
     std::lock_guard<std::mutex> lock(callbackMutex);
@@ -287,9 +287,9 @@ void MidiControllerManager::setCCValueCallback(MidiCCValueCallback callback) {
     ccValueCallback = callback;
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Mapping management
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 void MidiControllerManager::loadMappings(const MidiMappingPreset& preset) {
     currentPreset = preset;
@@ -341,9 +341,9 @@ void MidiControllerManager::rebuildLookupMaps() {
     }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // MIDI event processing
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 void MidiControllerManager::onMidiEvent(const MidiControllerEvent& event) {
     if (!enabled.load()) return;
@@ -441,9 +441,9 @@ void MidiControllerManager::processCCEvent(const MidiControllerEvent& event) {
     }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Motor fader feedback
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 int MidiControllerManager::findCCNumberForFunction(MidiCCFunction func) const {
     for (const auto& mapping : currentPreset.mappings) {
@@ -548,9 +548,9 @@ void MidiControllerManager::setEnabled(bool en) {
     }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // Preset file I/O (simple key=value format matching app_settings pattern)
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 bool MidiControllerManager::loadMappingsFromFile(const std::string& filepath) {
     // Basic path traversal protection: reject paths with ".."
