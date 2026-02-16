@@ -509,6 +509,9 @@ MATCH_DISCLAIMER=Hinweis: Dies sind grobe Richtlinien, keine präzisen Bauteilwe
 
 # Kabellänge messen
 CABLE_LEN_TITLE=Kabellänge messen
+CABLE_LEN_INSTRUCTIONS="Diese Funktion schätzt die Kabellänge aus der elektrischen Länge.
+Kabel an Port 1 anschliessen. Fernes Ende offen lassen oder kurzschliessen.
+Sweep sollte breiten Frequenzbereich abdecken für beste Genauigkeit."
 CABLE_LEN_INST1=Diese Funktion schätzt die Kabellänge aus der elektrischen Länge.
 CABLE_LEN_INST2=Kabel an Port 1 anschliessen. Fernes Ende offen lassen oder kurzschliessen.
 CABLE_LEN_INST3=Sweep sollte breiten Frequenzbereich abdecken für beste Genauigkeit.
@@ -535,6 +538,8 @@ CABLE_LEN_HINT=Hinweis: Für beste Ergebnisse mindestens 50-100 MHz Bereich swee
 
 # Kabelfehler-Erkennung
 CABLE_FAULT_TITLE=Kabelfehler-Erkennung
+CABLE_FAULT_INSTRUCTIONS="Diese Funktion prüft auf Kabelfehler (Kurzschlüsse, Unterbrechungen, Schäden).
+Kabel an Port 1 anschliessen."
 CABLE_FAULT_INST1=Diese Funktion prüft auf Kabelfehler (Kurzschlüsse, Unterbrechungen, Schäden).
 CABLE_FAULT_INST2=Kabel an Port 1 anschliessen.
 CABLE_FAULT_TERM=Kabel-Abschluss am fernen Ende:
@@ -559,6 +564,8 @@ CABLE_FAULT_DISCLAIMER=Hinweis: Dies ist eine grobe Analyse. Für definitive Feh
 
 # Kabeldämpfung
 CABLE_ATT_TITLE=Kabeldämpfung Messung (S21)
+CABLE_ATT_INSTRUCTIONS="Aufbau: Kabel zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
+S21-Messung (Through-Modus) über Frequenzbereich durchführen"
 CABLE_ATT_INST1=Aufbau: Kabel zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
 CABLE_ATT_INST2=S21-Messung (Through-Modus) über Frequenzbereich durchführen
 CABLE_ATT_LEN=Kabellänge in Metern eingeben: >
@@ -572,6 +579,8 @@ CABLE_ATT_PER_100FT=  Dämpfung pro 100ft: {0} dB/100ft
 
 # Filter-Schnellcheck
 FILTER_TITLE=Filter-Schnellcheck (S21)
+FILTER_INSTRUCTIONS="Aufbau: Filter zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
+S21-Messung über geeigneten Frequenzbereich durchführen"
 FILTER_INST1=Aufbau: Filter zwischen Port 1 (CH0) und Port 2 (CH1) anschliessen
 FILTER_INST2=S21-Messung über geeigneten Frequenzbereich durchführen
 FILTER_TYPE_SELECT=Filter-Typ auswählen:

@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 06:10:35)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 07:22:07)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 

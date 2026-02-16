@@ -505,6 +505,9 @@ MATCH_DISCLAIMER=Note: These are rough guidelines, not precise component values.
 
 # Cable length measurement
 CABLE_LEN_TITLE=Cable Length Measurement
+CABLE_LEN_INSTRUCTIONS="This function estimates cable length from electrical length.
+Connect cable to Port 1. Leave far end open or shorted.
+Sweep should cover wide frequency range for best accuracy."
 CABLE_LEN_INST1=This function estimates cable length from electrical length.
 CABLE_LEN_INST2=Connect cable to Port 1. Leave far end open or shorted.
 CABLE_LEN_INST3=Sweep should cover wide frequency range for best accuracy.
@@ -531,6 +534,8 @@ CABLE_LEN_HINT=Hint: For best results, sweep at least 50-100 MHz range.
 
 # Cable fault detection
 CABLE_FAULT_TITLE=Cable Fault Detection
+CABLE_FAULT_INSTRUCTIONS="This function checks for cable faults (shorts, opens, damage).
+Connect cable to Port 1."
 CABLE_FAULT_INST1=This function checks for cable faults (shorts, opens, damage).
 CABLE_FAULT_INST2=Connect cable to Port 1.
 CABLE_FAULT_TERM=Cable termination at far end:
@@ -555,6 +560,8 @@ CABLE_FAULT_DISCLAIMER=Note: This is a rough analysis. For definitive fault loca
 
 # Cable attenuation
 CABLE_ATT_TITLE=Cable Attenuation Measurement (S21)
+CABLE_ATT_INSTRUCTIONS="Setup: Connect cable between Port 1 (CH0) and Port 2 (CH1)
+Perform S21 measurement (through mode) across frequency range"
 CABLE_ATT_INST1=Setup: Connect cable between Port 1 (CH0) and Port 2 (CH1)
 CABLE_ATT_INST2=Perform S21 measurement (through mode) across frequency range
 CABLE_ATT_LEN=Enter cable length in meters: >
@@ -568,6 +575,8 @@ CABLE_ATT_PER_100FT=  Attenuation per 100ft: {0} dB/100ft
 
 # Filter quick check
 FILTER_TITLE=Filter Quick Check (S21)
+FILTER_INSTRUCTIONS="Setup: Connect filter between Port 1 (CH0) and Port 2 (CH1)
+Perform S21 measurement across appropriate frequency range"
 FILTER_INST1=Setup: Connect filter between Port 1 (CH0) and Port 2 (CH1)
 FILTER_INST2=Perform S21 measurement across appropriate frequency range
 FILTER_TYPE_SELECT=Select filter type:

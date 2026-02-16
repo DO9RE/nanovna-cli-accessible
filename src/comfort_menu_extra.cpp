@@ -17,9 +17,7 @@ void ConsoleUI::cableLengthMeasurement(std::vector<MeasurementPoint>& pts, NanoV
         return;
     }
     
-    print(translation.get("CABLE_LEN_INST1", "This function estimates cable length from electrical length.") + "\n");
-    print(translation.get("CABLE_LEN_INST2", "Connect cable to Port 1. Leave far end open or shorted.") + "\n");
-    print(translation.get("CABLE_LEN_INST3", "Sweep should cover wide frequency range for best accuracy.") + "\n\n");
+    print(translation.get("CABLE_LEN_INSTRUCTIONS", "This function estimates cable length from electrical length.\nConnect cable to Port 1. Leave far end open or shorted.\nSweep should cover wide frequency range for best accuracy.") + "\n\n");
     
     print(translation.get("CABLE_LEN_TERM", "Cable termination:") + "\n");
     print(translation.get("CABLE_LEN_OPEN", "1. Open (far end disconnected)") + "\n");
@@ -102,8 +100,7 @@ void ConsoleUI::cableFaultDetection(std::vector<MeasurementPoint>& pts, NanoVNAP
         return;
     }
     
-    print(translation.get("CABLE_FAULT_INST1", "This function checks for cable faults.") + "\n");
-    print(translation.get("CABLE_FAULT_INST2", "Connect cable to Port 1.") + "\n\n");
+    print(translation.get("CABLE_FAULT_INSTRUCTIONS", "This function checks for cable faults.\nConnect cable to Port 1.") + "\n\n");
     
     print(translation.get("CABLE_FAULT_TERM", "Cable termination at far end:") + "\n");
     print(translation.get("CABLE_FAULT_OPEN", "1. Open (disconnected)") + "\n");
@@ -180,8 +177,7 @@ void ConsoleUI::cableAttenuationMeasurement(std::vector<MeasurementPoint>& pts, 
         return;
     }
     
-    print(translation.get("CABLE_ATT_INST1", "Setup: Connect cable between Port 1 and Port 2") + "\n");
-    print(translation.get("CABLE_ATT_INST2", "Perform S21 measurement across frequency range") + "\n\n");
+    print(translation.get("CABLE_ATT_INSTRUCTIONS", "Setup: Connect cable between Port 1 and Port 2\nPerform S21 measurement across frequency range") + "\n\n");
     
     double cable_len_m = getDoubleInput(translation.get("CABLE_ATT_LEN", "Enter cable length in meters: > "), 0.1, 1000.0);
     if (cable_len_m < 0.1) return;
@@ -231,8 +227,7 @@ void ConsoleUI::filterQuickCheck(std::vector<MeasurementPoint>& pts, NanoVNAProt
         return;
     }
     
-    print(translation.get("FILTER_INST1", "Setup: Connect filter between Port 1 and Port 2") + "\n");
-    print(translation.get("FILTER_INST2", "Perform S21 measurement across frequency range") + "\n\n");
+    print(translation.get("FILTER_INSTRUCTIONS", "Setup: Connect filter between Port 1 and Port 2\nPerform S21 measurement across frequency range") + "\n\n");
     
     print(translation.get("FILTER_TYPE_SELECT", "Select filter type:") + "\n");
     print(translation.get("FILTER_BANDPASS", "1. Bandpass") + "\n");
