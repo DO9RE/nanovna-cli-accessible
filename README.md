@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 07:22:07)
+<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 07:55:47)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -49,7 +49,7 @@ Transform measurements into interactive multi-channel audio:
 **Dual Audio Engines:**
 - **Synthesizer** (default): Waveform-based synthesis (sine, triangle, sawtooth)
 - **MIDI**: 128 General MIDI instruments with real-time preview
-- Switch engines via **Y** key in acoustic mode
+- Open acoustic configuration via **A** key in acoustic mode (engine/MIDI/curve volume settings)
 
 **Five Simultaneous Curves:**
 1. **SWR** - Sine wave / String Ensemble
@@ -289,7 +289,7 @@ nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autos
 
 **Curves:**
 - **1-5** - Toggle curve on/off
-- **Ctrl+1-5** - Decrease volume | **Shift+1-5** - Increase volume
+- Curve volumes are configured in the acoustic configuration screen (**A**) via menu keys **A-V**
 
 **Smith Visualization:**
 - **V** - Toggle Smith diagram visualization
@@ -297,7 +297,8 @@ nanovna-cli.exe -d -p COM4 --start 144000000 --end 146000000 --step 1000 --autos
 - **H** - Show help (Smith-specific when Smith active)
 
 **Other:**
-- **Y** - Audio configuration (engine/MIDI instruments)
+- **A** - Open acoustic configuration screen (engine/MIDI instruments, acoustic settings, curve volumes via **A-V**)
+- **Y** - Play Y-axis ruler
 - **M** - Show current measurement
 - **E** - Export | **ESC** - Back
 

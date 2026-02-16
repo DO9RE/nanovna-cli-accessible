@@ -133,8 +133,7 @@ Jedes Szenario hat eine **ausführliche Dokumentation** im `doc/` Verzeichnis:
 
 ### Kurven-Steuerung
 - **1-5** - Kurven ein/ausschalten
-- **Strg+1-5** - Lautstärke verringern
-- **Umschalt+1-5** - Lautstärke erhöhen
+- Lautstärken im Akustik-Konfigurationsbildschirm anpassen (**A**, Menü-Tasten **A-V**)
 - **T** - Smooth/Dotted Modus
 
 ### Smith-Diagramm
