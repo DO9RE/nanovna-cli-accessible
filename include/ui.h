@@ -59,7 +59,7 @@ private:
     void showTable(const std::vector<MeasurementPoint>& pts, size_t center = 0, size_t maxRows=20);
     void showTablePaginated(const std::vector<MeasurementPoint>& pts);  // New paginated table viewer
     void customizeMenu();
-    void exportMenu(const std::vector<MeasurementPoint>& pts, const AcousticAnalyzer* analyzer = nullptr);
+    void exportMenu(const std::vector<MeasurementPoint>& pts, AcousticAnalyzer* analyzer = nullptr);
     void importMenu(std::vector<MeasurementPoint>& pts);  // New import function
     void deviceInfoMenu(NanoVNAProtocol* proto);  // New device info submenu
     void calibrationMenu(NanoVNAProtocol* proto);  // New calibration submenu
@@ -176,8 +176,9 @@ private:
     // Helper to ensure port is selected, offering to navigate to port selection if not
     bool ensurePortSelected(NanoVNAProtocol* proto);
     
-    // Helper function for Braille curve selection UI
-    bool selectBrailleCurves(bool curveFlags[5]);
+    // Helper function for curve selection UI
+    // contextTitle: heading text shown to user (e.g. "Braille Export", "Acoustic Image Export")
+    bool selectBrailleCurves(bool curveFlags[5], const std::string& contextTitle = "");
     
     // Helper function to offer repeat option after playing a sound in wizard
     // Returns true if user wants to repeat, false if user wants to continue

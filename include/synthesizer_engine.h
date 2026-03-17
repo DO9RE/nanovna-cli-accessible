@@ -123,6 +123,13 @@ public:
         double intensity);
 
     /**
+     * Release the internal audio backend without closing the engine.
+     * Use when only generateAudio() is needed (pure computation)
+     * and playback is handled by an external backend.
+     */
+    void releaseBackend();
+
+    /**
      * Set logger for debug output
      * @param logger Pointer to logger instance
      */

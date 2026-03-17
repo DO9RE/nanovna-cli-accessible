@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <cmath>
+#include <cctype>
+#include <regex>
 
 // ----------------------------------------------------------------------------
 // Value conversion helpers
@@ -81,6 +83,11 @@ std::string MidiControllerManager::getCommandName(MidiAppCommand cmd) {
         case MidiAppCommand::TOGGLE_STATUS_LINE: return "Toggle Status Line";
         case MidiAppCommand::TOGGLE_X_RULER: return "Toggle X-Axis Ruler";
         case MidiAppCommand::GO_TO_POSITION: return "Go To Position";
+        case MidiAppCommand::OVERVIEW_CURVE_1: return "Overview Curve 1 (SWR)";
+        case MidiAppCommand::OVERVIEW_CURVE_2: return "Overview Curve 2 (RL)";
+        case MidiAppCommand::OVERVIEW_CURVE_3: return "Overview Curve 3 (|Z|)";
+        case MidiAppCommand::OVERVIEW_CURVE_4: return "Overview Curve 4 (X)";
+        case MidiAppCommand::OVERVIEW_CURVE_5: return "Overview Curve 5 (Phase)";
         default: return "Unknown";
     }
 }
@@ -157,6 +164,11 @@ std::string MidiControllerManager::getCommandKeyName(MidiAppCommand cmd) {
         case MidiAppCommand::TOGGLE_STATUS_LINE: return "toggle_status_line";
         case MidiAppCommand::TOGGLE_X_RULER: return "toggle_x_ruler";
         case MidiAppCommand::GO_TO_POSITION: return "go_to_position";
+        case MidiAppCommand::OVERVIEW_CURVE_1: return "overview_curve_1";
+        case MidiAppCommand::OVERVIEW_CURVE_2: return "overview_curve_2";
+        case MidiAppCommand::OVERVIEW_CURVE_3: return "overview_curve_3";
+        case MidiAppCommand::OVERVIEW_CURVE_4: return "overview_curve_4";
+        case MidiAppCommand::OVERVIEW_CURVE_5: return "overview_curve_5";
         default: return "unknown";
     }
 }
@@ -254,6 +266,45 @@ bool MidiControllerManager::openDevice(int deviceId) {
     return success;
 }
 
+int MidiControllerManager::openDeviceByName(const std::string& deviceName, int* foundIdOut) {
+    if (!controllerInput || deviceName.empty()) return -1;
+
+    auto devices = controllerInput->listDevices();
+    // Prefer exact match, then fall back to prefix / substring match
+    int foundId = -1;
+    for (const auto& dev : devices) {
+        if (dev.name == deviceName) { foundId = dev.id; break; }
+    }
+    if (foundId < 0) {
+        for (const auto& dev : devices) {
+            // Secondary fallback: check if the live device name contains the stored name
+            // (handles cases where the stored name is a prefix/substring, e.g. a truncated
+            // WinMM name or an ALSA name without the port suffix).
+            if (dev.name.find(deviceName) != std::string::npos) {
+                foundId = dev.id;
+                break;
+            }
+        }
+    }
+
+    if (foundId < 0) {
+        if (logger) logger->log("MIDI_CTRL", "openDeviceByName: device not found: " + deviceName);
+        return -1;
+    }
+
+    if (foundIdOut) *foundIdOut = foundId;
+
+    bool success = controllerInput->open(foundId);
+    if (success) {
+        if (logger) logger->log("MIDI_CTRL", "Opened MIDI controller by name: " + controllerInput->getDeviceName());
+        enabled = true;
+        return foundId;
+    } else {
+        if (logger) logger->log("MIDI_CTRL", "ERROR: openDeviceByName failed: " + controllerInput->getLastError());
+        return -1;
+    }
+}
+
 void MidiControllerManager::closeDevice() {
     if (controllerInput && controllerInput->isOpen()) {
         if (logger) logger->log("MIDI_CTRL", "Closing MIDI controller: " + controllerInput->getDeviceName());
@@ -287,12 +338,19 @@ void MidiControllerManager::setCCValueCallback(MidiCCValueCallback callback) {
     ccValueCallback = callback;
 }
 
+void MidiControllerManager::setOverviewTouchCallback(MidiOverviewTouchCallback callback) {
+    std::lock_guard<std::mutex> lock(callbackMutex);
+    overviewTouchCallback = callback;
+}
+
 // ----------------------------------------------------------------------------
 // Mapping management
 // ----------------------------------------------------------------------------
 
 void MidiControllerManager::loadMappings(const MidiMappingPreset& preset) {
     currentPreset = preset;
+    overviewFaderMappings.clear();
+    overviewTouchMappings.clear();
     rebuildLookupMaps();
     if (logger) {
         logger->log("MIDI_CTRL", "Loaded mapping preset: " + preset.name + 
@@ -428,6 +486,19 @@ void MidiControllerManager::processCCEvent(const MidiControllerEvent& event) {
     MidiMapping* mapping = findCCMapping(event.channel, event.data1);
     if (!mapping) return;
     
+    // Dispatch dynamic overview touch events via overviewTouchCallback
+    if (mapping->overviewTouchIndex >= 0) {
+        std::lock_guard<std::mutex> lock(callbackMutex);
+        if (overviewTouchCallback) {
+            if (logger) {
+                logger->log("MIDI_CTRL", "Overview touch " + std::to_string(mapping->overviewTouchIndex) +
+                            (event.data2 >= 64 ? " touched" : " released"));
+            }
+            overviewTouchCallback(mapping->overviewTouchIndex, event.data2 >= 64);
+        }
+        return;
+    }
+    
     if (mapping->ccFunction != MidiCCFunction::NONE) {
         std::lock_guard<std::mutex> lock(callbackMutex);
         if (ccValueCallback) {
@@ -541,6 +612,19 @@ void MidiControllerManager::sendCurveVolumeFeedback(int curveIndex, int volumePe
     controllerInput->sendFeedback(0xB0 | channel, static_cast<uint8_t>(ccNumber), static_cast<uint8_t>(midiValue));
 }
 
+void MidiControllerManager::sendOverviewFaderFeedback(int faderIndex, double normalizedValue) {
+    if (!controllerInput || !controllerInput->isOpen()) return;
+    
+    // Look up the CC number and channel for this overview fader (1-based index)
+    for (const auto& entry : overviewFaderMappings) {
+        if (entry.index == faderIndex) {
+            int midiValue = normalizedToMidi(normalizedValue);
+            controllerInput->sendFeedback(0xB0 | entry.channel, entry.ccNumber, static_cast<uint8_t>(midiValue));
+            return;
+        }
+    }
+}
+
 void MidiControllerManager::setEnabled(bool en) {
     enabled = en;
     if (logger) {
@@ -567,6 +651,21 @@ bool MidiControllerManager::loadMappingsFromFile(const std::string& filepath) {
     
     MidiMappingPreset preset;
     std::string line;
+    
+    // Temporary storage for dynamic overview entries (populated before loadMappings clears them)
+    std::vector<OverviewFaderEntry> tempFaderEntries;
+    std::vector<OverviewFaderEntry> tempTouchEntries;
+    
+    // Helper: try to parse "overview_fader_N" or "overview_touch_N", return index (>=1) or 0 if no match
+    auto parseOverviewFaderKey = [](const std::string& s, bool wantTouch) -> int {
+        const std::string prefix = wantTouch ? "overview_touch_" : "overview_fader_";
+        if (s.substr(0, prefix.size()) != prefix) return 0;
+        std::string suffix = s.substr(prefix.size());
+        if (suffix.empty()) return 0;
+        for (char c : suffix) { if (!std::isdigit(static_cast<unsigned char>(c))) return 0; }
+        int idx = std::stoi(suffix);
+        return (idx >= 1) ? idx : 0;
+    };
     
     while (std::getline(file, line)) {
         // Trim whitespace
@@ -636,14 +735,38 @@ bool MidiControllerManager::loadMappingsFromFile(const std::string& filepath) {
                         m.command = static_cast<MidiAppCommand>(command);
                     }
                     
-                    // Try parsing CC function as name first, then as integer (backward compatible)
-                    MidiCCFunction resolvedFunc = resolveCCFunctionKeyName(tokens[4]);
-                    if (resolvedFunc != MidiCCFunction::NONE || tokens[4] == "none") {
-                        m.ccFunction = resolvedFunc;
+                    // Check for dynamic overview_fader_N or overview_touch_N ccfunction name
+                    int overviewFaderIdx = parseOverviewFaderKey(tokens[4], false);
+                    int overviewTouchIdx = parseOverviewFaderKey(tokens[4], true);
+                    
+                    if (overviewFaderIdx > 0 && m.triggerType == MidiMessageType::CONTROL_CHANGE) {
+                        // overview_fader_N: output-only, store in tempFaderEntries
+                        OverviewFaderEntry entry;
+                        entry.index = overviewFaderIdx;
+                        entry.channel = m.channel;
+                        entry.ccNumber = m.number;
+                        tempFaderEntries.push_back(entry);
+                        // Do NOT add to preset.mappings (no input dispatch needed)
+                        continue;
+                    } else if (overviewTouchIdx > 0 && m.triggerType == MidiMessageType::CONTROL_CHANGE) {
+                        // overview_touch_N: input, store in tempTouchEntries + add to mappings for dispatch
+                        OverviewFaderEntry entry;
+                        entry.index = overviewTouchIdx;
+                        entry.channel = m.channel;
+                        entry.ccNumber = m.number;
+                        tempTouchEntries.push_back(entry);
+                        m.ccFunction = MidiCCFunction::NONE;
+                        m.overviewTouchIndex = overviewTouchIdx;
                     } else {
-                        int ccFunc = std::stoi(tokens[4]);
-                        if (ccFunc < 0 || ccFunc >= static_cast<int>(MidiCCFunction::FUNCTION_COUNT)) continue;
-                        m.ccFunction = static_cast<MidiCCFunction>(ccFunc);
+                        // Try parsing CC function as name first, then as integer (backward compatible)
+                        MidiCCFunction resolvedFunc = resolveCCFunctionKeyName(tokens[4]);
+                        if (resolvedFunc != MidiCCFunction::NONE || tokens[4] == "none") {
+                            m.ccFunction = resolvedFunc;
+                        } else {
+                            int ccFunc = std::stoi(tokens[4]);
+                            if (ccFunc < 0 || ccFunc >= static_cast<int>(MidiCCFunction::FUNCTION_COUNT)) continue;
+                            m.ccFunction = static_cast<MidiCCFunction>(ccFunc);
+                        }
                     }
                 } catch (const std::exception&) {
                     continue;  // Skip malformed entries
@@ -659,9 +782,15 @@ bool MidiControllerManager::loadMappingsFromFile(const std::string& filepath) {
     }
     
     loadMappings(preset);
+    // Restore dynamic overview entries (loadMappings clears them)
+    overviewFaderMappings = std::move(tempFaderEntries);
+    overviewTouchMappings = std::move(tempTouchEntries);
+    
     if (logger) {
         logger->log("MIDI_CTRL", "Loaded preset from file: " + filepath + 
-                     " (" + std::to_string(preset.mappings.size()) + " mappings)");
+                     " (" + std::to_string(preset.mappings.size()) + " mappings, " +
+                     std::to_string(overviewFaderMappings.size()) + " overview faders, " +
+                     std::to_string(overviewTouchMappings.size()) + " overview touches)");
     }
     return true;
 }

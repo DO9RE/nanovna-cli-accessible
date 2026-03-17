@@ -53,6 +53,27 @@ public:
                            std::vector<char>& data,
                            std::string& err);
     
+    /**
+     * Generate Braille data using pre-selected audio indices (Pflichtenheft §9).
+     * @param pts Full measurement data
+     * @param audioIndices Pre-selected point indices from Audio-LTTB
+     * @param startFreq Start frequency
+     * @param endFreq End frequency
+     * @param step Frequency step
+     * @param curveFlags Array of 5 bools for curves (0:SWR, 1:RL, 2:|Z|, 3:X, 4:Phase)
+     * @param config Application configuration
+     * @param data Output data buffer
+     * @param err Error string
+     * @return true on success, false on failure
+     */
+    bool generateBrailleData(const std::vector<MeasurementPoint>& pts,
+                           const std::vector<size_t>& audioIndices,
+                           uint64_t startFreq, uint64_t endFreq, uint64_t step,
+                           const bool curveFlags[5],
+                           const AppConfig& config,
+                           std::vector<char>& data,
+                           std::string& err);
+    
     // Calculate estimated page count for current settings
     int calculatePageCount(const std::vector<MeasurementPoint>& pts,
                           const bool curveFlags[5],

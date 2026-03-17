@@ -57,6 +57,35 @@ public:
                              const AppConfig& config,
                              std::string& generatedFilename, std::string& err);
     
+    // Export to Braille using pre-selected audio indices (Pflichtenheft §9)
+    // audioIndices: LTTB-selected point indices from AcousticAnalyzer
+    static bool exportBraille(const std::vector<MeasurementPoint>& pts,
+                             const std::vector<size_t>& audioIndices,
+                             uint64_t startFreq, uint64_t endFreq, uint64_t step,
+                             const bool curveFlags[5],
+                             const AppConfig& config,
+                             std::string& generatedFilename, std::string& err);
+    
+    // Export acoustic curves as bitmap image (.bmp)
+    // Renders the same curves that are played acoustically as a visual graph
+    static bool exportAcousticBitmap(
+        const std::vector<MeasurementPoint>& pts,
+        const std::vector<size_t>& audioIndices,
+        uint64_t startFreq, uint64_t endFreq, uint64_t step,
+        const bool curveFlags[5],
+        const AppConfig& config,
+        std::string& generatedFilename, std::string& err);
+    
+    // Export Braille print preview as bitmap image (.bmp)
+    // Renders the Braille dot pattern as visual dots for pre-print verification
+    static bool exportBrailleBitmap(
+        const std::vector<MeasurementPoint>& pts,
+        const std::vector<size_t>& audioIndices,
+        uint64_t startFreq, uint64_t endFreq, uint64_t step,
+        const bool curveFlags[5],
+        const AppConfig& config,
+        std::string& generatedFilename, std::string& err);
+    
     // Legacy functions for backward compatibility (deprecated)
     static bool exportCSV(const std::string& filename, const std::vector<MeasurementPoint>& pts, std::string& err);
     static bool exportTXT(const std::string& filename, const std::vector<MeasurementPoint>& pts, std::string& err);

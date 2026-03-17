@@ -12,6 +12,9 @@ public:
     // Load a language file
     bool loadLanguage(const std::string& languageCode, std::string& error);
     
+    // Load additional translation file (merges into existing translations without clearing)
+    bool loadAdditionalFile(const std::string& filepath, std::string& error);
+    
     // Get translated string by key
     std::string get(const std::string& key) const;
     

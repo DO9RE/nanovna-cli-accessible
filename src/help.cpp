@@ -1,9 +1,11 @@
 #include "help.h"
 
 std::string HelpModule::getCommandLineHelp(const TranslationManager* tm) {
+    std::string helpText;
+    
     // Command line help uses translation if available, otherwise English
     if (tm) {
-        return tm->get("HELP_CMD_LINE", 
+        helpText = tm->get("HELP_CMD_LINE", 
 R"(NanoVNA-CLI-Accessible - Accessible Console Application for NanoVNA-H4
 
 Usage: nanovna-cli.exe [OPTIONS]
@@ -37,11 +39,9 @@ Configuration:
 Main Menu Commands:
   Press 'H' in any screen for context-sensitive help.
 )");
-    }
-    
-    // Fallback to English
-    return R"(
-NanoVNA-CLI-Accessible - Accessible Console Application for NanoVNA-H4
+    } else {
+        // Fallback to English
+        helpText = R"(NanoVNA-CLI-Accessible - Accessible Console Application for NanoVNA-H4
 
 Usage: nanovna-cli.exe [OPTIONS]
 
@@ -74,6 +74,25 @@ Configuration:
 Main Menu Commands:
   Press 'H' in any screen for context-sensitive help.
 )";
+    }
+    
+#ifdef WITH_HAM_SPIRIT
+    // Add Ham Spirit message when Easter egg is compiled in
+    if (tm) {
+        // Try to get language-specific message
+        std::string currentLang = tm->getCurrentLanguage();
+        if (currentLang == "deu") {
+            helpText += "\n🎮 Dieses Tool wurde mit Ham Spirit gebaut.\n";
+        } else {
+            helpText += "\n🎮 This tool was built with Ham Spirit.\n";
+        }
+    } else {
+        // Default to English if no translation manager
+        helpText += "\n🎮 This tool was built with Ham Spirit.\n";
+    }
+#endif
+    
+    return helpText;
 }
 
 std::string HelpModule::getMainMenuHelp(const TranslationManager& tm) {

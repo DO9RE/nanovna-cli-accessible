@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include "waveform.h"  // Include waveform enum
+#include "curve_transform.h"  // RLPreset, SWRPreset, CurveRange
 
 // Audio engine types
 enum class AudioEngineType {
@@ -194,6 +195,30 @@ struct AppConfig {
     // Calibration settings
     int calibration_bank = 0;  // Calibration bank number (0 is auto-loaded on device startup)
     
+    // RL (Return Loss) configuration (Pflichtenheft §2)
+    bool rl_inverted = true;          // Default: inverted (Pflichtenheft §2.1) — sign flip, S11-style
+    RLPreset rl_preset = RLPreset::RL_0_30;
+    CurveRange rl_custom_range = {0.0, 30.0};
+    
+    // SWR configuration (Pflichtenheft §3)
+    SWRPreset swr_preset = SWRPreset::SWR_1_10;
+    CurveRange swr_custom_range = {1.0, 10.0};
+    
+    // Autoscale configuration (Pflichtenheft §4)
+    bool autoscale_enabled = false;
+    double autoscale_low_percentile = 0.005;   // p0.5
+    double autoscale_high_percentile = 0.995;  // p99.5
+    
+    // Braille overrides (Pflichtenheft §5) — only Range/Autoscale, not semantic transformations
+    bool braille_override_range = false;
+    bool braille_override_autoscale = false;
+    double braille_custom_range_min[5] = {0};  // per curve
+    double braille_custom_range_max[5] = {0};
+    bool braille_autoscale_enabled = false;
+    
+    // Braille X=0 marker configuration (Pflichtenheft §8)
+    double braille_x0_hysteresis_ohms = 5.0;  // Schmitt-Trigger hysteresis H (Pflichtenheft §8.6)
+    
     // Y-Axis Ruler (Lineal) settings
     enum class RulerSoundMode {
         FOLLOW_LAST_CURVE = 0,  // Use sound of last activated curve
@@ -375,6 +400,11 @@ struct AppConfig {
     // Y-axis space reservation (in mm, subtracted from graph width for axis labels)
     double braille_y_axis_space_mm = 2.0;  // Space reserved for Y-axis (1-5mm)
     
+    // Bitmap Export Settings
+    int bitmap_acoustic_width = 1200;      // Width of acoustic curve image in pixels
+    int bitmap_acoustic_height = 800;      // Height of acoustic curve image in pixels
+    int bitmap_braille_px_per_mm = 10;     // Pixels per mm for Braille preview image
+    
     // Spatial Audio Calibration settings
     bool spatial_audio_calibrated = false;  // Whether spatial audio has been calibrated
     
@@ -419,4 +449,6 @@ struct AppConfig {
     std::string midi_controller_preset = "";  // Preset filename (e.g., "behringer_x_touch_compact.cfg")
     bool midi_controller_feedback = true;     // Send motor fader feedback to controller
     bool midi_controller_freeze_by_touch = false;  // Freeze playback when motor fader is touched
+    // Overview downsampling algorithm: 0=MEDIAN, 1=MAX, 2=P95, 3=HYBRID
+    int midi_controller_overview_algorithm = 0;
 };

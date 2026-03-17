@@ -3,6 +3,10 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
+
+// Forward declaration — Logger is optional (only used when debug mode is active)
+class Logger;
 
 /**
  * @file audio_backend.h
@@ -17,11 +21,27 @@
  */
 
 /**
- * Audio idle timeout in milliseconds
- * Streams are automatically closed after this period of inactivity
- * to conserve system resources
+ * Audio device descriptor for enumeration.
  */
-constexpr int AUDIO_IDLE_TIMEOUT_MS = 500;
+struct AudioOutputDevice {
+    int index;                 // Backend-specific device index
+    std::string name;          // Human-readable name
+    int maxChannels;           // Maximum output channels
+    int defaultSampleRate;     // Preferred sample rate
+    bool isDefault;            // Is this the system default device?
+
+    AudioOutputDevice() : index(-1), maxChannels(2), defaultSampleRate(44100), isDefault(false) {}
+};
+
+/**
+ * Audio error classification for unified recovery handling.
+ * TRANSIENT errors allow immediate retry; FATAL errors require device reopen.
+ */
+enum class AudioError {
+    NONE,       // No error
+    TRANSIENT,  // Buffer underflow — retry allowed
+    FATAL       // Device lost — requires shutdown + reinitialize
+};
 
 class IAudioBackend {
 public:
@@ -39,9 +59,9 @@ public:
     virtual void shutdown() = 0;
     
     /**
-     * Abort any ongoing audio playback immediately
-     * This can be called from a different thread to unblock a blocking playBuffer() call
-     * Default implementation does nothing
+     * Abort any ongoing audio playback immediately.
+     * Stops output within 50 ms. Pending buffers are discarded, not played.
+     * Default implementation does nothing.
      */
     virtual void abort() {}
     
@@ -73,6 +93,46 @@ public:
      * @return Maximum number of channels (2, 6, or 8)
      */
     virtual int detectMaxChannels() = 0;
+
+    /**
+     * Return the error type from the last failed playBuffer() call.
+     * Used by game-level recovery to distinguish retry vs. reconnect.
+     */
+    virtual AudioError getLastError() const { return AudioError::NONE; }
+
+    /**
+     * Enumerate available audio output devices.
+     * Default implementation returns only the default device.
+     * @return Vector of available output devices
+     */
+    virtual std::vector<AudioOutputDevice> enumerateDevices() {
+        AudioOutputDevice def;
+        def.index = -1;
+        def.name = "Default Audio Device";
+        def.maxChannels = detectMaxChannels();
+        def.defaultSampleRate = 44100;
+        def.isDefault = true;
+        return { def };
+    }
+
+    /**
+     * Select a specific output device by index.
+     * Must be called before initialize() or after shutdown().
+     * @param deviceIndex Device index from enumerateDevices(), or -1 for default
+     * @return true if device was selected successfully
+     */
+    virtual bool selectDevice(int deviceIndex) {
+        (void)deviceIndex;
+        return true;  // Default: accept any device (uses system default)
+    }
+
+    /**
+     * Set a Logger instance for debug output.
+     * When set, backend-internal diagnostics are written to the debug log file
+     * instead of stderr, so all output appears in a single log.
+     * @param logger Pointer to Logger (may be null to disable logging)
+     */
+    virtual void setLogger(Logger* /*logger*/) {}
 };
 
 /**

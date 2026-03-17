@@ -48,6 +48,10 @@ public:
     void setAudioEngine(std::shared_ptr<IAudioEngine> engine);
     std::shared_ptr<IAudioEngine> getAudioEngine() const { return audioEngine; }
     
+    // Audio backend access (for game reuse — avoids opening a second OS audio device)
+    // Returns nullptr if backend is not yet initialized
+    IAudioBackend* getAudioBackend() { return backend.get(); }
+    
     // Playback control
     void play();
     void pause();       // Hard pause - silence
@@ -122,6 +126,14 @@ public:
     
     // Get skip factor using dotted mode logic (for braille export consistency)
     int getDottedModeSkipFactor() const;
+    
+    /**
+     * Returns a copy of the currently selected audio point indices.
+     * These are the final LTTB-downsampled indices used for playback.
+     * Thread-safe: acquires selectedPointsCacheMutex.
+     * Filters to active loop boundaries [loopLeft, loopRight] when loop is active.
+     */
+    std::vector<size_t> getSelectedAudioIndices() const;
     
     // Get translated curve name
     std::string getCurveName(int curveIndex) const;
@@ -270,6 +282,21 @@ public:
         }
     }
     
+    // RL/SWR Range and Inversion configuration (Pflichtenheft §2, §3)
+    void setRLInverted(bool inverted) { rlInverted = inverted; }
+    bool getRLInverted() const { return rlInverted; }
+    void setRLPreset(RLPreset preset) { rlPreset = preset; }
+    void setRLCustomRange(const CurveRange& range) { rlCustomRange = range; }
+    void setSWRPreset(SWRPreset preset) { swrPreset = preset; }
+    void setSWRCustomRange(const CurveRange& range) { swrCustomRange = range; }
+    CurveRange getCurrentRLRange() const { return CurveTransform::resolveRLRange(rlPreset, rlCustomRange); }
+    CurveRange getCurrentSWRRange() const { return CurveTransform::resolveSWRRange(swrPreset, swrCustomRange); }
+    
+    // Autoscale configuration (Pflichtenheft §4)
+    void setAutoscaleEnabled(bool enabled) { autoscaleEnabled = enabled; }
+    bool getAutoscaleEnabled() const { return autoscaleEnabled; }
+    void updateAutoscaleRanges(const std::vector<MeasurementPoint>& pts);
+    
     /**
      * Export MIDI file to the Export directory (cross-platform)
      * @param outputPath Full path for the output MIDI file
@@ -337,6 +364,7 @@ private:
     // Audio thread
     std::thread audioThread;
     std::atomic<bool> shouldStop;
+    std::atomic<bool> audioThreadExited{true};  // Set by audio thread on exit, checked by stop() for timed join
     std::atomic<bool> buffersWereFlushed;  // Flag to signal immediate restart after flush
     size_t lastFrozenPos = SIZE_MAX;  // Track position changes in frozen smooth mode
     
@@ -387,6 +415,17 @@ private:
     AppConfig::SynthReactanceModeEffectConfig synthReactanceEffectsSmooth;
     AppConfig::SynthReactanceModeEffectConfig synthReactanceEffectsDotted;
     
+    // RL/SWR Range configuration (Pflichtenheft §2, §3)
+    std::atomic<bool> rlInverted{true};  // Default: inverted (Pflichtenheft §2.1)
+    RLPreset rlPreset = RLPreset::RL_0_30;
+    CurveRange rlCustomRange = {0.0, 30.0};
+    SWRPreset swrPreset = SWRPreset::SWR_1_10;
+    CurveRange swrCustomRange = {1.0, 10.0};
+    
+    // Autoscale state (Pflichtenheft §4)
+    std::atomic<bool> autoscaleEnabled{false};
+    CurveRange autoscaleRanges[5] = {{0,1},{0,1},{0,1},{0,1},{0,1}};  // per curve
+    
     // Timing constants for skip factor calculation
     static constexpr int MIN_SMOOTH_TRANSITION_TIME_MS = 20;   // Minimum time per transition in smooth mode (matches frame duration)
     static constexpr int MIN_DOTTED_DURATION_MS = 100;         // Default minimum duration per dot in dotted mode
@@ -405,7 +444,7 @@ private:
     
     // Intelligent point selection for dotted mode
     std::vector<size_t> selectedPointsCache;  // Cache of selected point indices for dotted mode
-    std::mutex selectedPointsCacheMutex;       // Mutex to protect selectedPointsCache access
+    mutable std::mutex selectedPointsCacheMutex;       // Mutex to protect selectedPointsCache access
     std::atomic<bool> needsPointSelection;     // Flag to indicate point selection needs updating
     
     // Constants for point importance scoring

@@ -1,6 +1,7 @@
 #include "acoustic_analyzer.h"
 #include "audio_backend.h"
 #include "config.h"
+#include "curve_transform.h"
 #include "synthesizer_engine.h"
 #include "midi_engine.h"
 #include "midi_file_writer.h"
@@ -121,6 +122,7 @@ void AcousticAnalyzer::setData(const std::vector<MeasurementPoint>& data) {
     continuousReplay = false;
     loopZoomEnabled = false;
     needsPointSelection.store(true);  // Recalculate point selection with new data
+    updateAutoscaleRanges(data);  // Pflichtenheft §4: Auto-update on new sweep
     if (logger) {
         logger->log("ACOUSTIC", "Data set: " + std::to_string(data.size()) + " points");
     }
@@ -145,6 +147,7 @@ void AcousticAnalyzer::updateData(const std::vector<MeasurementPoint>& data) {
     }
     
     needsPointSelection.store(true);  // Recalculate point selection with updated data
+    updateAutoscaleRanges(data);  // Pflichtenheft §4: Auto-update on new sweep
     
     if (logger) {
         logger->log("ACOUSTIC", "Data updated: " + std::to_string(data.size()) + " points (was: " + std::to_string(oldSize) + ")");
@@ -309,22 +312,29 @@ void AcousticAnalyzer::stop() {
         }
     }
     
-    // Safely join audio thread with exception handling
+    // Safely join audio thread with timeout using audioThreadExited flag
     if (audioThread.joinable()) {
-        try {
-            audioThread.join();
-        } catch (const std::system_error& e) {
-            if (logger) logger->log("ACOUSTIC", std::string("System error joining audio thread: ") + e.what());
-            // Thread may be in invalid state - try to detach instead
+        // Wait for audio thread to exit (it checks shouldStop every 10-20ms)
+        // With curveMutex no longer held during playBuffer, it should exit promptly
+        for (int i = 0; i < 200 && !audioThreadExited.load(); ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        
+        if (audioThreadExited.load()) {
+            // Thread has exited — safe to join (returns immediately)
+            try {
+                audioThread.join();
+            } catch (...) {
+                if (logger) logger->log("ACOUSTIC", "Exception joining audio thread after clean exit");
+            }
+        } else {
+            // Thread stuck in OS call (e.g., waveOutWrite) — detach to avoid hang
+            if (logger) logger->log("ACOUSTIC", "Audio thread join timed out after 2s - detaching");
             try {
                 audioThread.detach();
             } catch (...) {
                 if (logger) logger->log("ACOUSTIC", "Failed to detach audio thread");
             }
-        } catch (const std::exception& e) {
-            if (logger) logger->log("ACOUSTIC", std::string("Exception joining audio thread: ") + e.what());
-        } catch (...) {
-            if (logger) logger->log("ACOUSTIC", "Unknown exception joining audio thread");
         }
     }
     shouldStop = false;
@@ -711,6 +721,8 @@ const MeasurementPoint* AcousticAnalyzer::getCurrentMeasurement() const {
 void AcousticAnalyzer::audioThreadFunc() {
     const int frameDurationMs = 20;  // Reduced from 50ms to 20ms for faster response
     double smoothFractionalPos = 0.0;  // Fractional progress (0.0-1.0) between current and next point
+    
+    audioThreadExited.store(false);  // Mark thread as running
     
     while (!shouldStop.load()) {
         PlaybackState currentState = state.load();
@@ -1165,6 +1177,7 @@ void AcousticAnalyzer::audioThreadFunc() {
             }
         }
     }
+    audioThreadExited.store(true);  // Mark thread as exited
 }
 
 void AcousticAnalyzer::advancePosition() {
@@ -1353,102 +1366,103 @@ void AcousticAnalyzer::playCurrentPosition(int durationMs) {
     const int samples = (SAMPLE_RATE * durationMs) / 1000;
     std::vector<int16_t> mixBuffer(samples * CHANNELS, 0);
     
-    // Mix enabled curves using audio engine
-    std::lock_guard<std::mutex> lock(curveMutex);
-    
-    // Apply master volume to curve volumes
-    if (curves[0].enabled) {  // SWR
-        int effectiveVolume = (curveVolumes[0] * masterVolume) / 100;
-        audioEngine->generateAudio(mixBuffer, samples, 0, calcSWRPitch(pt), frac, effectiveVolume);
-    }
-    if (curves[1].enabled) {  // Return Loss
-        int effectiveVolume = (curveVolumes[1] * masterVolume) / 100;
-        audioEngine->generateAudio(mixBuffer, samples, 1, calcRLPitch(pt), frac, effectiveVolume);
-    }
-    if (curves[2].enabled) {  // Impedance Magnitude
-        int effectiveVolume = (curveVolumes[2] * masterVolume) / 100;
-        audioEngine->generateAudio(mixBuffer, samples, 2, calcZPitch(pt), frac, effectiveVolume);
-    }
-    if (curves[3].enabled) {  // Reactance
-        int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
-        audioEngine->generateAudio(mixBuffer, samples, 3, calcXPitch(pt), frac, effectiveVolume);
-        // Apply reactance effects based on engine type
-        if (reactanceEffectsEnabled) {
-            if (logger) {
-                char msg[256];
-                snprintf(msg, sizeof(msg), "Dotted: Applying reactance effects at pos=%zu, X=%.1f Ohm, engine=%s, mode=%s",
-                         pos, pt.X, audioEngine->getName(), smoothMode.load() ? "smooth" : "dotted");
-                logger->log("ACOUSTIC_FX", msg);
-            }
-            if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
-                auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
-                if (midiEngine) {
-                    const auto& effectConfig = smoothMode.load() ? reactanceEffectsGliding : reactanceEffectsDotted;
-                    midiEngine->applyReactanceEffects(pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+    // Generate audio under curveMutex, then release BEFORE calling playAudioBuffer
+    // This prevents deadlock: playAudioBuffer() -> playBuffer() -> waveOutWrite() can block
+    // indefinitely on some Windows audio drivers, and if we hold curveMutex during that,
+    // the main thread (which may call toggleCurve/setCurveVolume) blocks, and stop() hangs.
+    {
+        std::lock_guard<std::mutex> lock(curveMutex);
+        
+        // Apply master volume to curve volumes
+        if (curves[0].enabled) {  // SWR
+            int effectiveVolume = (curveVolumes[0] * masterVolume) / 100;
+            audioEngine->generateAudio(mixBuffer, samples, 0, calcSWRPitch(pt), frac, effectiveVolume);
+        }
+        if (curves[1].enabled) {  // Return Loss
+            int effectiveVolume = (curveVolumes[1] * masterVolume) / 100;
+            audioEngine->generateAudio(mixBuffer, samples, 1, calcRLPitch(pt), frac, effectiveVolume);
+        }
+        if (curves[2].enabled) {  // Impedance Magnitude
+            int effectiveVolume = (curveVolumes[2] * masterVolume) / 100;
+            audioEngine->generateAudio(mixBuffer, samples, 2, calcZPitch(pt), frac, effectiveVolume);
+        }
+        if (curves[3].enabled) {  // Reactance
+            int effectiveVolume = (curveVolumes[3] * masterVolume) / 100;
+            audioEngine->generateAudio(mixBuffer, samples, 3, calcXPitch(pt), frac, effectiveVolume);
+            // Apply reactance effects based on engine type
+            if (reactanceEffectsEnabled) {
+                if (logger) {
+                    char msg[256];
+                    snprintf(msg, sizeof(msg), "Dotted: Applying reactance effects at pos=%zu, X=%.1f Ohm, engine=%s, mode=%s",
+                             pos, pt.X, audioEngine->getName(), smoothMode.load() ? "smooth" : "dotted");
+                    logger->log("ACOUSTIC_FX", msg);
                 }
-            } else if (audioEngine->getEngineType() == AudioEngineType::SYNTHESIZER) {
-                auto synthEngine = std::dynamic_pointer_cast<SynthesizerEngine>(audioEngine);
-                if (synthEngine) {
-                    const auto& effectConfig = smoothMode.load() ? synthReactanceEffectsSmooth : synthReactanceEffectsDotted;
-                    synthEngine->applySynthReactanceEffects(mixBuffer, samples, pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                if (audioEngine->getEngineType() == AudioEngineType::MIDI) {
+                    auto midiEngine = std::dynamic_pointer_cast<MIDIEngine>(audioEngine);
+                    if (midiEngine) {
+                        const auto& effectConfig = smoothMode.load() ? reactanceEffectsGliding : reactanceEffectsDotted;
+                        midiEngine->applyReactanceEffects(pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                    }
+                } else if (audioEngine->getEngineType() == AudioEngineType::SYNTHESIZER) {
+                    auto synthEngine = std::dynamic_pointer_cast<SynthesizerEngine>(audioEngine);
+                    if (synthEngine) {
+                        const auto& effectConfig = smoothMode.load() ? synthReactanceEffectsSmooth : synthReactanceEffectsDotted;
+                        synthEngine->applySynthReactanceEffects(mixBuffer, samples, pt.X, effectConfig, reactanceDeadzoneOhms, reactanceMaxOhms);
+                    }
                 }
             }
         }
-    }
-    if (curves[4].enabled) {  // Phase
-        int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
-        audioEngine->generateAudio(mixBuffer, samples, 4, calcPhasePitch(pt), frac, effectiveVolume);
-    }
-    
-    // X-Axis Ruler: Add blip sound when moving to a new measurement point
-    if (xAxisRulerEnabled.load() && pos != lastXAxisBlipPosition) {
-        lastXAxisBlipPosition = pos;
-        
-        // Generate a short noise impulse to mark the measurement point
-        int blipDuration = xAxisRulerBlipDurationMs;
-        int blipSamples = (SAMPLE_RATE * blipDuration) / 1000;
-        if (blipSamples > samples) blipSamples = samples;  // Limit to buffer size
-        
-        // Create blip buffer
-        std::vector<int16_t> blipBuffer(blipSamples * CHANNELS, 0);
-        
-        // Use noise impulse for X-axis ruler
-        double blipPan = frac;  // Follow curve panning
-        int blipVolume = (xAxisRulerVolume * masterVolume) / 100;
-        
-        // Generate noise impulse using audio engine
-        // For MIDI: use percussion sound (drum)
-        // For Synth: use noise waveform
-        audioEngine->generateXAxisRulerAudio(blipBuffer, blipSamples, blipPan, blipVolume);
-        
-        // Mix blip into main buffer
-        for (int i = 0; i < blipSamples * CHANNELS && i < mixBuffer.size(); i++) {
-            int32_t mixed = static_cast<int32_t>(mixBuffer[i]) + static_cast<int32_t>(blipBuffer[i]);
-            // Clamp to prevent overflow
-            if (mixed > 32767) mixed = 32767;
-            if (mixed < -32768) mixed = -32768;
-            mixBuffer[i] = static_cast<int16_t>(mixed);
+        if (curves[4].enabled) {  // Phase
+            int effectiveVolume = (curveVolumes[4] * masterVolume) / 100;
+            audioEngine->generateAudio(mixBuffer, samples, 4, calcPhasePitch(pt), frac, effectiveVolume);
         }
-    }
-    
-    // Smith Visualization: Add ambient spatial cues if enabled
-    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isSmithCuesEnabled()) {
-        smithVisualizer->generateSmithAmbientAudio(pt, mixBuffer, samples);
-    }
-    
-    // Center pulse generation (reference signal for Smith chart center)
-    if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isCenterPulseEnabled()) {
-        // Calculate time delta: samples / sample rate
-        double deltaTimeSeconds = static_cast<double>(samples) / SAMPLE_RATE;
-        smithVisualizer->generateCenterPulse(mixBuffer, samples, deltaTimeSeconds);
-    }
-    
-    // Axis crossing events (check full dataset range for crossings)
-    // This ensures we detect crossings even when points are skipped
-    size_t prevPos = (pos > 0) ? (pos - 1) : 0;
-    checkAxisCrossingsInRange(prevPos, pos, mixBuffer, samples);
+        
+        // X-Axis Ruler: Add blip sound when moving to a new measurement point
+        if (xAxisRulerEnabled.load() && pos != lastXAxisBlipPosition) {
+            lastXAxisBlipPosition = pos;
+            
+            // Generate a short noise impulse to mark the measurement point
+            int blipDuration = xAxisRulerBlipDurationMs;
+            int blipSamples = (SAMPLE_RATE * blipDuration) / 1000;
+            if (blipSamples > samples) blipSamples = samples;  // Limit to buffer size
+            
+            // Create blip buffer
+            std::vector<int16_t> blipBuffer(blipSamples * CHANNELS, 0);
+            
+            // Use noise impulse for X-axis ruler
+            double blipPan = frac;  // Follow curve panning
+            int blipVolume = (xAxisRulerVolume * masterVolume) / 100;
+            
+            // Generate noise impulse using audio engine
+            audioEngine->generateXAxisRulerAudio(blipBuffer, blipSamples, blipPan, blipVolume);
+            
+            // Mix blip into main buffer
+            for (int i = 0; i < blipSamples * CHANNELS && i < static_cast<int>(mixBuffer.size()); i++) {
+                int32_t mixed = static_cast<int32_t>(mixBuffer[i]) + static_cast<int32_t>(blipBuffer[i]);
+                if (mixed > 32767) mixed = 32767;
+                if (mixed < -32768) mixed = -32768;
+                mixBuffer[i] = static_cast<int16_t>(mixed);
+            }
+        }
+        
+        // Smith Visualization: Add ambient spatial cues if enabled
+        if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isSmithCuesEnabled()) {
+            smithVisualizer->generateSmithAmbientAudio(pt, mixBuffer, samples);
+        }
+        
+        // Center pulse generation (reference signal for Smith chart center)
+        if (smithVisualizer && smithVisualizer->isEnabled() && smithVisualizer->isCenterPulseEnabled()) {
+            double deltaTimeSeconds = static_cast<double>(samples) / SAMPLE_RATE;
+            smithVisualizer->generateCenterPulse(mixBuffer, samples, deltaTimeSeconds);
+        }
+        
+        // Axis crossing events
+        size_t prevPos = (pos > 0) ? (pos - 1) : 0;
+        checkAxisCrossingsInRange(prevPos, pos, mixBuffer, samples);
+    } // curveMutex released here — BEFORE blocking playBuffer call
     
     // Play the mixed buffer using platform audio backend
+    // This call may block waiting for free buffers — safe now that curveMutex is released
     playAudioBuffer(mixBuffer);
 }
 
@@ -1567,7 +1581,12 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
     std::vector<int16_t> mixBuffer(samples * CHANNELS, 0);
     
     // Mix enabled curves with interpolation based on fractional progress
-    std::lock_guard<std::mutex> lock(curveMutex);
+    // Generate audio under curveMutex, then release BEFORE calling playAudioBuffer
+    // This prevents deadlock: playAudioBuffer() -> playBuffer() -> waveOutWrite() can block
+    // indefinitely on some Windows audio drivers, and if we hold curveMutex during that,
+    // the main thread (which may call toggleCurve/setCurveVolume) blocks, and stop() hangs.
+    {
+        std::lock_guard<std::mutex> lock(curveMutex);
     
     // Interpolate pitch values for smooth transitions
     // If wrapped around, don't interpolate pitch - stay at current position to avoid false auditory impression
@@ -1682,8 +1701,10 @@ void AcousticAnalyzer::playCurrentPositionSmooth(double fractionalProgress, int 
     // Axis crossing events (check full dataset range for crossings)
     // This ensures we detect crossings even when points are skipped in smooth mode
     checkAxisCrossingsInRange(pos, nextPos, mixBuffer, samples);
+    } // curveMutex released here — BEFORE blocking playBuffer call
     
     // Play the mixed buffer using platform audio backend
+    // This call may block waiting for free buffers — safe now that curveMutex is released
     playAudioBuffer(mixBuffer);
 }
 
@@ -2053,18 +2074,19 @@ void AcousticAnalyzer::playAudioBuffer(const std::vector<int16_t>& buffer) {
 
 // Pitch calculation helper functions
 double AcousticAnalyzer::calcSWRPitch(const MeasurementPoint& pt) {
-    // Task 1.9: Use centralized pitch mapping
-    // SWR: 1.0 (best) to 20.0 (worst) - linear mapping
+    // Pflichtenheft §3: Use configurable SWR range
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = linearPitchMap(pt.swr, 1.0, 20.0, static_cast<double>(minHz), static_cast<double>(maxHz));
+    CurveRange range = getCurrentSWRRange();
+    double pitchHz = linearPitchMap(pt.swr, range.min, range.max, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
-        double swr = std::clamp(pt.swr, 1.0, 20.0);
-        double normalizedValue = (swr - 1.0) / 19.0;
+        double swr = std::clamp(pt.swr, range.min, range.max);
+        double normalizedValue = (swr - range.min) / (range.max - range.min);
         std::ostringstream oss;
         oss << "SWR=" << pt.swr << " (clamped=" << swr << ") "
+            << "-> range=[" << range.min << ", " << range.max << "] "
             << "-> normalized=" << normalizedValue << " "
             << "-> pitch=" << pitchHz << " Hz "
             << "(range " << minHz << "-" << maxHz << " Hz)";
@@ -2076,22 +2098,25 @@ double AcousticAnalyzer::calcSWRPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcRLPitch(const MeasurementPoint& pt) {
-    // Task 1.9: Use centralized pitch mapping
-    // Return Loss: 0 dB (worst) to 40 dB (best) - linear mapping
+    // Pflichtenheft §2: Use configurable RL range and inversion
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = linearPitchMap(pt.rl, 0.0, 40.0, static_cast<double>(minHz), static_cast<double>(maxHz));
+    CurveRange range = getCurrentRLRange();
+    double val = CurveTransform::getTransformedValue(pt, 1, rlInverted.load());
+    // When inverted, val is negative (S11-style). Map the range accordingly.
+    double rangeMin = rlInverted.load() ? -range.max : range.min;
+    double rangeMax = rlInverted.load() ? -range.min : range.max;
+    double pitchHz = linearPitchMap(val, rangeMin, rangeMax, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
-        double rl = std::clamp(pt.rl, 0.0, 40.0);
-        double normalizedValue = rl / 40.0;
         std::ostringstream oss;
-        oss << "RL=" << pt.rl << " dB (clamped=" << rl << " dB) "
-            << "-> normalized=" << normalizedValue << " "
+        oss << "RL=" << pt.rl << " dB (inverted=" << (rlInverted.load() ? "true" : "false")
+            << ", transformed=" << val << ") "
+            << "-> range=[" << rangeMin << ", " << rangeMax << "] "
             << "-> pitch=" << pitchHz << " Hz "
             << "(range " << minHz << "-" << maxHz << " Hz)";
-        mathLogger->logAudioOutput(currentPos.load(), "Return Loss", rl, pitchHz, 0.0, "pitch_calculation");
+        mathLogger->logAudioOutput(currentPos.load(), "Return Loss", val, pitchHz, 0.0, "pitch_calculation");
         mathLogger->logDataFlow("RL_PITCH_CALC", oss.str());
     }
     
@@ -2122,18 +2147,18 @@ double AcousticAnalyzer::calcZPitch(const MeasurementPoint& pt) {
 }
 
 double AcousticAnalyzer::calcXPitch(const MeasurementPoint& pt) {
-    // Task 1.9: Use centralized pitch mapping
-    // Reactance: -300 to +300 Ohms - linear mapping
+    // Pflichtenheft §6: X is mapped as |X| (absolute value)
     int minHz = minFreqHz.load();
     int maxHz = maxFreqHz.load();
-    double pitchHz = linearPitchMap(pt.X, -300.0, 300.0, static_cast<double>(minHz), static_cast<double>(maxHz));
+    double absX = CurveTransform::getTransformedValue(pt, 3, false);  // |X|
+    double pitchHz = linearPitchMap(absX, 0.0, 300.0, static_cast<double>(minHz), static_cast<double>(maxHz));
     
     // Log the calculation if math logger is enabled
     if (mathLogger && mathLogger->isEnabled()) {
-        double x = std::clamp(pt.X, -300.0, 300.0);
-        double normalizedValue = (x + 300.0) / 600.0;
+        double x = std::clamp(absX, 0.0, 300.0);
+        double normalizedValue = x / 300.0;
         std::ostringstream oss;
-        oss << "X=" << pt.X << " Ω (clamped=" << x << " Ω) "
+        oss << "X=" << pt.X << " Ω (|X|=" << absX << " Ω, clamped=" << x << " Ω) "
             << "-> normalized=" << normalizedValue << " "
             << "-> pitch=" << pitchHz << " Hz "
             << "(range " << minHz << "-" << maxHz << " Hz)";
@@ -3073,7 +3098,9 @@ std::string AcousticAnalyzer::getStatusLineText() const {
     
     if (statusLineShowRL) {
         if (!firstItem) oss << " | ";
-        oss << "RL: " << std::fixed << std::setprecision(2) << pt.rl << " dB";
+        // Pflichtenheft §6: Show RL according to inversion setting
+        double rlVal = CurveTransform::getTransformedValue(pt, 1, rlInverted.load());
+        oss << "RL: " << std::fixed << std::setprecision(2) << rlVal << " dB";
         firstItem = false;
     }
     
@@ -3085,7 +3112,20 @@ std::string AcousticAnalyzer::getStatusLineText() const {
     
     if (statusLineShowReactance) {
         if (!firstItem) oss << " | ";
-        oss << "X: " << std::fixed << std::setprecision(2) << pt.X << " Ω";
+        // Pflichtenheft §7: Show |X| with capacitive/inductive label
+        double absX = std::abs(pt.X);
+        std::string signLabel;
+        if (translation) {
+            signLabel = CurveTransform::isInductive(pt) 
+                ? translation->get("STATUS_INDUCTIVE", "inductive")
+                : translation->get("STATUS_CAPACITIVE", "capacitive");
+        } else {
+            signLabel = CurveTransform::isInductive(pt) ? "inductive" : "capacitive";
+        }
+        std::string reactanceLabel = translation 
+            ? translation->get("STATUS_REACTANCE_LABEL", "X")
+            : "X";
+        oss << reactanceLabel << ": " << std::fixed << std::setprecision(2) << absX << " \xCE\xA9 (" << signLabel << ")";
         firstItem = false;
     }
     
@@ -3096,6 +3136,53 @@ std::string AcousticAnalyzer::getStatusLineText() const {
     }
     
     return oss.str();
+}
+
+std::vector<size_t> AcousticAnalyzer::getSelectedAudioIndices() const {
+    std::lock_guard<std::mutex> lock(selectedPointsCacheMutex);
+    
+    // Filter to active loop boundaries when loop is active
+    size_t left = loopLeft.load();
+    size_t right = loopRight.load();
+    
+    if (left < right && right > 0) {
+        // Loop is active: filter indices to [left, right]
+        std::vector<size_t> filtered;
+        filtered.reserve(selectedPointsCache.size());
+        for (size_t idx : selectedPointsCache) {
+            if (idx >= left && idx <= right) {
+                filtered.push_back(idx);
+            }
+        }
+        return filtered;
+    }
+    
+    return selectedPointsCache;
+}
+
+void AcousticAnalyzer::updateAutoscaleRanges(const std::vector<MeasurementPoint>& pts) {
+    if (!autoscaleEnabled.load() || pts.empty()) return;
+    
+    bool inv = rlInverted.load();
+    for (int c = 0; c < 5; c++) {
+        std::vector<double> values;
+        values.reserve(pts.size());
+        for (const auto& pt : pts) {
+            values.push_back(CurveTransform::getTransformedValue(pt, c, inv));
+        }
+        auto range = Autoscale::computeRobust(values, 0.005, 0.995);
+        autoscaleRanges[c] = {range.min, range.max};
+    }
+    
+    if (mathLogger && mathLogger->isEnabled()) {
+        std::ostringstream oss;
+        oss << "Autoscale updated for " << pts.size() << " points: ";
+        const char* names[] = {"SWR", "RL", "|Z|", "|X|", "Phase"};
+        for (int c = 0; c < 5; c++) {
+            oss << names[c] << "=[" << autoscaleRanges[c].min << "," << autoscaleRanges[c].max << "] ";
+        }
+        mathLogger->logDataFlow("AUTOSCALE", oss.str());
+    }
 }
 
 void AcousticAnalyzer::rulerThreadFunc() {

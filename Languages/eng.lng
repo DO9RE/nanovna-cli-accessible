@@ -108,9 +108,18 @@ CUSTOMIZE_UPDATED=Updated columns.
 EXPORT_LOOP_RANGE=Exporting loop range (markers {0} to {1})
 EXPORT_INVALID_LOOP=Invalid loop range, exporting all data
 EXPORT_ALL_DATA=Exporting all measurement data
-EXPORT_FORMAT=Export format: (1) CSV, (2) TXT, (3) Braille File, (4) Print to Braille Printer, (other) cancel
+EXPORT_FORMAT=Export format: (1) CSV, (2) TXT, (3) Braille File, (4) Print to Braille Printer, (5) Acoustic curves as image, (6) Braille preview as image, (other) cancel
 EXPORT_SUCCESS=Exported to: {0}
 EXPORT_FAILED=Export failed: {0}
+
+# Bitmap export
+BITMAP_ACOUSTIC_TITLE=Export Acoustic Curves as Image
+BITMAP_ACOUSTIC_SUCCESS=Acoustic curve image exported to: {0}
+BITMAP_ACOUSTIC_FAILED=Acoustic image export failed: {0}
+BITMAP_BRAILLE_TITLE=Export Braille Preview as Image
+BITMAP_BRAILLE_SUCCESS=Braille preview image exported to: {0}
+BITMAP_BRAILLE_FAILED=Braille preview export failed: {0}
+BITMAP_IMAGE_SIZE=Image size: {0} x {1} pixels
 
 # Braille printer
 BRAILLE_NO_PRINTERS=No printers found on this system.
@@ -1409,6 +1418,17 @@ MIDI_CTRL_CONFIG_PRESET_CMD=  P - Load mapping preset
 MIDI_CTRL_CONFIG_MAPPING_CMD=  M - Edit mappings
 MIDI_CTRL_CONFIG_FEEDBACK_CMD=  F - Toggle motor fader feedback
 MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD=  T - Toggle freeze by touch
+MIDI_CTRL_CONFIG_OVERVIEW_ALGO_CMD=  O - Cycle overview algorithm
+MIDI_CTRL_CONFIG_OVERVIEW_ALGO=Overview algorithm: {0}
+MIDI_CTRL_OVERVIEW_ALGO_TOGGLED=[Overview algorithm: {0}]
+MIDI_CTRL_ALGO_MEDIAN_DESC=Middle value per bucket — ignores outliers, shows the overall shape smoothly
+MIDI_CTRL_ALGO_MAX_DESC=Peak value per bucket — highlights the worst-case / highest point in each section
+MIDI_CTRL_ALGO_P95_DESC=95th percentile per bucket — shows near-peaks while suppressing isolated single spikes
+MIDI_CTRL_ALGO_HYBRID_DESC=Median normally; switches to peak when a significant spike is detected in a bucket
+MIDI_CTRL_ALGO_MEDIAN_OPT=      MEDIAN: middle value, smooth overall shape
+MIDI_CTRL_ALGO_MAX_OPT=      MAX:    peak value, worst-case per section
+MIDI_CTRL_ALGO_P95_OPT=      P95:    near-peak, suppresses isolated spikes
+MIDI_CTRL_ALGO_HYBRID_OPT=      HYBRID: median normally, switches to peak on spike
 MIDI_CTRL_CONFIG_SAVE_CMD=  S - Save current mappings to file
 MIDI_CTRL_TOGGLED=[MIDI Controller: {0}]
 MIDI_CTRL_SCANNING=[Scanning for MIDI input devices...]
@@ -1431,6 +1451,8 @@ MIDI_CTRL_FREEZE_TOUCH_TOGGLED=[Freeze by touch: {0}]
 MIDI_CTRL_SAVE_FILENAME=Enter filename (without .cfg):
 MIDI_CTRL_PRESET_SAVED=[Preset saved: {0}]
 MIDI_CTRL_SAVE_FAILED=[Failed to save preset]
+MIDI_OVERVIEW_ACTIVATED=[Overview: {0}]
+MIDI_OVERVIEW_DEACTIVATED=[Overview: off]
 
 # MIDI Mapping Editor
 MIDI_MAPPING_TITLE=MIDI Mapping Editor
@@ -1877,3 +1899,31 @@ REACTANCE_FX_HELP_SCALING=  Scaling Curves:
 REACTANCE_FX_HELP_PLATFORM_MIDI=  Platform Notes (MIDI):\n  Windows (GS Wavetable): Supports Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n    Limited effect range. Reverb and Modulation are most effective.\n  macOS (DLS Synth): Full GM effects support. All CC parameters work well.\n    Effects were previously disabled for clean output - now enabled only on reactance channel.\n  Linux (FluidSynth/TiMidity): Depends on soundfont. Most effects supported.
 REACTANCE_FX_HELP_PLATFORM_SYNTH=  Platform Notes (Synthesizer):\n  All DSP effects work identically on Windows (WaveOut), macOS (PortAudio),\n  and Linux (PortAudio). No platform limitations for native DSP processing.
 REACTANCE_FX_BACK=\n[Returning to audio configuration...]
+
+# Status line labels (Pflichtenheft §7)
+STATUS_REACTANCE_LABEL=X
+STATUS_INDUCTIVE=inductive
+STATUS_CAPACITIVE=capacitive
+
+# Range/Autoscale menu (Pflichtenheft §2, §3, §4)
+MENU_WINDOW_TITLE=Range / Autoscale Configuration
+MENU_RL_RANGE=RL Range
+MENU_SWR_RANGE=SWR Range
+MENU_RL_INVERT=RL inverted
+MENU_AUTOSCALE=Autoscale
+MENU_PRESET=Preset
+MENU_CUSTOM=Custom
+MENU_WINDOW_CMD=  B - Configure Range / Autoscale
+MENU_WINDOW_RL_PRESET=  1 - RL Range preset
+MENU_WINDOW_SWR_PRESET=  2 - SWR Range preset
+MENU_WINDOW_RL_INVERT_TOGGLE=  I - Toggle RL inversion
+MENU_WINDOW_AUTOSCALE_TOGGLE=  A - Toggle Autoscale
+MENU_WINDOW_RL_CUSTOM=  3 - RL Custom Range (min/max)
+MENU_WINDOW_SWR_CUSTOM=  4 - SWR Custom Range (min/max)
+MENU_WINDOW_CURRENT_RL=Current RL Range: {0} - {1} dB ({2})
+MENU_WINDOW_CURRENT_SWR=Current SWR Range: {0} - {1} ({2})
+MENU_WINDOW_ENTER_MIN=Enter minimum value:
+MENU_WINDOW_ENTER_MAX=Enter maximum value:
+ERR_MAX_LESS_THAN_MIN=Error: Maximum must be greater than minimum. Please re-enter.
+ERR_INVALID_INPUT=Invalid input. Resetting to preset default.
+ERR_BRAILLE_NO_AUDIO=Audio playback required for Braille export - start playback first.

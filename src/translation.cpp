@@ -56,6 +56,61 @@ bool TranslationManager::loadLanguage(const std::string& languageCode, std::stri
     return true;
 }
 
+bool TranslationManager::loadAdditionalFile(const std::string& filepath, std::string& error) {
+    std::filesystem::path p = std::filesystem::u8path(filepath);
+    
+    if (!std::filesystem::exists(p)) {
+        error = "Additional language file not found: " + filepath;
+        return false;
+    }
+    
+    std::ifstream ifs(p);
+    if (!ifs) {
+        error = "Cannot open additional language file: " + filepath;
+        return false;
+    }
+    
+    std::string line;
+    while (std::getline(ifs, line)) {
+        // Trim whitespace
+        while (!line.empty() && (line.back() == '\r' || line.back() == '\n' || line.back() == ' ')) {
+            line.pop_back();
+        }
+        size_t start = line.find_first_not_of(" \t");
+        if (start != std::string::npos) {
+            line = line.substr(start);
+        }
+        
+        // Skip empty lines and comments
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+        
+        auto pos = line.find('=');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        
+        std::string key = line.substr(0, pos);
+        std::string value = line.substr(pos + 1);
+        
+        // Trim key and value
+        while (!key.empty() && (key.back() == ' ' || key.back() == '\t')) key.pop_back();
+        start = key.find_first_not_of(" \t");
+        if (start != std::string::npos) key = key.substr(start);
+        
+        while (!value.empty() && (value.back() == ' ' || value.back() == '\t')) value.pop_back();
+        start = value.find_first_not_of(" \t");
+        if (start != std::string::npos) value = value.substr(start);
+        
+        if (!key.empty()) {
+            translations[key] = value;  // Merge (overwrite if exists)
+        }
+    }
+    
+    return true;
+}
+
 std::string TranslationManager::get(const std::string& key) const {
     auto it = translations.find(key);
     if (it != translations.end()) {

@@ -89,6 +89,13 @@ enum class MidiAppCommand {
     TOGGLE_X_RULER,      // 'x' key area
     GO_TO_POSITION,      // 'g' key
     
+    // Overview mode (single-curve coarse overview across all motor faders)
+    OVERVIEW_CURVE_1,    // Toggle overview for curve 1 (SWR)
+    OVERVIEW_CURVE_2,    // Toggle overview for curve 2 (RL)
+    OVERVIEW_CURVE_3,    // Toggle overview for curve 3 (|Z|)
+    OVERVIEW_CURVE_4,    // Toggle overview for curve 4 (X)
+    OVERVIEW_CURVE_5,    // Toggle overview for curve 5 (Phase)
+    
     COMMAND_COUNT        // Sentinel: number of commands
 };
 
@@ -134,6 +141,7 @@ struct MidiMapping {
     MidiAppCommand command;       // Application command to trigger (for Note events)
     MidiCCFunction ccFunction;    // CC function (for Control Change events)
     std::string description;      // Human-readable description
+    int overviewTouchIndex = -1;  // >= 0 for dynamic overview_touch_N mappings (1-based)
 };
 
 /**
@@ -147,6 +155,15 @@ struct MidiMappingPreset {
 };
 
 /**
+ * A dynamic overview fader or touch entry (parsed from overview_fader_N / overview_touch_N)
+ */
+struct OverviewFaderEntry {
+    int index;          // 1-based fader/touch index
+    uint8_t channel;    // MIDI channel
+    uint8_t ccNumber;   // CC number
+};
+
+/**
  * Callback type for application commands triggered by MIDI
  */
 using MidiCommandCallback = std::function<void(MidiAppCommand command)>;
@@ -155,6 +172,11 @@ using MidiCommandCallback = std::function<void(MidiAppCommand command)>;
  * Callback type for CC value changes (volume, position feedback)
  */
 using MidiCCValueCallback = std::function<void(MidiCCFunction function, int value)>;
+
+/**
+ * Callback type for dynamic overview touch events (faderIndex 1-based, touched true/false)
+ */
+using MidiOverviewTouchCallback = std::function<void(int faderIndex, bool touched)>;
 
 /**
  * MIDI Controller Manager
@@ -173,6 +195,9 @@ public:
     // Device management
     std::vector<MidiDeviceInfo> listDevices();
     bool openDevice(int deviceId = -1);
+    // Open by stored name; returns found device ID on success, -1 on failure.
+    // Updates the caller's device_id via the out-parameter when the ID has changed.
+    int openDeviceByName(const std::string& deviceName, int* foundIdOut = nullptr);
     void closeDevice();
     bool isDeviceOpen() const;
     std::string getDeviceName() const;
@@ -191,12 +216,18 @@ public:
     // Callback registration
     void setCommandCallback(MidiCommandCallback callback);
     void setCCValueCallback(MidiCCValueCallback callback);
+    void setOverviewTouchCallback(MidiOverviewTouchCallback callback);
     
     // Motor fader feedback: send current values to controller
     void sendPositionFeedback(double normalizedPosition);  // 0.0-1.0
     void sendCurveValueFeedback(int curveIndex, double normalizedValue);  // 0.0-1.0
     void sendMasterVolumeFeedback(int volumePercent);  // 0-100
     void sendCurveVolumeFeedback(int curveIndex, int volumePercent);  // 0-200
+    void sendOverviewFaderFeedback(int faderIndex, double normalizedValue);  // 1-based index, 0.0-1.0
+    
+    // Dynamic overview fader/touch mapping access (populated from overview_fader_N / overview_touch_N in preset)
+    const std::vector<OverviewFaderEntry>& getOverviewFaderMappings() const { return overviewFaderMappings; }
+    const std::vector<OverviewFaderEntry>& getOverviewTouchMappings() const { return overviewTouchMappings; }
     
     // Value conversion helpers
     static int percentToMidi(int percent, int maxPercent = 100);   // percent -> 0-127
@@ -238,6 +269,11 @@ private:
     
     MidiCommandCallback commandCallback;
     MidiCCValueCallback ccValueCallback;
+    MidiOverviewTouchCallback overviewTouchCallback;
+    
+    // Dynamic overview fader/touch mappings (populated from preset)
+    std::vector<OverviewFaderEntry> overviewFaderMappings;
+    std::vector<OverviewFaderEntry> overviewTouchMappings;
     
     Logger* logger = nullptr;
     std::mutex callbackMutex;

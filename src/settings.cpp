@@ -319,6 +319,24 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
                 // Invalid value, keep default
             }
         }
+        else if (k == "bitmap_acoustic_width") {
+            try {
+                int w = std::stoi(v);
+                if (w >= 400 && w <= 4000) cfg.bitmap_acoustic_width = w;
+            } catch (...) {}
+        }
+        else if (k == "bitmap_acoustic_height") {
+            try {
+                int h = std::stoi(v);
+                if (h >= 300 && h <= 3000) cfg.bitmap_acoustic_height = h;
+            } catch (...) {}
+        }
+        else if (k == "bitmap_braille_px_per_mm") {
+            try {
+                int px = std::stoi(v);
+                if (px >= 2 && px <= 30) cfg.bitmap_braille_px_per_mm = px;
+            } catch (...) {}
+        }
         else if (k == "audio_engine") {
             int engineType = std::stoi(v);
             if (engineType == 0) {
@@ -416,6 +434,7 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         else if (k == "midi_controller_preset") cfg.midi_controller_preset = v;
         else if (k == "midi_controller_feedback") cfg.midi_controller_feedback = (v == "1" || v == "true");
         else if (k == "midi_controller_freeze_by_touch") cfg.midi_controller_freeze_by_touch = (v == "1" || v == "true");
+        else if (k == "midi_controller_overview_algorithm") { try { cfg.midi_controller_overview_algorithm = std::stoi(v); } catch(...) {} }
         
         else if (k == "table_columns") {
             // Parse comma-separated list of columns
@@ -653,6 +672,52 @@ bool loadAppSettings(AppConfig& cfg, const std::string& path, std::string& err) 
         else if (k == "synth_reactance_dotted_inductive_scaling") {
             try { int s = std::stoi(v); if (s >= 0 && s <= 4) cfg.synth_reactance_effects_dotted.inductive_scaling = static_cast<AppConfig::EffectScaling>(s); } catch (...) {}
         }
+        // RL/SWR Range configuration (Pflichtenheft §2, §3)
+        else if (k == "rl_inverted") {
+            cfg.rl_inverted = (v == "1" || v == "true");
+        }
+        else if (k == "rl_preset") {
+            try { int p = std::stoi(v); if (p >= 0 && p <= 3) cfg.rl_preset = static_cast<RLPreset>(p); } catch (...) {}
+        }
+        else if (k == "rl_custom_min") {
+            try { cfg.rl_custom_range.min = std::stod(v); } catch (...) {}
+        }
+        else if (k == "rl_custom_max") {
+            try { cfg.rl_custom_range.max = std::stod(v); } catch (...) {}
+        }
+        else if (k == "swr_preset") {
+            try { int p = std::stoi(v); if (p >= 0 && p <= 3) cfg.swr_preset = static_cast<SWRPreset>(p); } catch (...) {}
+        }
+        else if (k == "swr_custom_min") {
+            try { cfg.swr_custom_range.min = std::stod(v); } catch (...) {}
+        }
+        else if (k == "swr_custom_max") {
+            try { cfg.swr_custom_range.max = std::stod(v); } catch (...) {}
+        }
+        // Autoscale configuration (Pflichtenheft §4)
+        else if (k == "autoscale_enabled") {
+            cfg.autoscale_enabled = (v == "1" || v == "true");
+        }
+        else if (k == "autoscale_low_percentile") {
+            try { cfg.autoscale_low_percentile = std::stod(v); } catch (...) {}
+        }
+        else if (k == "autoscale_high_percentile") {
+            try { cfg.autoscale_high_percentile = std::stod(v); } catch (...) {}
+        }
+        // Braille overrides (Pflichtenheft §5)
+        else if (k == "braille_override_range") {
+            cfg.braille_override_range = (v == "1" || v == "true");
+        }
+        else if (k == "braille_override_autoscale") {
+            cfg.braille_override_autoscale = (v == "1" || v == "true");
+        }
+        else if (k == "braille_autoscale_enabled") {
+            cfg.braille_autoscale_enabled = (v == "1" || v == "true");
+        }
+        // Braille X=0 marker (Pflichtenheft §8)
+        else if (k == "braille_x0_hysteresis_ohms") {
+            try { cfg.braille_x0_hysteresis_ohms = std::stod(v); } catch (...) {}
+        }
     }
     return true;
 }
@@ -772,6 +837,11 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "braille_origin_y_mm=" << std::fixed << std::setprecision(1) << cfg.braille_origin_y_mm << "  # Vertical offset from text insertion (0-20mm, default 0)\n";
     ofs << "braille_y_axis_space_mm=" << std::fixed << std::setprecision(1) << cfg.braille_y_axis_space_mm << "  # Y-axis label space (1-5mm, default 2)\n";
     
+    ofs << "\n# Bitmap export settings\n";
+    ofs << "bitmap_acoustic_width=" << cfg.bitmap_acoustic_width << "  # Acoustic image width in pixels (default 1200)\n";
+    ofs << "bitmap_acoustic_height=" << cfg.bitmap_acoustic_height << "  # Acoustic image height in pixels (default 800)\n";
+    ofs << "bitmap_braille_px_per_mm=" << cfg.bitmap_braille_px_per_mm << "  # Braille preview pixels per mm (default 10)\n";
+    
     ofs << "\n# Braille curve patterns\n";
     for (int i = 0; i < 5; i++) {
         ofs << "braille_curve_pattern" << i << "=" << cfg.braille_curve_patterns[i] << "  # Curve " << i << " pattern (e.g., '0'=solid, '2-1'=draw 2+pause 1)\n";
@@ -860,6 +930,7 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "midi_controller_preset=" << cfg.midi_controller_preset << "  # MIDI mapping preset filename\n";
     ofs << "midi_controller_feedback=" << (cfg.midi_controller_feedback ? "1" : "0") << "  # Send motor fader feedback\n";
     ofs << "midi_controller_freeze_by_touch=" << (cfg.midi_controller_freeze_by_touch ? "1" : "0") << "  # Freeze playback when fader touched\n";
+    ofs << "midi_controller_overview_algorithm=" << cfg.midi_controller_overview_algorithm << "  # Overview algorithm: 0=MEDIAN 1=MAX 2=P95 3=HYBRID\n";
     
     // Reactance MIDI effect settings
     ofs << "\n# Reactance MIDI Effect Configuration\n";
@@ -902,6 +973,32 @@ bool saveAppSettings(const AppConfig& cfg, const std::string& path, std::string&
     ofs << "synth_reactance_dotted_inductive_effect=" << static_cast<int>(cfg.synth_reactance_effects_dotted.inductive_effect) << "\n";
     ofs << "synth_reactance_dotted_inductive_max=" << cfg.synth_reactance_effects_dotted.inductive_max_percent << "\n";
     ofs << "synth_reactance_dotted_inductive_scaling=" << static_cast<int>(cfg.synth_reactance_effects_dotted.inductive_scaling) << "\n";
+    
+    // RL/SWR Range configuration (Pflichtenheft §2, §3)
+    ofs << "\n# RL/SWR Range configuration\n";
+    ofs << "rl_inverted=" << (cfg.rl_inverted ? "1" : "0") << "  # RL inversion (1=inverted/S11-style, 0=normal)\n";
+    ofs << "rl_preset=" << static_cast<int>(cfg.rl_preset) << "  # 0=0-10dB, 1=0-30dB, 2=0-60dB, 3=Custom\n";
+    ofs << "rl_custom_min=" << std::fixed << std::setprecision(1) << cfg.rl_custom_range.min << "\n";
+    ofs << "rl_custom_max=" << std::fixed << std::setprecision(1) << cfg.rl_custom_range.max << "\n";
+    ofs << "swr_preset=" << static_cast<int>(cfg.swr_preset) << "  # 0=1-3, 1=1-10, 2=1-20, 3=Custom\n";
+    ofs << "swr_custom_min=" << std::fixed << std::setprecision(1) << cfg.swr_custom_range.min << "\n";
+    ofs << "swr_custom_max=" << std::fixed << std::setprecision(1) << cfg.swr_custom_range.max << "\n";
+    
+    // Autoscale configuration (Pflichtenheft §4)
+    ofs << "\n# Autoscale configuration\n";
+    ofs << "autoscale_enabled=" << (cfg.autoscale_enabled ? "1" : "0") << "  # Autoscale on/off\n";
+    ofs << "autoscale_low_percentile=" << std::fixed << std::setprecision(3) << cfg.autoscale_low_percentile << "  # Low percentile (0.5% = p0.5)\n";
+    ofs << "autoscale_high_percentile=" << std::fixed << std::setprecision(3) << cfg.autoscale_high_percentile << "  # High percentile (99.5% = p99.5)\n";
+    
+    // Braille overrides (Pflichtenheft §5)
+    ofs << "\n# Braille overrides (range/autoscale only, not semantics)\n";
+    ofs << "braille_override_range=" << (cfg.braille_override_range ? "1" : "0") << "\n";
+    ofs << "braille_override_autoscale=" << (cfg.braille_override_autoscale ? "1" : "0") << "\n";
+    ofs << "braille_autoscale_enabled=" << (cfg.braille_autoscale_enabled ? "1" : "0") << "\n";
+    
+    // Braille X=0 marker (Pflichtenheft §8)
+    ofs << "\n# Braille X=0 marker\n";
+    ofs << "braille_x0_hysteresis_ohms=" << std::fixed << std::setprecision(1) << cfg.braille_x0_hysteresis_ohms << "  # Schmitt-trigger hysteresis\n";
     
     ofs << "\n# Table view preferences\n";
     ofs << "table_columns=";

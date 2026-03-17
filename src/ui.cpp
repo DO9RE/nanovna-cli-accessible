@@ -3,11 +3,17 @@
 #include "import.h"
 #include "settings.h"
 #include "help.h"
+#include "curve_transform.h"
 #include "synthesizer_engine.h"
 #include "midi_engine.h"
 #include "band_definitions.h"
 #include "frequency_utils.h"
 #include "braille_printer.h"
+
+#ifdef WITH_HAM_SPIRIT
+#include "hamspirit_game.h"
+#include "platform/interface/audio_backend.h"
+#endif
 
 #include <iostream>
 #include <sstream>
@@ -346,7 +352,7 @@ void ConsoleUI::customizeMenu() {
     }
 }
 
-void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const AcousticAnalyzer* analyzer) {
+void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, AcousticAnalyzer* analyzer) {
     clearScreen();
     if (pts.empty()) {
         print(translation.get("ERROR_NO_DATA", "No data to export.") + "\n");
@@ -392,6 +398,14 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
         }
     } else {
         toExport = pts;
+        // Always derive frequency range from actual measurement data
+        if (!toExport.empty()) {
+            startFreq = toExport.front().freq;
+            endFreq = toExport.back().freq;
+            if (toExport.size() > 1) {
+                step = (endFreq - startFreq) / (toExport.size() - 1);
+            }
+        }
         if (analyzer && analyzer->isLoopEnabled() && !analyzer->isLoopZoomEnabled()) {
             print(translation.get("EXPORT_ALL_DATA", "Exporting all measurement data") + " ");
             print(translation.format("EXPORT_LOOP_NO_ZOOM", "(Loop active at markers {0} to {1}, but zoom off)", 
@@ -539,9 +553,26 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
         }
     }
     
-    print(translation.get("EXPORT_FORMAT", "Export format: (1) CSV, (2) TXT, (3) Braille File, (4) Print to Braille Printer, (other) cancel") + "\n> ");
+    print(translation.get("EXPORT_FORMAT", "Export format: (1) CSV, (2) TXT, (3) Braille File, (4) Print to Braille Printer, (5) Acoustic curves as image, (6) Braille preview as image, (other) cancel") + "\n> ");
     std::string a;
     if (!readLine(a)) return;
+    
+#ifdef WITH_HAM_SPIRIT
+    // Hidden Easter egg: typing "hamspirit" at the export prompt launches the game
+    if (a == "hamspirit" && analyzer) {
+        if (logger) {
+            logger->log("HAMSPIRIT", "Easter egg activated from export menu!");
+        }
+        analyzer->stop();
+        bool gameResult = HamSpirit::launchGame(pts, analyzer, &translation, logger, consoleInput.get());
+        if (gameResult) {
+            print("\n" + translation.get("HAMSPIRIT_EXIT", "[Returned from Ham Spirit]") + "\n");
+        } else {
+            print("\n" + translation.get("HAMSPIRIT_ERROR", "[Ham Spirit failed to launch]") + "\n");
+        }
+        return;
+    }
+#endif // WITH_HAM_SPIRIT
     
     if (a == "1") {
         std::string generatedFilename;
@@ -566,7 +597,7 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
     } else if (a == "3") {
         // Braille export with curve selection
         bool curveFlags[5];
-        if (selectBrailleCurves(curveFlags)) {
+        if (selectBrailleCurves(curveFlags, translation.get("BRAILLE_EXPORT_TITLE", "Export to Braille"))) {
             // Perform Braille export
             std::string generatedFilename;
             std::string err;
@@ -620,7 +651,7 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
     } else if (a == "4") {
         // Direct print to Braille printer
         bool curveFlags[5];
-        if (selectBrailleCurves(curveFlags)) {
+        if (selectBrailleCurves(curveFlags, translation.get("BRAILLE_PRINT_TITLE", "Print to Braille Printer"))) {
             BraillePrinter braillePrinter(logger);
             
             // Show skip factor info if applicable
@@ -712,6 +743,61 @@ void ConsoleUI::exportMenu(const std::vector<MeasurementPoint>& pts, const Acous
                 }
             } else {
                 print(translation.get("BRAILLE_PRINT_CANCELED") + "\n");
+            }
+        }
+    } else if (a == "5") {
+        // Export acoustic curves as bitmap image
+        bool curveFlags[5];
+        if (selectBrailleCurves(curveFlags, translation.get("BITMAP_ACOUSTIC_TITLE", "Export Acoustic Curves as Image"))) {
+            std::string generatedFilename;
+            std::string err;
+            
+            // Get audio indices if available
+            std::vector<size_t> audioIndices;
+            if (analyzer) {
+                audioIndices = analyzer->getSelectedAudioIndices();
+            }
+            
+            print(translation.format("BITMAP_IMAGE_SIZE", "Image size: {0} x {1} pixels",
+                                    std::to_string(cfg.bitmap_acoustic_width),
+                                    std::to_string(cfg.bitmap_acoustic_height)) + "\n");
+            
+            if (ExportModule::exportAcousticBitmap(toExport, audioIndices,
+                                                    startFreq, endFreq, step,
+                                                    curveFlags, cfg,
+                                                    generatedFilename, err)) {
+                print(translation.format("BITMAP_ACOUSTIC_SUCCESS", "Acoustic curve image exported to: {0}", generatedFilename) + "\n");
+                if (logger) logger->log("EXPORT", generatedFilename + " created (Acoustic Bitmap)");
+            } else {
+                print(translation.format("BITMAP_ACOUSTIC_FAILED", "Acoustic image export failed: {0}", err) + "\n");
+                if (logger) logger->log("EXPORT", "Acoustic bitmap export failed: " + err);
+            }
+        }
+    } else if (a == "6") {
+        // Export Braille preview as bitmap image
+        bool curveFlags[5];
+        if (selectBrailleCurves(curveFlags, translation.get("BITMAP_BRAILLE_TITLE", "Export Braille Preview as Image"))) {
+            std::string generatedFilename;
+            std::string err;
+            
+            // Get audio indices if available
+            std::vector<size_t> audioIndices;
+            if (analyzer) {
+                audioIndices = analyzer->getSelectedAudioIndices();
+            }
+            
+            // Show braille settings info
+            print(translation.get("BRAILLE_PROTOCOL_LABEL") + " " + (cfg.braille_protocol == AppConfig::BrailleProtocol::INDEX_V5 ? translation.get("BRAILLE_PROTOCOL_INDEX_V5") : translation.get("BRAILLE_PROTOCOL_INDEX_V4")) + "\n");
+            
+            if (ExportModule::exportBrailleBitmap(toExportBraille, audioIndices,
+                                                   startFreq, endFreq, step,
+                                                   curveFlags, cfg,
+                                                   generatedFilename, err)) {
+                print(translation.format("BITMAP_BRAILLE_SUCCESS", "Braille preview image exported to: {0}", generatedFilename) + "\n");
+                if (logger) logger->log("EXPORT", generatedFilename + " created (Braille Bitmap)");
+            } else {
+                print(translation.format("BITMAP_BRAILLE_FAILED", "Braille preview export failed: {0}", err) + "\n");
+                if (logger) logger->log("EXPORT", "Braille bitmap export failed: " + err);
             }
         }
     } else {
@@ -1918,6 +2004,14 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     analyzer.setSynthReactanceEffectsSmooth(cfg.synth_reactance_effects_smooth);
     analyzer.setSynthReactanceEffectsDotted(cfg.synth_reactance_effects_dotted);
     
+    // Set RL/SWR range configuration (Pflichtenheft §2, §3)
+    analyzer.setRLInverted(cfg.rl_inverted);
+    analyzer.setRLPreset(cfg.rl_preset);
+    analyzer.setRLCustomRange(cfg.rl_custom_range);
+    analyzer.setSWRPreset(cfg.swr_preset);
+    analyzer.setSWRCustomRange(cfg.swr_custom_range);
+    analyzer.setAutoscaleEnabled(cfg.autoscale_enabled);
+    
     // Set continuous replay if configured
     if (cfg.continuous_replay && !analyzer.isContinuousReplay()) {
         analyzer.toggleContinuousReplay();
@@ -1995,6 +2089,7 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     std::mutex dataMutex;
     std::thread continuousSweepThread;
     NanoVNAProtocol* backgroundProto = nullptr;  // Will be set if continuous sweep starts
+    std::atomic<bool> overviewRefreshPending{false};  // Set by sweep thread when new data arrives
     
     // Store original scan parameters so we can restore them when exiting freeze/loop mode
     uint64_t original_start_freq = cfg.start_freq;
@@ -2221,6 +2316,9 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                         analyzer.updateData(latestPts);
                     }
                     
+                    // Signal overview refresh if active
+                    overviewRefreshPending.store(true);
+                    
                     if (logger) {
                         logger->log("SWEEP", "Continuous sweep updated data (" + std::to_string(newPts.size()) + " points measured)");
                     }
@@ -2259,6 +2357,8 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     std::vector<MidiAppCommand> midiCommandQueue;
     std::mutex midiCCMutex;
     std::vector<std::pair<MidiCCFunction, int>> midiCCQueue;
+    std::mutex midiOverviewTouchMutex;
+    std::vector<std::pair<int,bool>> midiOverviewTouchQueue;  // (faderIndex 1-based, touched)
     size_t lastMidiFeedbackPos = std::numeric_limits<size_t>::max();  // Track last motor fader position
     
     // Solo state tracking: save/restore curve enabled state on solo toggle
@@ -2327,6 +2427,26 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         return std::min(1.0, std::max(0.0, norm));
     };
     
+    // Helper: normalize a raw curve value to 0.0-1.0 (for overview, where we have a raw double not a point)
+    auto normalizeCurveValue2 = [&](double val, int curveIndex) -> double {
+        double minV, maxV;
+        switch (curveIndex) {
+            case 0: minV = 1.0;    maxV = 10.0;   break;
+            case 1: minV = -40.0;  maxV = 0.0;    break;
+            case 2: minV = 0.0;    maxV = 500.0;  break;
+            case 3: minV = -250.0; maxV = 250.0;  break;
+            case 4: minV = -180.0; maxV = 180.0;  break;
+            default: return 0.0;
+        }
+        if (curveRanges[curveIndex].computed) {
+            minV = curveRanges[curveIndex].minVal;
+            maxV = curveRanges[curveIndex].maxVal;
+        }
+        if (maxV <= minV) return 0.5;
+        double norm = (val - minV) / (maxV - minV);
+        return std::min(1.0, std::max(0.0, norm));
+    };
+    
     // Helper: send all 5 curve faders to a specific position (0 for reset, or computed values)
     auto sendAllFadersToZero = [&]() {
         if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
@@ -2336,6 +2456,14 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         }
     };
     
+    // Helper: drive all overview bucket faders to 0 (called when exiting overview mode)
+    auto sendAllOverviewFadersToZero = [&]() {
+        if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
+        for (const auto& entry : midiControllerMgr->getOverviewFaderMappings()) {
+            midiControllerMgr->sendOverviewFaderFeedback(entry.index, 0.0);
+        }
+    };
+
     // Helper: send curve fader values based on current measurement point, respecting enabled/solo state
     auto sendCurveFaderValues = [&](const MeasurementPoint& pt) {
         if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
@@ -2364,13 +2492,30 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             }
         }
         
-        // Open the MIDI controller device
-        if (cfg.midi_controller_device_id >= 0) {
-            if (midiControllerMgr->openDevice(cfg.midi_controller_device_id)) {
+        // Open the MIDI controller device: prefer name-based lookup (robust across sessions
+        // where numeric device IDs can be reassigned by the OS), fall back to stored ID.
+        {
+            bool opened = false;
+            if (!cfg.midi_controller_device_name.empty()) {
+                int foundId = -1;
+                if (midiControllerMgr->openDeviceByName(cfg.midi_controller_device_name, &foundId) >= 0) {
+                    opened = true;
+                    if (foundId != cfg.midi_controller_device_id) {
+                        // Refresh stale device ID so subsequent reinit uses the correct one
+                        cfg.midi_controller_device_id = foundId;
+                        saveSettings();
+                    }
+                }
+            }
+            if (!opened && cfg.midi_controller_device_id >= 0) {
+                opened = midiControllerMgr->openDevice(cfg.midi_controller_device_id);
+            }
+            if (opened) {
                 if (logger) logger->log("MIDI_CTRL", "MIDI controller opened: " + midiControllerMgr->getDeviceName());
                 print(translation.format("MIDI_CTRL_CONNECTED", "[MIDI Controller: {0}]", midiControllerMgr->getDeviceName()) + "\n");
             } else {
-                if (logger) logger->log("MIDI_CTRL", "Failed to open MIDI controller device ID " + std::to_string(cfg.midi_controller_device_id));
+                if (logger) logger->log("MIDI_CTRL", "Failed to open MIDI controller (name: "
+                    + cfg.midi_controller_device_name + ", id: " + std::to_string(cfg.midi_controller_device_id) + ")");
             }
         }
         
@@ -2384,6 +2529,12 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         midiControllerMgr->setCCValueCallback([&midiCCMutex, &midiCCQueue](MidiCCFunction func, int value) {
             std::lock_guard<std::mutex> lock(midiCCMutex);
             midiCCQueue.push_back({func, value});
+        });
+        
+        // Set overview touch callback: push events to thread-safe queue
+        midiControllerMgr->setOverviewTouchCallback([&midiOverviewTouchMutex, &midiOverviewTouchQueue](int faderIndex, bool touched) {
+            std::lock_guard<std::mutex> lock(midiOverviewTouchMutex);
+            midiOverviewTouchQueue.push_back({faderIndex, touched});
         });
     }
     
@@ -2430,13 +2581,26 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                 }
             }
             
-            if (cfg.midi_controller_device_id >= 0) {
-                if (midiControllerMgr->openDevice(cfg.midi_controller_device_id)) {
+            {
+                bool opened = false;
+                if (!cfg.midi_controller_device_name.empty()) {
+                    int foundId = -1;
+                    if (midiControllerMgr->openDeviceByName(cfg.midi_controller_device_name, &foundId) >= 0) {
+                        opened = true;
+                        if (foundId != cfg.midi_controller_device_id) {
+                            cfg.midi_controller_device_id = foundId;
+                            saveSettings();
+                        }
+                    }
+                }
+                if (!opened && cfg.midi_controller_device_id >= 0) {
+                    opened = midiControllerMgr->openDevice(cfg.midi_controller_device_id);
+                }
+                if (opened) {
                     if (logger) logger->log("MIDI_CTRL", "MIDI controller reopened: " + midiControllerMgr->getDeviceName());
                     print(translation.format("MIDI_CTRL_CONNECTED", "[MIDI Controller: {0}]", midiControllerMgr->getDeviceName()) + "\n");
                 }
             }
-            
             // Re-set callbacks
             midiControllerMgr->setCommandCallback([&midiCommandMutex, &midiCommandQueue](MidiAppCommand cmd) {
                 std::lock_guard<std::mutex> lock(midiCommandMutex);
@@ -2445,6 +2609,10 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             midiControllerMgr->setCCValueCallback([&midiCCMutex, &midiCCQueue](MidiCCFunction func, int value) {
                 std::lock_guard<std::mutex> lock(midiCCMutex);
                 midiCCQueue.push_back({func, value});
+            });
+            midiControllerMgr->setOverviewTouchCallback([&midiOverviewTouchMutex, &midiOverviewTouchQueue](int faderIndex, bool touched) {
+                std::lock_guard<std::mutex> lock(midiOverviewTouchMutex);
+                midiOverviewTouchQueue.push_back({faderIndex, touched});
             });
             
             // Reset faders to 0 after reconnection
@@ -2455,6 +2623,102 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     // Freeze-by-touch state: tracks which faders are currently touched
     bool faderTouched[5] = {false, false, false, false, false};
     bool freezeByTouchActive = false;  // True when at least one fader is touched
+    
+    // Overview mode state
+    int overviewActiveCurve = -1;      // -1 = inactive, 0-4 = active curve index
+    bool overviewTouchHeld = false;    // True when any overview fader is currently touched
+    
+    // Helper: compute overview bucket values for the given curve index
+    // Uses latestPts (must be accessed with dataMutex held) and cfg.midi_controller_overview_algorithm
+    auto computeOverviewValues = [&](int curveIndex, const std::vector<MeasurementPoint>& data) -> std::vector<double> {
+        if (!midiControllerMgr) return {};
+        const auto& overviewFaders = midiControllerMgr->getOverviewFaderMappings();
+        int N = static_cast<int>(overviewFaders.size());
+        if (N == 0 || data.empty()) return std::vector<double>(N, 0.0);
+        
+        // Respect active loop: only bucket points within the loop range
+        size_t rangeStart = 0;
+        size_t rangeEnd = data.size();  // exclusive
+        if (analyzer.isLoopEnabled() && !analyzer.isLoopInverted()) {
+            size_t lLeft  = analyzer.getLoopLeft();
+            size_t lRight = analyzer.getLoopRight();
+            if (lLeft < data.size() && lRight < data.size() && lLeft <= lRight) {
+                rangeStart = lLeft;
+                rangeEnd   = std::min(lRight + 1, data.size());
+            }
+        }
+        size_t dataSize = rangeEnd - rangeStart;
+        if (dataSize == 0) return std::vector<double>(N, 0.0);
+
+        std::vector<double> result(N, 0.0);
+        for (int b = 0; b < N; b++) {
+            size_t relBstart, relBend;
+            if (dataSize < static_cast<size_t>(N)) {
+                // Fewer range-points than faders: give one point to each of the first dataSize
+                // faders; surplus faders stay at 0 (already initialized).
+                // Without this guard, integer division `(1*dataSize)/N == 0` causes bucket 0
+                // to be empty, shifting all data to start at fader 1.
+                if (static_cast<size_t>(b) >= dataSize) continue;  // result[b] already 0.0
+                relBstart = static_cast<size_t>(b);
+                relBend   = static_cast<size_t>(b) + 1;
+            } else {
+                relBstart = static_cast<size_t>(b)     * dataSize / static_cast<size_t>(N);
+                relBend   = static_cast<size_t>(b + 1) * dataSize / static_cast<size_t>(N);
+                if (relBend > dataSize) relBend = dataSize;
+            }
+            size_t bstart = rangeStart + relBstart;
+            size_t bend   = rangeStart + relBend;
+            if (bstart >= bend) { result[b] = 0.0; continue; }
+            
+            std::vector<double> bucketVals;
+            bucketVals.reserve(bend - bstart);
+            for (size_t j = bstart; j < bend; j++) {
+                bucketVals.push_back(getCurveValue(data[j], curveIndex));
+            }
+            std::sort(bucketVals.begin(), bucketVals.end());
+            
+            switch (cfg.midi_controller_overview_algorithm) {
+                case 1: // MAX
+                    result[b] = bucketVals.back();
+                    break;
+                case 2: // P95
+                    {
+                        size_t p95idx = static_cast<size_t>(bucketVals.size() * 95 / 100);
+                        if (p95idx >= bucketVals.size()) p95idx = bucketVals.size() - 1;
+                        result[b] = bucketVals[p95idx];
+                    }
+                    break;
+                case 3: // HYBRID: median unless peak detected
+                    {
+                        double median = bucketVals[bucketVals.size() / 2];
+                        size_t p75idx = static_cast<size_t>(bucketVals.size() * 75 / 100);
+                        if (p75idx >= bucketVals.size()) p75idx = bucketVals.size() - 1;
+                        double p75 = bucketVals[p75idx];
+                        double maxVal = bucketVals.back();
+                        result[b] = (maxVal > p75 * 1.5 && p75 > 0.0) ? maxVal : median;
+                    }
+                    break;
+                default: // MEDIAN (0)
+                    result[b] = bucketVals[bucketVals.size() / 2];
+                    break;
+            }
+        }
+        return result;
+    };
+    
+    // Helper: send overview fader values for the current active curve
+    auto sendOverviewFaderValues = [&](const std::vector<MeasurementPoint>& data) {
+        if (!midiControllerMgr || !midiControllerMgr->isDeviceOpen() || !cfg.midi_controller_feedback) return;
+        if (overviewActiveCurve < 0) return;
+        if (overviewTouchHeld) return;  // Hold: suppress updates while fader touched
+        
+        auto vals = computeOverviewValues(overviewActiveCurve, data);
+        const auto& overviewFaders = midiControllerMgr->getOverviewFaderMappings();
+        for (size_t i = 0; i < vals.size() && i < overviewFaders.size(); i++) {
+            double normVal = normalizeCurveValue2(vals[i], overviewActiveCurve);
+            midiControllerMgr->sendOverviewFaderFeedback(overviewFaders[i].index, normVal);
+        }
+    };
     
     // Lambda to process MIDI app commands (same actions as keyboard)
     auto processMidiCommand = [&](MidiAppCommand cmd) {
@@ -2725,6 +2989,63 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                     print("\n" + translation.format("ACOUSTIC_MASTER_VOLUME_ANNOUNCE", "[Master volume: {0}%]", vol) + "\n");
                 }
                 break;
+            case MidiAppCommand::OVERVIEW_CURVE_1:
+            case MidiAppCommand::OVERVIEW_CURVE_2:
+            case MidiAppCommand::OVERVIEW_CURVE_3:
+            case MidiAppCommand::OVERVIEW_CURVE_4:
+            case MidiAppCommand::OVERVIEW_CURVE_5:
+                {
+                    int curveIdx = static_cast<int>(cmd) - static_cast<int>(MidiAppCommand::OVERVIEW_CURVE_1);
+                    if (overviewActiveCurve == curveIdx) {
+                        // Same curve pressed: deactivate overview
+                        overviewActiveCurve = -1;
+                        overviewTouchHeld = false;
+                        print("\n" + translation.get("MIDI_OVERVIEW_DEACTIVATED", "[Overview: off]") + "\n");
+                        // Drive overview bucket faders back to zero
+                        sendAllOverviewFadersToZero();
+                        // Restore amplitude mode: send curve fader values respecting mute/solo state
+                        const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                        if (pt) {
+                            sendCurveFaderValues(*pt);
+                        } else {
+                            sendAllFadersToZero();
+                        }
+                        // Restore master volume fader position
+                        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                            midiControllerMgr->sendMasterVolumeFeedback(analyzer.getMasterVolume());
+                        }
+                    } else if (overviewActiveCurve >= 0 && overviewActiveCurve != curveIdx) {
+                        // Different curve while overview active: deactivate overview (do NOT switch)
+                        overviewActiveCurve = -1;
+                        overviewTouchHeld = false;
+                        print("\n" + translation.get("MIDI_OVERVIEW_DEACTIVATED", "[Overview: off]") + "\n");
+                        // Drive overview bucket faders back to zero
+                        sendAllOverviewFadersToZero();
+                        const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                        if (pt) {
+                            sendCurveFaderValues(*pt);
+                        } else {
+                            sendAllFadersToZero();
+                        }
+                        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
+                            midiControllerMgr->sendMasterVolumeFeedback(analyzer.getMasterVolume());
+                        }
+                    } else {
+                        // Overview inactive: activate for this curve
+                        overviewActiveCurve = curveIdx;
+                        overviewTouchHeld = false;
+                        std::string curveName = analyzer.getCurveName(curveIdx);
+                        print("\n" + translation.format("MIDI_OVERVIEW_ACTIVATED", "[Overview: {0}]", curveName) + "\n");
+                        // Render overview snapshot immediately
+                        std::vector<MeasurementPoint> snapshot;
+                        {
+                            std::lock_guard<std::mutex> lock(dataMutex);
+                            snapshot = latestPts;
+                        }
+                        sendOverviewFaderValues(snapshot);
+                    }
+                }
+                break;
             default:
                 break;
         }
@@ -2737,8 +3058,10 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                 double normalizedPos = static_cast<double>(analyzer.getPosition()) / (dataSize - 1);
                 midiControllerMgr->sendPositionFeedback(normalizedPos);
             }
-            // Update master volume feedback
-            midiControllerMgr->sendMasterVolumeFeedback(analyzer.getMasterVolume());
+            // Update master volume feedback (suppressed in overview mode: fader 9 shows overview bucket)
+            if (overviewActiveCurve < 0) {
+                midiControllerMgr->sendMasterVolumeFeedback(analyzer.getMasterVolume());
+            }
         }
     };
     
@@ -2752,6 +3075,11 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
     static constexpr int CC_DEBOUNCE_MS = 50;  // Wait 50ms of inactivity before applying
     int pendingMasterVolume = -1;  // -1 = no pending change
     int pendingCurveVolume[5] = {-1, -1, -1, -1, -1};
+
+    // Debouncing state for settings save: avoid disk I/O flood when holding +/- keys
+    static constexpr int SETTINGS_SAVE_DEBOUNCE_MS = 500;  // Wait 500ms of inactivity before writing
+    bool pendingSettingsSave = false;
+    std::chrono::steady_clock::time_point lastSettingsChangeTime = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point masterVolumeLastChange;
     std::chrono::steady_clock::time_point curveVolumeLastChange[5];
     
@@ -2801,6 +3129,9 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
         switch (func) {
             case MidiCCFunction::MASTER_VOLUME:
                 {
+                    // Suppress master volume input during overview mode (overview uses that fader)
+                    if (overviewActiveCurve >= 0) break;
+                    
                     int vol = MidiControllerManager::midiToPercent(midiValue, 100);
                     int currentVol = analyzer.getMasterVolume();
                     
@@ -2861,6 +3192,18 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             case MidiCCFunction::FADER_TOUCH_4:
             case MidiCCFunction::FADER_TOUCH_5:
                 {
+                    // During overview mode, FADER_TOUCH events suppress overview updates (hold)
+                    // instead of triggering freeze-by-touch
+                    if (overviewActiveCurve >= 0) {
+                        int idx = static_cast<int>(func) - static_cast<int>(MidiCCFunction::FADER_TOUCH_1);
+                        bool touched = (midiValue >= 64);
+                        faderTouched[idx] = touched;
+                        bool anyTouched = false;
+                        for (int i = 0; i < 5; i++) { if (faderTouched[i]) { anyTouched = true; break; } }
+                        overviewTouchHeld = anyTouched;
+                        break;
+                    }
+                    
                     if (!cfg.midi_controller_freeze_by_touch) break;
                     
                     int idx = static_cast<int>(func) - static_cast<int>(MidiCCFunction::FADER_TOUCH_1);
@@ -3034,6 +3377,61 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                     continue;  // Skip the switch statement
                 }
                 
+#ifdef WITH_HAM_SPIRIT
+                // Easter egg: timer-based "hamspirit" sequence detector
+                // Keys are NEVER consumed — they always pass through to the switch below.
+                // The detector runs silently in parallel with normal key handling.
+                {
+                    static const char* eggWord = "hamspirit";
+                    static size_t eggPos = 0;
+                    static std::chrono::steady_clock::time_point eggStart;
+                    const float eggTimeout = 3.0f;  // seconds to type the full word
+                    
+                    // Only check printable ASCII letters
+                    if (key < 'a' || key > 'z') {
+                        // Not a lowercase letter — skip easter egg check
+                    } else if (eggPos == 0 && key == eggWord[0]) {
+                        // First character matches — start timer
+                        eggStart = std::chrono::steady_clock::now();
+                        eggPos = 1;
+                    } else if (eggPos > 0) {
+                        float elapsed = std::chrono::duration<float>(
+                            std::chrono::steady_clock::now() - eggStart).count();
+                        if (elapsed > eggTimeout) {
+                            // Timer expired — reset
+                            eggPos = (key == eggWord[0]) ? 1 : 0;
+                            if (eggPos == 1) eggStart = std::chrono::steady_clock::now();
+                        } else if (key == eggWord[eggPos]) {
+                            eggPos++;
+                            if (eggPos == 9) {  // strlen("hamspirit")
+                                // Full sequence matched — launch game!
+                                eggPos = 0;
+                                if (logger) logger->log("HAMSPIRIT", "Easter egg activated from acoustic analyzer!");
+                                std::vector<MeasurementPoint> eggPts;
+                                {
+                                    std::lock_guard<std::mutex> lock(dataMutex);
+                                    eggPts = latestPts;
+                                }
+                                if (!eggPts.empty()) {
+                                    analyzer.stop();
+                                    HamSpirit::launchGame(eggPts, &analyzer, &translation, logger, consoleInput.get());
+                                    // Reset audio backend after game exits to prevent stuck state
+                                    if (analyzer.getAudioBackend()) {
+                                        analyzer.getAudioBackend()->resetAbort();
+                                    }
+                                    print("\n" + translation.get("HAMSPIRIT_EXIT", "[Returned from Ham Spirit]") + "\n");
+                                }
+                                continue;
+                            }
+                        } else {
+                            // Wrong key — reset (but check if this key starts a new sequence)
+                            eggPos = (key == eggWord[0]) ? 1 : 0;
+                            if (eggPos == 1) eggStart = std::chrono::steady_clock::now();
+                        }
+                    }
+                }
+#endif // WITH_HAM_SPIRIT
+                
                 switch (key) {
                     case ' ':  // Space - Play/Pause toggle
                         if (!spaceWasPressed) {
@@ -3172,7 +3570,8 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                             
                             print("\n" + timeMsg + "\n");
                             cfg.acoustic_time_seconds = analyzer.getPlaybackTimeSeconds();
-                            saveSettings();
+                            pendingSettingsSave = true;
+                            lastSettingsChangeTime = std::chrono::steady_clock::now();
                         }
                         break;
                     
@@ -3226,7 +3625,8 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                                 
                                 print("\n" + timeMsg + "\n");
                                 cfg.acoustic_time_seconds = analyzer.getPlaybackTimeSeconds();
-                                saveSettings();
+                                pendingSettingsSave = true;
+                                lastSettingsChangeTime = std::chrono::steady_clock::now();
                             }
                         }
                         break;
@@ -3448,6 +3848,15 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                         }
                         // Re-initialize MIDI controller if settings changed in config screen
                         reinitMidiController();
+                        // If overview is active, immediately recompute with (possibly new) algorithm
+                        if (overviewActiveCurve >= 0) {
+                            std::vector<MeasurementPoint> snapshot;
+                            {
+                                std::lock_guard<std::mutex> lock(dataMutex);
+                                snapshot = latestPts;
+                            }
+                            sendOverviewFaderValues(snapshot);
+                        }
                         // Removed unnecessary "Press any key to continue" prompt - return directly to acoustic analysis
                         break;
                     
@@ -3638,6 +4047,11 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                         
                     case 27:  // ESC key - Back to main menu
                         running = false;
+                        // Flush any pending debounced settings save
+                        if (pendingSettingsSave) {
+                            pendingSettingsSave = false;
+                            saveSettings();
+                        }
                         analyzer.stopYAxisRuler();  // Stop ruler thread first to prevent race condition
                         analyzer.stop();
                         print("\n" + translation.get("ACOUSTIC_RETURN", "[Returning to main menu...]") + "\n");
@@ -3682,41 +4096,104 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
             }
         }
         
+        // Process overview touch queue
+        {
+            std::vector<std::pair<int,bool>> touchEvents;
+            {
+                std::lock_guard<std::mutex> lock(midiOverviewTouchMutex);
+                touchEvents.swap(midiOverviewTouchQueue);
+            }
+            for (auto& [faderIdx, touched] : touchEvents) {
+                // In overview mode: update hold state (suppress overview updates while touching)
+                // In amplitude mode: if freeze-by-touch enabled and fader index <= 5, apply freeze
+                if (overviewActiveCurve >= 0) {
+                    // Overview mode: update hold state
+                    // Track per-fader state by index (faderIdx is 1-based)
+                    if (touched) {
+                        overviewTouchHeld = true;
+                    } else {
+                        // Check if this release clears all touches
+                        // We use a simple "any active" flag; re-evaluate on each release
+                        // by checking if any other touch event was queued or is known active
+                        // For simplicity, we clear hold on any release event and rely on
+                        // subsequent touch events to set it again if needed
+                        overviewTouchHeld = false;
+                    }
+                } else if (cfg.midi_controller_freeze_by_touch && faderIdx >= 1 && faderIdx <= 5) {
+                    // Amplitude mode: treat as FADER_TOUCH for freeze-by-touch
+                    int idx = faderIdx - 1;
+                    faderTouched[idx] = touched;
+                    bool anyTouched = false;
+                    for (int i = 0; i < 5; i++) { if (faderTouched[i]) { anyTouched = true; break; } }
+                    if (anyTouched && !freezeByTouchActive) {
+                        freezeByTouchActive = true;
+                        if (analyzer.getState() == PlaybackState::PLAYING) analyzer.freeze();
+                    } else if (!anyTouched && freezeByTouchActive) {
+                        freezeByTouchActive = false;
+                        if (analyzer.getState() == PlaybackState::FROZEN) analyzer.play();
+                    }
+                }
+            }
+        }
+        
+        // Check if overview needs a refresh from continuous sweep
+        if (overviewActiveCurve >= 0 && overviewRefreshPending.exchange(false)) {
+            std::vector<MeasurementPoint> snapshot;
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                snapshot = latestPts;
+            }
+            sendOverviewFaderValues(snapshot);
+        }
+        
         // Apply debounced volume changes (only after fader stops moving)
         applyDebouncedVolumes();
+        
+        // Apply debounced settings save (prevents disk I/O flood when holding +/- keys)
+        if (pendingSettingsSave) {
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - lastSettingsChangeTime).count();
+            if (elapsed >= SETTINGS_SAVE_DEBOUNCE_MS) {
+                pendingSettingsSave = false;
+                saveSettings();
+            }
+        }
         
         // Send periodic motor fader feedback during playback or frozen state
         if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback) {
             PlaybackState currentState = analyzer.getState();
             
-            if (currentState == PlaybackState::PLAYING) {
-                size_t curPos = analyzer.getPosition();
-                if (curPos != lastMidiFeedbackPos) {
-                    lastMidiFeedbackPos = curPos;
-                    size_t dataSize = analyzer.getDataSize();
-                    if (dataSize > 1) {
-                        // Send curve value feedback for enabled curves only
+            if (overviewActiveCurve < 0) {
+                // Normal (non-overview) mode: update amplitude faders and master volume
+                if (currentState == PlaybackState::PLAYING) {
+                    size_t curPos = analyzer.getPosition();
+                    if (curPos != lastMidiFeedbackPos) {
+                        lastMidiFeedbackPos = curPos;
+                        size_t dataSize = analyzer.getDataSize();
+                        if (dataSize > 1) {
+                            const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
+                            if (pt) {
+                                sendCurveFaderValues(*pt);
+                            }
+                        }
+                    }
+                } else if (currentState == PlaybackState::FROZEN) {
+                    size_t curPos = analyzer.getPosition();
+                    if (curPos != lastMidiFeedbackPos) {
+                        lastMidiFeedbackPos = curPos;
                         const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
                         if (pt) {
                             sendCurveFaderValues(*pt);
                         }
                     }
                 }
-            } else if (currentState == PlaybackState::FROZEN) {
-                // In freeze mode: if position changed (user moved playhead), update faders
-                size_t curPos = analyzer.getPosition();
-                if (curPos != lastMidiFeedbackPos) {
-                    lastMidiFeedbackPos = curPos;
-                    const MeasurementPoint* pt = analyzer.getCurrentMeasurement();
-                    if (pt) {
-                        sendCurveFaderValues(*pt);
-                    }
-                }
             }
+            // In overview mode: amplitude faders and master volume fader are suppressed (handled below)
         }
         
-        // In freeze mode: snap faders back to frozen positions
+        // In freeze mode (non-overview): snap amplitude faders back to frozen positions
         if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback &&
+            overviewActiveCurve < 0 &&
             analyzer.getState() == PlaybackState::FROZEN) {
             // Send frozen positions back for all active faders to override any user movement
             for (int i = 0; i < 5; i++) {
@@ -3724,6 +4201,18 @@ void ConsoleUI::runAcousticAnalysis(const std::vector<MeasurementPoint>& pts, Na
                     midiControllerMgr->sendCurveValueFeedback(i, frozenFaderValues[i] / 127.0);
                 }
             }
+        }
+        
+        // In overview mode: snap overview faders back to overview positions (suppresses user movement)
+        if (midiControllerMgr && midiControllerMgr->isDeviceOpen() && cfg.midi_controller_feedback &&
+            overviewActiveCurve >= 0 && !overviewTouchHeld) {
+            // Re-send the last computed overview values to override any accidental user movement
+            std::vector<MeasurementPoint> snapshot;
+            {
+                std::lock_guard<std::mutex> lock(dataMutex);
+                snapshot = latestPts;
+            }
+            sendOverviewFaderValues(snapshot);
         }
         
         // Small sleep to prevent busy waiting
@@ -5249,6 +5738,7 @@ bool ConsoleUI::runInvertedLoopGapConfigurationScreen(AcousticAnalyzer* analyzer
 // ----------------------------------------------------------------------------
 
 bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer) {
+    static const char* algoNames[] = {"MEDIAN", "MAX", "P95", "HYBRID"};
     clearScreen();
     print(formatHeading(translation.get("MIDI_CTRL_CONFIG_TITLE", "MIDI Controller Configuration")));
     
@@ -5265,7 +5755,29 @@ bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer)
     print(translation.format("MIDI_CTRL_CONFIG_FEEDBACK", "Motor fader feedback: {0}", 
         cfg.midi_controller_feedback ? "ON" : "OFF") + "\n");
     print(translation.format("MIDI_CTRL_CONFIG_FREEZE_TOUCH", "Freeze by touch: {0}", 
-        cfg.midi_controller_freeze_by_touch ? "ON" : "OFF") + "\n\n");
+        cfg.midi_controller_freeze_by_touch ? "ON" : "OFF") + "\n");
+    
+    // Show current overview algorithm with description
+    {
+        static const char* algoKeys[] = {
+            "MIDI_CTRL_ALGO_MEDIAN_DESC",
+            "MIDI_CTRL_ALGO_MAX_DESC",
+            "MIDI_CTRL_ALGO_P95_DESC",
+            "MIDI_CTRL_ALGO_HYBRID_DESC"
+        };
+        static const char* algoFallbacks[] = {
+            "MEDIAN - middle value per bucket; ignores outliers, smooth overall shape",
+            "MAX - peak value per bucket; highlights worst-case / highest point",
+            "P95 - 95th percentile; shows near-peaks, suppresses single spikes",
+            "HYBRID - median normally; switches to peak when a spike is detected"
+        };
+        int algo = cfg.midi_controller_overview_algorithm;
+        if (algo < 0 || algo > 3) algo = 0;
+        print(translation.format("MIDI_CTRL_CONFIG_OVERVIEW_ALGO", "Overview algorithm: {0}",
+            std::string(algoNames[algo])) + "\n");
+        print("    " + translation.get(algoKeys[algo], algoFallbacks[algo]) + "\n");
+    }
+    print("\n");
     
     print(translation.get("MIDI_CTRL_CONFIG_COMMANDS", "Commands:") + "\n");
     print(translation.get("MIDI_CTRL_CONFIG_TOGGLE_CMD", "  E - Enable/Disable MIDI controller") + "\n");
@@ -5274,6 +5786,11 @@ bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer)
     print(translation.get("MIDI_CTRL_CONFIG_MAPPING_CMD", "  M - Edit Mappings") + "\n");
     print(translation.get("MIDI_CTRL_CONFIG_FEEDBACK_CMD", "  F - Toggle motor Fader feedback") + "\n");
     print(translation.get("MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD", "  T - Toggle freeze by Touch") + "\n");
+    print(translation.get("MIDI_CTRL_CONFIG_OVERVIEW_ALGO_CMD", "  O - Cycle overview algorithm") + "\n");
+    print(translation.get("MIDI_CTRL_ALGO_MEDIAN_OPT", "      MEDIAN: middle value, smooth shape") + "\n");
+    print(translation.get("MIDI_CTRL_ALGO_MAX_OPT",    "      MAX:    peak value, worst-case") + "\n");
+    print(translation.get("MIDI_CTRL_ALGO_P95_OPT",    "      P95:    near-peak, suppresses single spikes") + "\n");
+    print(translation.get("MIDI_CTRL_ALGO_HYBRID_OPT", "      HYBRID: median normally, peak on spike") + "\n");
     print(translation.get("MIDI_CTRL_CONFIG_SAVE_CMD", "  S - Save current mapping as new preset") + "\n");
     print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
     
@@ -5397,6 +5914,16 @@ bool ConsoleUI::runMidiControllerConfigurationScreen(AcousticAnalyzer* analyzer)
                 print("\n" + translation.format("MIDI_CTRL_FREEZE_TOUCH_TOGGLED", "[Freeze by touch: {0}]", 
                     cfg.midi_controller_freeze_by_touch ? "ON" : "OFF") + "\n");
                 saveSettings();
+                break;
+                
+            case 'o':  // Cycle overview downsampling algorithm
+                {
+                    cfg.midi_controller_overview_algorithm = (cfg.midi_controller_overview_algorithm + 1) % 4;
+                    print("\n" + translation.format("MIDI_CTRL_OVERVIEW_ALGO_TOGGLED",
+                        "[Overview algorithm: {0}]",
+                        std::string(algoNames[cfg.midi_controller_overview_algorithm])) + "\n");
+                    saveSettings();
+                }
                 break;
                 
             case 's':  // Save preset
@@ -5717,6 +6244,9 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
     } else {
         print(translation.get("AUDIO_CONFIG_PREVIEW_SYNTH_CMD", "  P - Preview current Synthesizer configuration") + "\n");
     }
+    
+    // Range / Window configuration (Pflichtenheft §2, §3, §4)
+    print(translation.get("MENU_WINDOW_CMD", "  B - Configure Range / Autoscale") + "\n");
     
     print(translation.get("HELP_COMMAND", "  H - Help") + "\n");
     print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
@@ -6587,6 +7117,167 @@ bool ConsoleUI::runAudioConfigurationScreen(AcousticAnalyzer* analyzer) {
                             }
                         } else {
                             print("\n" + translation.get("ERROR_NO_ANALYZER", "[Error: Audio analyzer not available]") + "\n");
+                        }
+                    }
+                    break;
+                
+                case 'b':  // Range / Autoscale Configuration (Pflichtenheft §2, §3, §4)
+                    {
+                        clearScreen();
+                        print(formatHeading(translation.get("MENU_WINDOW_TITLE", "Range / Autoscale Configuration")));
+                        
+                        // Show current settings
+                        CurveRange rlRange = CurveTransform::resolveRLRange(cfg.rl_preset, cfg.rl_custom_range);
+                        CurveRange swrRange = CurveTransform::resolveSWRRange(cfg.swr_preset, cfg.swr_custom_range);
+                        std::string rlPresetName = (cfg.rl_preset == RLPreset::RL_0_10) ? "0-10 dB" :
+                                                   (cfg.rl_preset == RLPreset::RL_0_30) ? "0-30 dB" :
+                                                   (cfg.rl_preset == RLPreset::RL_0_60) ? "0-60 dB" : "Custom";
+                        std::string swrPresetName = (cfg.swr_preset == SWRPreset::SWR_1_3) ? "1-3" :
+                                                    (cfg.swr_preset == SWRPreset::SWR_1_10) ? "1-10" :
+                                                    (cfg.swr_preset == SWRPreset::SWR_1_20) ? "1-20" : "Custom";
+                        
+                        print(translation.format("MENU_WINDOW_CURRENT_RL", "Current RL Range: {0} - {1} dB ({2})",
+                            rlRange.min, rlRange.max, rlPresetName) + "\n");
+                        print(translation.format("MENU_WINDOW_CURRENT_SWR", "Current SWR Range: {0} - {1} ({2})",
+                            swrRange.min, swrRange.max, swrPresetName) + "\n");
+                        print(std::string("  ") + translation.get("MENU_RL_INVERT", "RL inverted") + ": " + (cfg.rl_inverted ? "ON" : "OFF") + "\n");
+                        print(std::string("  ") + translation.get("MENU_AUTOSCALE", "Autoscale") + ": " + (cfg.autoscale_enabled ? "ON" : "OFF") + "\n\n");
+                        
+                        print(translation.get("MENU_WINDOW_RL_PRESET", "  1 - RL Range preset") + "\n");
+                        print(translation.get("MENU_WINDOW_SWR_PRESET", "  2 - SWR Range preset") + "\n");
+                        print(translation.get("MENU_WINDOW_RL_CUSTOM", "  3 - RL Custom Range (min/max)") + "\n");
+                        print(translation.get("MENU_WINDOW_SWR_CUSTOM", "  4 - SWR Custom Range (min/max)") + "\n");
+                        print(translation.get("MENU_WINDOW_RL_INVERT_TOGGLE", "  I - Toggle RL inversion") + "\n");
+                        print(translation.get("MENU_WINDOW_AUTOSCALE_TOGGLE", "  A - Toggle Autoscale") + "\n");
+                        print(translation.get("BACK_ESC", "  ESC - Back") + "\n\n");
+                        
+                        bool windowRunning = true;
+                        while (windowRunning) {
+                            if (!consoleInput->kbhit()) {
+                                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                                continue;
+                            }
+                            int wch = consoleInput->getch();
+                            if (wch == 0 || wch == 224) {
+                                if (consoleInput->kbhit()) consoleInput->getch();
+                                continue;
+                            }
+                            char wkey = static_cast<char>(wch);
+                            if (wkey >= 'A' && wkey <= 'Z') wkey = wkey - 'A' + 'a';
+                            
+                            switch (wkey) {
+                                case '1': {  // RL Range preset cycle
+                                    int p = static_cast<int>(cfg.rl_preset);
+                                    p = (p + 1) % 3;  // Cycle through 0, 1, 2 (not Custom)
+                                    cfg.rl_preset = static_cast<RLPreset>(p);
+                                    CurveRange r = CurveTransform::resolveRLRange(cfg.rl_preset, cfg.rl_custom_range);
+                                    {
+                                        std::ostringstream rloss;
+                                        rloss << "  RL Preset: " << std::fixed << std::setprecision(0) << r.min << "-" << r.max << " dB\n";
+                                        print(rloss.str());
+                                    }
+                                    if (analyzer) {
+                                        analyzer->setRLPreset(cfg.rl_preset);
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case '2': {  // SWR Range preset cycle
+                                    int p = static_cast<int>(cfg.swr_preset);
+                                    p = (p + 1) % 3;  // Cycle through 0, 1, 2 (not Custom)
+                                    cfg.swr_preset = static_cast<SWRPreset>(p);
+                                    CurveRange r = CurveTransform::resolveSWRRange(cfg.swr_preset, cfg.swr_custom_range);
+                                    {
+                                        std::ostringstream swross;
+                                        swross << "  SWR Preset: " << std::fixed << std::setprecision(1) << r.min << "-" << r.max << "\n";
+                                        print(swross.str());
+                                    }
+                                    if (analyzer) {
+                                        analyzer->setSWRPreset(cfg.swr_preset);
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case '3': {  // RL Custom Range
+                                    cfg.rl_preset = RLPreset::CUSTOM;
+                                    print(translation.get("MENU_WINDOW_ENTER_MIN", "Enter minimum value:") + " ");
+                                    std::string minStr;
+                                    readLine(minStr);
+                                    print(translation.get("MENU_WINDOW_ENTER_MAX", "Enter maximum value:") + " ");
+                                    std::string maxStr;
+                                    readLine(maxStr);
+                                    try {
+                                        double minVal = std::stod(minStr);
+                                        double maxVal = std::stod(maxStr);
+                                        if (maxVal <= minVal) {
+                                            print(translation.get("ERR_MAX_LESS_THAN_MIN", "Error: Maximum must be greater than minimum.") + "\n");
+                                            cfg.rl_preset = RLPreset::RL_0_30;
+                                        } else {
+                                            cfg.rl_custom_range = {std::max(0.0, minVal), maxVal};  // RL min clamp 0
+                                            if (analyzer) {
+                                                analyzer->setRLPreset(cfg.rl_preset);
+                                                analyzer->setRLCustomRange(cfg.rl_custom_range);
+                                            }
+                                        }
+                                    } catch (...) {
+                                        print(translation.get("ERR_INVALID_INPUT", "Invalid input. Resetting to preset default.") + "\n");
+                                        cfg.rl_preset = RLPreset::RL_0_30;
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case '4': {  // SWR Custom Range
+                                    cfg.swr_preset = SWRPreset::CUSTOM;
+                                    print(translation.get("MENU_WINDOW_ENTER_MIN", "Enter minimum value:") + " ");
+                                    std::string minStr;
+                                    readLine(minStr);
+                                    print(translation.get("MENU_WINDOW_ENTER_MAX", "Enter maximum value:") + " ");
+                                    std::string maxStr;
+                                    readLine(maxStr);
+                                    try {
+                                        double minVal = std::stod(minStr);
+                                        double maxVal = std::stod(maxStr);
+                                        if (maxVal <= minVal) {
+                                            print(translation.get("ERR_MAX_LESS_THAN_MIN", "Error: Maximum must be greater than minimum.") + "\n");
+                                            cfg.swr_preset = SWRPreset::SWR_1_10;
+                                        } else {
+                                            cfg.swr_custom_range = {std::max(1.0, minVal), maxVal};  // SWR min clamp 1
+                                            if (analyzer) {
+                                                analyzer->setSWRPreset(cfg.swr_preset);
+                                                analyzer->setSWRCustomRange(cfg.swr_custom_range);
+                                            }
+                                        }
+                                    } catch (...) {
+                                        print(translation.get("ERR_INVALID_INPUT", "Invalid input. Resetting to preset default.") + "\n");
+                                        cfg.swr_preset = SWRPreset::SWR_1_10;
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case 'i': {  // Toggle RL inversion
+                                    cfg.rl_inverted = !cfg.rl_inverted;
+                                    print(std::string("  ") + translation.get("MENU_RL_INVERT", "RL inverted") + ": " + (cfg.rl_inverted ? "ON" : "OFF") + "\n");
+                                    if (analyzer) {
+                                        analyzer->setRLInverted(cfg.rl_inverted);
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case 'a': {  // Toggle Autoscale
+                                    cfg.autoscale_enabled = !cfg.autoscale_enabled;
+                                    print(std::string("  ") + translation.get("MENU_AUTOSCALE", "Autoscale") + ": " + (cfg.autoscale_enabled ? "ON" : "OFF") + "\n");
+                                    if (analyzer) {
+                                        analyzer->setAutoscaleEnabled(cfg.autoscale_enabled);
+                                    }
+                                    saveSettings();
+                                    break;
+                                }
+                                case 27:  // ESC
+                                    windowRunning = false;
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                     break;
@@ -9507,8 +10198,12 @@ void ConsoleUI::goToMenuAcoustic(AcousticAnalyzer& analyzer, const std::vector<M
 }
 
 // Helper function for Braille curve selection UI
-bool ConsoleUI::selectBrailleCurves(bool curveFlags[5]) {
-    print(formatHeading("Braille Export - Curve Selection"));
+bool ConsoleUI::selectBrailleCurves(bool curveFlags[5], const std::string& contextTitle) {
+    if (!contextTitle.empty()) {
+        print(formatHeading(contextTitle));
+    } else {
+        print(formatHeading(translation.get("BRAILLE_EXPORT_CURVE_HEADING", "Braille Export - Curve Selection")));
+    }
     print(translation.get("BRAILLE_SELECT_CURVES", "Select curves to include in Braille graphics:") + "\n");
     print("  1. SWR (Standing Wave Ratio)\n");
     print("  2. Return Loss\n");

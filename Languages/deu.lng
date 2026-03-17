@@ -111,9 +111,18 @@ CUSTOMIZE_UPDATED=Spalten aktualisiert.
 EXPORT_LOOP_RANGE=Exportiere Loop Range (Marker {0} bis {1})
 EXPORT_INVALID_LOOP=Ungültiger Loop Range, exportiere alle Daten
 EXPORT_ALL_DATA=Exportiere alle Messdaten
-EXPORT_FORMAT=Export Format: (1) CSV, (2) TXT, (3) Braille Datei, (4) Direkt an Braille Drucker drucken, (andere) abbrechen
+EXPORT_FORMAT=Export Format: (1) CSV, (2) TXT, (3) Braille Datei, (4) Direkt an Braille Drucker drucken, (5) Akustik-Kurven als Bild, (6) Braille-Vorschau als Bild, (andere) abbrechen
 EXPORT_SUCCESS=Exportiert nach: {0}
 EXPORT_FAILED=Export fehlgeschlagen: {0}
+
+# Bitmap Export
+BITMAP_ACOUSTIC_TITLE=Akustik-Kurven als Bild exportieren
+BITMAP_ACOUSTIC_SUCCESS=Akustik-Kurvenbild exportiert nach: {0}
+BITMAP_ACOUSTIC_FAILED=Akustik-Bild-Export fehlgeschlagen: {0}
+BITMAP_BRAILLE_TITLE=Braille-Vorschau als Bild exportieren
+BITMAP_BRAILLE_SUCCESS=Braille-Vorschaubild exportiert nach: {0}
+BITMAP_BRAILLE_FAILED=Braille-Vorschau-Export fehlgeschlagen: {0}
+BITMAP_IMAGE_SIZE=Bildgröße: {0} x {1} Pixel
 
 # Braille Drucker
 BRAILLE_NO_PRINTERS=Keine Drucker auf diesem System gefunden.
@@ -1413,6 +1422,17 @@ MIDI_CTRL_CONFIG_PRESET_CMD=  P - Mapping-Preset laden
 MIDI_CTRL_CONFIG_MAPPING_CMD=  M - Mappings bearbeiten
 MIDI_CTRL_CONFIG_FEEDBACK_CMD=  F - Motor-Fader Rückmeldung umschalten
 MIDI_CTRL_CONFIG_FREEZE_TOUCH_CMD=  T - Einfrieren durch Berührung umschalten
+MIDI_CTRL_CONFIG_OVERVIEW_ALGO_CMD=  O - Übersichts-Algorithmus wechseln
+MIDI_CTRL_CONFIG_OVERVIEW_ALGO=Übersichts-Algorithmus: {0}
+MIDI_CTRL_OVERVIEW_ALGO_TOGGLED=[Übersichts-Algorithmus: {0}]
+MIDI_CTRL_ALGO_MEDIAN_DESC=Mittelwert pro Abschnitt — ignoriert Ausreißer, zeigt die Gesamtform gleichmäßig
+MIDI_CTRL_ALGO_MAX_DESC=Spitzenwert pro Abschnitt — hebt den schlechtesten/höchsten Punkt jedes Bereichs hervor
+MIDI_CTRL_ALGO_P95_DESC=95. Perzentil pro Abschnitt — zeigt Beinahespitzen, unterdrückt einzelne Ausreißer
+MIDI_CTRL_ALGO_HYBRID_DESC=Normalerweise Median; wechselt zum Spitzenwert wenn ein markanter Spike erkannt wird
+MIDI_CTRL_ALGO_MEDIAN_OPT=      MEDIAN: Mittelwert, gleichmäßige Gesamtform
+MIDI_CTRL_ALGO_MAX_OPT=      MAX:    Spitzenwert, schlechtester Punkt je Abschnitt
+MIDI_CTRL_ALGO_P95_OPT=      P95:    Beinahespitze, unterdrückt einzelne Ausreißer
+MIDI_CTRL_ALGO_HYBRID_OPT=      HYBRID: Median normal, Spitzenwert bei Spike
 MIDI_CTRL_CONFIG_SAVE_CMD=  S - Aktuelle Mappings in Datei speichern
 MIDI_CTRL_TOGGLED=[MIDI Controller: {0}]
 MIDI_CTRL_SCANNING=[Suche nach MIDI Eingabegeräten...]
@@ -1435,6 +1455,8 @@ MIDI_CTRL_FREEZE_TOUCH_TOGGLED=[Einfrieren durch Berührung: {0}]
 MIDI_CTRL_SAVE_FILENAME=Dateiname eingeben (ohne .cfg):
 MIDI_CTRL_PRESET_SAVED=[Preset gespeichert: {0}]
 MIDI_CTRL_SAVE_FAILED=[Preset konnte nicht gespeichert werden]
+MIDI_OVERVIEW_ACTIVATED=[Übersicht: {0}]
+MIDI_OVERVIEW_DEACTIVATED=[Übersicht: aus]
 
 # MIDI Mapping Editor
 MIDI_MAPPING_TITLE=MIDI Mapping Editor
@@ -1881,3 +1903,31 @@ REACTANCE_FX_HELP_SCALING=  Skalierungskurven:
 REACTANCE_FX_HELP_PLATFORM_MIDI=  Plattform-Hinweise (MIDI):\n  Windows (GS Wavetable): Unterstützt Reverb (CC 91), Chorus (CC 93), Modulation (CC 1).\n    Begrenzter Effektbereich. Reverb und Modulation sind am wirksamsten.\n  macOS (DLS Synth): Volle GM-Effektunterstützung. Alle CC-Parameter funktionieren gut.\n    Effekte waren zuvor für saubere Ausgabe deaktiviert - jetzt nur auf Reaktanz-Kanal aktiviert.\n  Linux (FluidSynth/TiMidity): Abhängig vom Soundfont. Die meisten Effekte werden unterstützt.
 REACTANCE_FX_HELP_PLATFORM_SYNTH=  Plattform-Hinweise (Synthesizer):\n  Alle DSP-Effekte funktionieren identisch auf Windows (WaveOut), macOS (PortAudio)\n  und Linux (PortAudio). Keine Plattform-Einschränkungen für native DSP-Verarbeitung.
 REACTANCE_FX_BACK=\n[Zurück zur Audio-Konfiguration...]
+
+# Statuszeilen-Labels (Pflichtenheft §7)
+STATUS_REACTANCE_LABEL=X
+STATUS_INDUCTIVE=induktiv
+STATUS_CAPACITIVE=kapazitiv
+
+# Bereich/Autoskalierung Menü (Pflichtenheft §2, §3, §4)
+MENU_WINDOW_TITLE=Bereich / Autoskalierung Konfiguration
+MENU_RL_RANGE=RL-Bereich
+MENU_SWR_RANGE=SWR-Bereich
+MENU_RL_INVERT=RL invertiert
+MENU_AUTOSCALE=Autoskalierung
+MENU_PRESET=Preset
+MENU_CUSTOM=Benutzerdefiniert
+MENU_WINDOW_CMD=  B - Bereich / Autoskalierung konfigurieren
+MENU_WINDOW_RL_PRESET=  1 - RL-Bereich Preset
+MENU_WINDOW_SWR_PRESET=  2 - SWR-Bereich Preset
+MENU_WINDOW_RL_INVERT_TOGGLE=  I - RL-Invertierung umschalten
+MENU_WINDOW_AUTOSCALE_TOGGLE=  A - Autoskalierung umschalten
+MENU_WINDOW_RL_CUSTOM=  3 - RL Benutzerdefinierter Bereich (Min/Max)
+MENU_WINDOW_SWR_CUSTOM=  4 - SWR Benutzerdefinierter Bereich (Min/Max)
+MENU_WINDOW_CURRENT_RL=Aktueller RL-Bereich: {0} - {1} dB ({2})
+MENU_WINDOW_CURRENT_SWR=Aktueller SWR-Bereich: {0} - {1} ({2})
+MENU_WINDOW_ENTER_MIN=Minimalwert eingeben:
+MENU_WINDOW_ENTER_MAX=Maximalwert eingeben:
+ERR_MAX_LESS_THAN_MIN=Fehler: Maximum muss größer als Minimum sein. Bitte erneut eingeben.
+ERR_INVALID_INPUT=Ungültige Eingabe. Setze auf Preset-Standard zurück.
+ERR_BRAILLE_NO_AUDIO=Audio-Wiedergabe erforderlich für Braille-Export - bitte zuerst Wiedergabe starten.

@@ -57,6 +57,13 @@ bool SynthesizerEngine::onInitialize() {
     return true;
 }
 
+void SynthesizerEngine::releaseBackend() {
+    if (backend) {
+        backend->shutdown();
+        backend.reset();
+    }
+}
+
 void SynthesizerEngine::generateAudio(
     std::vector<int16_t>& buffer,
     int samples,

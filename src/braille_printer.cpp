@@ -294,6 +294,49 @@ bool BraillePrinter::generateBrailleData(const std::vector<MeasurementPoint>& pt
 #endif
 }
 
+// Overload with pre-selected audio indices (Pflichtenheft §9)
+bool BraillePrinter::generateBrailleData(const std::vector<MeasurementPoint>& pts,
+                                        const std::vector<size_t>& audioIndices,
+                                        uint64_t startFreq, uint64_t endFreq, uint64_t step,
+                                        const bool curveFlags[5],
+                                        const AppConfig& config,
+                                        std::vector<char>& data,
+                                        std::string& err) {
+    // Pflichtenheft §9 + RÜCKFRAGE OPTION B: No fallback, export requires audio indices
+    if (audioIndices.empty()) {
+        err = "Audio playback required for Braille export - no audio indices available";
+        if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
+        return false;
+    }
+    
+    // Build a reduced dataset using only the audio-selected indices
+    std::vector<MeasurementPoint> selectedPts;
+    selectedPts.reserve(audioIndices.size());
+    for (size_t idx : audioIndices) {
+        if (idx < pts.size()) {
+            selectedPts.push_back(pts[idx]);
+        }
+    }
+    
+    if (selectedPts.empty()) {
+        err = "No valid points from audio indices";
+        if (logger) logger->log("BRAILLE_PRINTER", "ERROR: " + err);
+        return false;
+    }
+    
+    if (logger) {
+        std::ostringstream oss;
+        oss << "Generating Braille data from " << audioIndices.size() << " audio-selected indices "
+            << "(out of " << pts.size() << " total points)";
+        logger->log("BRAILLE_PRINTER", oss.str());
+    }
+    
+    // Delegate to the standard generation with the pre-selected points
+    // The existing V5/V4 generators will handle these points directly
+    // (they may further downsample if needed, but the starting set matches audio)
+    return generateBrailleData(selectedPts, startFreq, endFreq, step, curveFlags, config, data, err);
+}
+
 #if defined(_WIN32)
 bool BraillePrinter::generateV5Data(const std::vector<MeasurementPoint>& pts,
                                    uint64_t startFreq, uint64_t endFreq, uint64_t step,
@@ -730,56 +773,52 @@ bool BraillePrinter::generateV5Data(const std::vector<MeasurementPoint>& pts,
             logger->log("BRAILLE_PRINTER", oss2.str());
         }
         
-        // IMPROVED PATTERN APPLICATION: Generate uniform-density path first, then apply pattern
-        // This ensures consistent gaps and dashes regardless of curve direction changes
-        
-        // Step 1: Generate a uniform-density path along the curve
-        // Resample the curve at minSpacing intervals for uniform point distribution
+        // UNIFORM PATH GENERATION: Resample the polyline at exact minSpacing intervals
+        // This ensures consistent dot density for the braille embosser along the entire curve,
+        // regardless of how the original data points or LTTB-selected points are distributed.
+        // The pattern (dash/dot/gap) is then applied on top of this uniform point sequence.
         std::vector<std::pair<double, double>> uniformPath;
         
         if (decimatedCoords.size() > 1) {
-            // Add first point
+            // Always include the first point
             uniformPath.push_back(decimatedCoords[0]);
             
-            // Walk along the curve, adding points at uniform spacing
-            double accumulatedDist = 0.0;
-            size_t currentSegment = 0;
+            // Walk along the polyline, placing points at exact minSpacing intervals.
+            // residualDist tracks the arc-length distance from the last placed point
+            // to the end of the previous segment, so the next point is placed at
+            // (minSpacing - residualDist) into the current segment.
+            double residualDist = 0.0;
             
-            while (currentSegment < decimatedCoords.size() - 1) {
-                double x1 = decimatedCoords[currentSegment].first;
-                double y1 = decimatedCoords[currentSegment].second;
-                double x2 = decimatedCoords[currentSegment + 1].first;
-                double y2 = decimatedCoords[currentSegment + 1].second;
+            for (size_t seg = 0; seg < decimatedCoords.size() - 1; seg++) {
+                double x1 = decimatedCoords[seg].first;
+                double y1 = decimatedCoords[seg].second;
+                double x2 = decimatedCoords[seg + 1].first;
+                double y2 = decimatedCoords[seg + 1].second;
                 
                 double dx = x2 - x1;
                 double dy = y2 - y1;
-                double segmentLength = std::sqrt(dx * dx + dy * dy);
+                double segLen = std::sqrt(dx * dx + dy * dy);
+                if (segLen < 1e-9) continue; // skip degenerate segments
                 
-                // Calculate how many uniform points fit in this segment
-                double remainingInSegment = segmentLength;
-                double distanceToNext = minSpacing - (accumulatedDist);
+                // Place points along this segment at uniform spacing
+                double nextPointDist = minSpacing - residualDist;
                 
-                while (distanceToNext < remainingInSegment) {
-                    // Add a point at uniform spacing
-                    double t = distanceToNext / segmentLength;
-                    double newX = x1 + t * dx;
-                    double newY = y1 + t * dy;
-                    uniformPath.push_back({newX, newY});
-                    
-                    remainingInSegment -= minSpacing;
-                    distanceToNext += minSpacing;
-                    accumulatedDist = 0.0;
+                while (nextPointDist <= segLen) {
+                    double t = nextPointDist / segLen;
+                    uniformPath.push_back({x1 + t * dx, y1 + t * dy});
+                    nextPointDist += minSpacing;
                 }
                 
-                accumulatedDist = segmentLength - (distanceToNext - minSpacing);
-                currentSegment++;
+                // Distance from last placed point to end of this segment
+                residualDist = segLen - (nextPointDist - minSpacing);
             }
             
-            // Always add the last point
+            // Always include the last point
+            const auto& lastPt = decimatedCoords.back();
             if (uniformPath.empty() || 
-                (uniformPath.back().first != decimatedCoords.back().first || 
-                 uniformPath.back().second != decimatedCoords.back().second)) {
-                uniformPath.push_back(decimatedCoords.back());
+                std::abs(uniformPath.back().first - lastPt.first) > 1e-6 || 
+                std::abs(uniformPath.back().second - lastPt.second) > 1e-6) {
+                uniformPath.push_back(lastPt);
             }
         } else if (decimatedCoords.size() == 1) {
             uniformPath = decimatedCoords;

@@ -1,0 +1,210 @@
+# Ham Spirit Easter Egg - Deutsche Übersetzung
+# Diese Datei enthält Übersetzungen speziell für das Ham Spirit Spiel
+
+# Spielaktivierung
+HAMSPIRIT_ACTIVATING=Ham Spirit wird aktiviert...
+HAMSPIRIT_WELCOME=Willkommen bei Ham Spirit!
+HAMSPIRIT_LOADING=Spielwelt wird geladen...
+
+# Story Einführung
+HAMSPIRIT_INTRO_1=Du bist der Ham Spirit, ein positiver Funkspruch, der auf allen Amateurfunkbändern gesendet werden möchte.
+HAMSPIRIT_INTRO_2=Doch als Funkspruch stehst du vor Hindernissen, die nur mit geschicktem Einsatz von Mess- und Regeltechnik überwunden werden können.
+HAMSPIRIT_INTRO_3=Nutze deinen Antennentuner, Anpassnetzwerke und die Morsekanone, um deine Reise zu vollenden.
+
+# Steuerung
+HAMSPIRIT_CONTROLS_TITLE=Spielsteuerung
+HAMSPIRIT_CONTROLS_MOVEMENT=Linker Analogstick: Links/Rechts lenken und Geschwindigkeit anpassen
+HAMSPIRIT_CONTROLS_TUNER_L=L1/L2: Induktivität verringern/erhöhen
+HAMSPIRIT_CONTROLS_TUNER_C=R1/R2: Kapazität verringern/erhöhen
+HAMSPIRIT_CONTROLS_UNUN=Steuerkreuz hoch/runter: UnUn Impedanzverhältnis anpassen
+HAMSPIRIT_CONTROLS_MORSE_STRAIGHT=Untere runde Taste: Morsekanone (Vertikaltaste)
+HAMSPIRIT_CONTROLS_MORSE_PADDLE=Linke/Rechte runde Tasten: Paddle (dit/dah)
+HAMSPIRIT_CONTROLS_AIM=Rechter Analogstick: Morsekanone ausrichten
+HAMSPIRIT_CONTROLS_PAUSE=Start-Taste: Spiel pausieren
+HAMSPIRIT_CONTROLS_SKIP=Beliebige Taste zum Überspringen
+
+# Tastatur Ausweichlösung
+HAMSPIRIT_KB_MOVEMENT=Pfeiltasten: Lenken
+HAMSPIRIT_KB_SPEED=Bild auf/ab: Geschwindigkeit
+HAMSPIRIT_KB_TUNER_L=Q/W: Induktivität
+HAMSPIRIT_KB_TUNER_C=E/R: Kapazität
+HAMSPIRIT_KB_UNUN=A/S: UnUn Verhältnis
+HAMSPIRIT_KB_MORSE=Leertaste: Morsekanone
+HAMSPIRIT_KB_AIM=I/J/K/L: Ausrichten
+HAMSPIRIT_KB_PAUSE=P: Pause
+
+# Spielmechanik
+HAMSPIRIT_TRACK_SELECT=Wähle Messkurve für Strecke
+HAMSPIRIT_SWR_WARNING=Warnung: Hohes SWR erkannt!
+HAMSPIRIT_PA_DAMAGE=Endstufe nimmt Schaden!
+HAMSPIRIT_PA_FAILED=Spiel vorbei: Endstufe defekt!
+HAMSPIRIT_MATCHED=Perfekte Anpassung! 50 Ohm Resonanz erreicht.
+HAMSPIRIT_RESONANCE=Antenne auf Resonanz abgestimmt!
+
+# Morsesystem
+HAMSPIRIT_MORSE_DETECTED=Morsezeichen erkannt
+HAMSPIRIT_MORSE_AHEAD=Antenne voreilt - sende nächstes Zeichen
+HAMSPIRIT_MORSE_BEHIND=Antenne nacheilt - sende vorheriges Zeichen
+HAMSPIRIT_MORSE_COLLECTED=Zeichen eingesammelt!
+HAMSPIRIT_MORSE_BONUS=HAMSPIRIT Bonus komplett!
+
+# Menü
+HAMSPIRIT_MENU_TITLE=Ham Spirit - Pausenmenü
+HAMSPIRIT_MENU_RESUME=Fortsetzen
+HAMSPIRIT_MENU_CONFIG=Konfiguration
+HAMSPIRIT_MENU_RESTART=Neustart
+HAMSPIRIT_MENU_EXIT=Zurück zum Akustischen Analysator
+
+# Konfiguration
+HAMSPIRIT_CFG_TRACK_CURVE=Streckenkurve: {0}
+HAMSPIRIT_CFG_DATA_SOURCE=Datenquelle: {0}
+HAMSPIRIT_CFG_AUDIO_MODE=Audiomodus: {0}
+HAMSPIRIT_CFG_DIFFICULTY=Schwierigkeit: {0}
+
+# Statusmeldungen
+HAMSPIRIT_STATUS_SWR=SWR: {0}
+HAMSPIRIT_STATUS_SPEED=Geschwindigkeit: {0}%
+HAMSPIRIT_STATUS_SCORE=Punkte: {0}
+HAMSPIRIT_STATUS_COLLECTED=Gesammelt: {0}/{1}
+
+# Neue Ergänzungen für erweiterten Spiel-Ende-Bildschirm
+HAMSPIRIT_GAME_OVER=Spiel beendet!
+HAMSPIRIT_COMPLETED=Mission erfolgreich abgeschlossen!
+HAMSPIRIT_STATS_TITLE=Spiel-Statistiken
+HAMSPIRIT_STATS_SCORE=Endpunktzahl: {0} Punkte
+HAMSPIRIT_STATS_TIME=Spielzeit: {0} Minuten und {1} Sekunden
+HAMSPIRIT_STATS_LAPS=Runden abgeschlossen: {0}
+HAMSPIRIT_STATS_CHARS=Morsezeichen gesammelt: {0}
+HAMSPIRIT_STATS_AVG_SWR=Durchschnittliches SWR: {0}
+HAMSPIRIT_STATS_PA_HEALTH=Endstufen-Zustand: {0} Prozent
+HAMSPIRIT_BONUS_ACHIEVED=HAMSPIRIT Bonus erreicht!
+HAMSPIRIT_THANKS=Vielen Dank fürs Spielen von Ham Spirit!
+HAMSPIRIT_PLAY_AGAIN=Noch mal spielen? Taste A zum Neustart, Taste B für Hauptmenü.
+HAMSPIRIT_LAP_COMPLETE=Runde geschafft!
+HAMSPIRIT_INTRO_START=Mach dich bereit! Das Spiel beginnt jetzt. Viel Glück!
+
+# Tuner Status Ansagen
+HAMSPIRIT_TUNER_STATUS=L: {0} Mikrohenry, C: {1} Pikofarad, UnUn: {2} zu 1, SWR: {3}
+HAMSPIRIT_TUNER_L=L: {0} Mikrohenry
+HAMSPIRIT_TUNER_C=C: {0} Pikofarad
+HAMSPIRIT_TUNER_UNUN=UnUn {0} zu 1
+HAMSPIRIT_BUMPER=Limit erreicht
+HAMSPIRIT_ALL_CURVES=Alle Kurven
+
+# Bandquerung Ansagen
+HAMSPIRIT_BAND_ENTER=Willkommen im {0} Band!
+HAMSPIRIT_BAND_LEAVE=Sie verlassen jetzt das {0} Band.
+
+# Geschwindigkeitsanzeige
+HAMSPIRIT_STATUS_SPEED_KHZ=Geschwindigkeit: {0} Kilohertz pro Sekunde
+
+# Randkollision
+HAMSPIRIT_BORDER_WARNING=Warnung: Streckenrand nähert sich!
+HAMSPIRIT_BORDER_CRASH=Crash! Aufprall auf die Streckenbegrenzung!
+HAMSPIRIT_BORDER_SCRAPE=Kontakt mit der Streckenbegrenzung!
+
+# QSO Störer
+HAMSPIRIT_QSO_STOERER_DETECTED=Intruder Monitoring: QSO Störer erkannt!
+HAMSPIRIT_QSO_STOERER_HIT=Störer getroffen!
+HAMSPIRIT_QSO_STOERER_COLLISION=QSO Störer Zusammenstoß!
+HAMSPIRIT_QSO_STOERER_DRIVING_ERROR=Störer macht einen Fahrfehler!
+HAMSPIRIT_QSO_STOERER_99=99! QSO Störer verabschiedet sich. 73!
+
+# Konfiguration
+HAMSPIRIT_CFG_INTRUDER_MONITORING=Intruder Monitoring: {0}
+HAMSPIRIT_CFG_BORDER_WARNING=Streckenbegrenzungs-Warnung: {0}
+
+# Konfigurationsnavigation
+HAMSPIRIT_CONFIG_BACK=Zurück
+
+# Braille Beschriftungen
+HAMSPIRIT_BRL_SPEED=GES
+HAMSPIRIT_BRL_SWR=SWR
+HAMSPIRIT_BRL_PA=PA
+HAMSPIRIT_BRL_SCORE=PK
+HAMSPIRIT_BRL_LAP=RD
+HAMSPIRIT_BRL_FREQ=FRQ
+HAMSPIRIT_BRL_TUNER=TNR
+
+# Kurvenankündigung
+HAMSPIRIT_CFG_CURVE_ANNOUNCEMENT=Kurvenankündigung: {0}
+HAMSPIRIT_CFG_CURVE_DISTANCE=Kurven-Vorwarndistanz: {0} kHz
+
+# Controller Layout Dialog
+HAMSPIRIT_CONTROLLER_LAYOUT_INFO=Controller Belegung. Benutze D-Pad hoch und runter um die Aktionen und ihre zugewiesenen Tasten zu durchsuchen. Das Controller Layout verwendet die Standard Xbox Belegung und ist aktuell nicht umprogrammierbar. Drücke B zum Zurückkehren.
+
+# Power-Up System
+HAMSPIRIT_POWERUP_SPEED_BOOST=Geschwindigkeitsboost aktiviert!
+HAMSPIRIT_POWERUP_FIRE_RATE=Feuerrate erhöht!
+HAMSPIRIT_POWERUP_AUTO_FIRE=Automatisches Feuer aktiviert!
+HAMSPIRIT_POWERUP_SWR_IMMUNITY=SWR Immunität aktiviert! Endstufe geschützt.
+HAMSPIRIT_POWERUP_DURATION_EXTEND=Power-up Dauer permanent erhöht auf {0} Sekunden!
+HAMSPIRIT_POWERUP_SPEED_EXPIRED=Geschwindigkeitsboost abgelaufen.
+HAMSPIRIT_POWERUP_FIRE_RATE_EXPIRED=Feuerrate normalisiert.
+HAMSPIRIT_POWERUP_AUTO_FIRE_EXPIRED=Automatisches Feuer deaktiviert.
+HAMSPIRIT_POWERUP_SWR_IMMUNITY_EXPIRED=SWR Immunität abgelaufen.
+HAMSPIRIT_POWERUP_EXPIRES_SOON={0} läuft in 5 Sekunden ab.
+HAMSPIRIT_POWERUP_EXPLOSION=Power-up Explosion! {0} Prozent Schaden!
+HAMSPIRIT_POWERUP_EXPLODED=Power-up explodiert!
+HAMSPIRIT_POWERUP_ZONE=Power-up Zone erkannt!
+
+# Spielmodus-Auswahl
+HAMSPIRIT_GAMEMODE_TITLE=Spielmodus
+HAMSPIRIT_GAMEMODE_SINGLE=Einzelspieler
+HAMSPIRIT_GAMEMODE_MULTI=Mehrspieler
+HAMSPIRIT_GAMEMODE_PROMPT=Spielmodus. Benutze Hoch und Runter zur Auswahl, dann bestätigen.
+
+# Hauptmenü
+HAMSPIRIT_MAINMENU_NEWGAME=Neues Spiel
+HAMSPIRIT_MAINMENU_TUTORIAL=Anleitung
+HAMSPIRIT_MAINMENU_SPEAKER_TEST=Lautsprechertest
+HAMSPIRIT_MAINMENU_LEARN_SOUNDS=Klänge lernen
+HAMSPIRIT_MAINMENU_CONFIG=Konfiguration
+HAMSPIRIT_MAINMENU_EXIT=Beenden
+
+# Konfigurations-Kategorien
+HAMSPIRIT_CFG_CAT_CONTROLS=Steuerung
+HAMSPIRIT_CFG_CAT_AUDIO=Audio & Lautstärke
+HAMSPIRIT_CFG_CAT_ACCESSIBILITY=Barrierefreiheit
+HAMSPIRIT_CFG_CAT_GAMEPLAY=Spielelemente
+HAMSPIRIT_CFG_CAT_BRAILLE=Braillezeile
+HAMSPIRIT_CFG_CAT_STATUS=Statusanzeige
+HAMSPIRIT_CFG_CAT_KEYS=Tastenbelegung
+
+# Braille-Konfiguration
+HAMSPIRIT_CFG_BRAILLE_ENABLED=Braillezeile: {0}
+HAMSPIRIT_CFG_BRAILLE_SPEED=Geschwindigkeit anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_FREQ=Frequenz anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_SWR=SWR anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_PA=PA-Zustand anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_SCORE=Punktestand anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_LAP=Runde anzeigen: {0}
+HAMSPIRIT_CFG_BRAILLE_TUNER=Tuner anzeigen: {0}
+
+# An/Aus Beschriftungen
+HAMSPIRIT_ON=An
+HAMSPIRIT_OFF=Aus
+
+# Mehrspieler-Einrichtung
+HAMSPIRIT_MP_SELECT_PLAYERS=Wähle die Anzahl der Spieler.
+HAMSPIRIT_MP_PLAYERS=Spieler
+HAMSPIRIT_MP_PLAYER=Spieler
+HAMSPIRIT_MP_PLAYER_COUNT_TITLE=Mehrspieler — Spieleranzahl
+HAMSPIRIT_MP_SCREEN_SPLIT=Bildschirmaufteilung.
+HAMSPIRIT_MP_HORIZONTAL=Horizontal, nebeneinander
+HAMSPIRIT_MP_VERTICAL=Vertikal, übereinander
+HAMSPIRIT_MP_SPLIT_TITLE=Mehrspieler — Bildschirmaufteilung
+HAMSPIRIT_MP_SELECT_INPUT=Eingabegerät wählen.
+HAMSPIRIT_MP_INPUT=Eingabe
+HAMSPIRIT_MP_SELECT_CONTROLLER=Controller-Profil wählen für
+HAMSPIRIT_MP_CONTROLLER_PROFILE=Controller-Profil
+HAMSPIRIT_MP_SELECT_AUDIO=Audioausgang wählen für
+HAMSPIRIT_MP_AUDIO_OUTPUT=Audioausgang
+
+# Eingabegerät-Auswahl
+HAMSPIRIT_SELECT_INPUT_TITLE=Eingabegerät für Spieler 1 wählen.
+HAMSPIRIT_INPUT_KEYBOARD=Tastatur
+HAMSPIRIT_INPUT_TITLE=Eingabegerät
+
+# Bestenliste
+HAMSPIRIT_MENU_LEADERBOARD=Bestenliste

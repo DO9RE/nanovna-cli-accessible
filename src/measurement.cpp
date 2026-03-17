@@ -161,11 +161,16 @@ std::vector<MeasurementPoint> MeasurementModule::parseDeviceData(const std::stri
         
         // Calculate additional derived values
         mp.impedance_mag = std::sqrt(mp.R * mp.R + mp.X * mp.X);
+        // Clamp |Z| to prevent exponential notation in outputs
+        if (mp.impedance_mag > 99999.0) mp.impedance_mag = 99999.0;
         if (mathLogger && mathLogger->isEnabled()) {
             mathLogger->logMagnitudeCalculation(mp.R, mp.X, mp.impedance_mag, "|Z| from R and X");
         }
         
         mp.phase_deg = std::atan2(g.im, g.re) * (180.0 / M_PI);
+        // Phase is inherently bounded by atan2 to [-180, 180], but enforce for safety
+        if (mp.phase_deg < -180.0) mp.phase_deg = -180.0;
+        if (mp.phase_deg > 180.0) mp.phase_deg = 180.0;
         if (mathLogger && mathLogger->isEnabled()) {
             mathLogger->logPhaseCalculation(g.im, g.re, mp.phase_deg, "S11 phase");
         }

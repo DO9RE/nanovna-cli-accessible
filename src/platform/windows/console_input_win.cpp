@@ -48,6 +48,9 @@ public:
         
         // Handle extended key prefix (224 or 0)
         if (ch == 224 || ch == 0) {
+            if (!_kbhit()) {
+                return KEY_UNKNOWN;
+            }
             int ext = _getch();
             
             // Map Windows extended key codes to LogicalKey

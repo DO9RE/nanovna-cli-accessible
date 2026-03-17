@@ -35,7 +35,7 @@ private:
         struct timeval tv;
         fd_set rdfs;
         tv.tv_sec = 0;
-        tv.tv_usec = 100000;  // 100ms timeout for escape sequences
+        tv.tv_usec = 30000;  // 30ms timeout for escape sequences (reduced from 100ms for lower input latency)
         
         FD_ZERO(&rdfs);
         FD_SET(STDIN_FILENO, &rdfs);

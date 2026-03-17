@@ -1,0 +1,176 @@
+# Ham Spirit Easter Egg - English Translation
+# This file contains translations specific to the Ham Spirit game
+
+# Game activation
+HAMSPIRIT_ACTIVATING=Activating Ham Spirit...
+HAMSPIRIT_WELCOME=Welcome to Ham Spirit!
+HAMSPIRIT_LOADING=Loading game world...
+
+# Story intro
+HAMSPIRIT_INTRO_1=You are the Ham Spirit, a positive radio signal seeking to travel across all amateur radio bands.
+HAMSPIRIT_INTRO_2=But as a signal, you face obstacles that can only be overcome with proper measurement and tuning techniques.
+HAMSPIRIT_INTRO_3=Use your antenna tuner, matching networks, and morse cannon to complete your journey.
+
+# Controls
+HAMSPIRIT_CONTROLS_TITLE=Game Controls
+HAMSPIRIT_CONTROLS_MOVEMENT=Left analog stick: Steer left/right and adjust speed
+HAMSPIRIT_CONTROLS_TUNER_L=L1/L2: Decrease/Increase inductance
+HAMSPIRIT_CONTROLS_TUNER_C=R1/R2: Decrease/Increase capacitance
+HAMSPIRIT_CONTROLS_UNUN=D-pad up/down: Adjust UnUn impedance ratio
+HAMSPIRIT_CONTROLS_MORSE_STRAIGHT=Bottom round button: Morse cannon (straight key)
+HAMSPIRIT_CONTROLS_MORSE_PADDLE=Left/Right round buttons: Paddle (dit/dah)
+HAMSPIRIT_CONTROLS_AIM=Right analog stick: Aim morse cannon
+HAMSPIRIT_CONTROLS_PAUSE=Start button: Pause game
+HAMSPIRIT_CONTROLS_SKIP=Press any button to skip
+
+# Keyboard fallback
+HAMSPIRIT_KB_MOVEMENT=Arrow keys: Steer
+HAMSPIRIT_KB_SPEED=PgUp/PgDn: Speed
+HAMSPIRIT_KB_TUNER_L=Q/W: Inductance
+HAMSPIRIT_KB_TUNER_C=E/R: Capacitance
+HAMSPIRIT_KB_UNUN=A/S: UnUn ratio
+HAMSPIRIT_KB_MORSE=Space: Morse cannon
+HAMSPIRIT_KB_AIM=I/J/K/L: Aim
+HAMSPIRIT_KB_PAUSE=P: Pause
+
+# Game mechanics
+HAMSPIRIT_TRACK_SELECT=Select measurement curve for track
+HAMSPIRIT_SWR_WARNING=Warning: High SWR detected!
+HAMSPIRIT_PA_DAMAGE=Power amplifier taking damage!
+HAMSPIRIT_PA_FAILED=Game Over: Power amplifier failed!
+HAMSPIRIT_MATCHED=Perfect match! 50 Ohms resonance achieved.
+HAMSPIRIT_RESONANCE=Antenna tuned to resonance!
+
+# Morse system
+HAMSPIRIT_MORSE_DETECTED=Morse signal detected
+HAMSPIRIT_MORSE_AHEAD=Antenna ahead - send next character
+HAMSPIRIT_MORSE_BEHIND=Antenna behind - send previous character
+HAMSPIRIT_MORSE_COLLECTED=Character collected!
+HAMSPIRIT_MORSE_BONUS=HAMSPIRIT bonus complete!
+
+# Menu
+HAMSPIRIT_MENU_TITLE=Ham Spirit - Pause Menu
+HAMSPIRIT_MENU_RESUME=Resume
+HAMSPIRIT_MENU_CONFIG=Configuration
+HAMSPIRIT_MENU_RESTART=Restart
+HAMSPIRIT_MENU_EXIT=Exit to Acoustic Analyzer
+
+# Configuration
+HAMSPIRIT_CFG_TRACK_CURVE=Track curve: {0}
+HAMSPIRIT_CFG_DATA_SOURCE=Data source: {0}
+HAMSPIRIT_CFG_AUDIO_MODE=Audio mode: {0}
+HAMSPIRIT_CFG_DIFFICULTY=Difficulty: {0}
+
+# Status messages
+HAMSPIRIT_STATUS_SWR=SWR: {0}
+HAMSPIRIT_STATUS_SPEED=Speed: {0}%
+HAMSPIRIT_STATUS_SCORE=Score: {0}
+HAMSPIRIT_STATUS_COLLECTED=Collected: {0}/{1}
+
+# New additions for enhanced game over screen
+HAMSPIRIT_GAME_OVER=Game Over!
+HAMSPIRIT_COMPLETED=Mission completed!
+HAMSPIRIT_STATS_TITLE=Game Statistics
+HAMSPIRIT_STATS_SCORE=Final score: {0} points
+HAMSPIRIT_STATS_TIME=Time played: {0} minutes and {1} seconds
+HAMSPIRIT_STATS_LAPS=Laps completed: {0}
+HAMSPIRIT_STATS_CHARS=Morse characters collected: {0}
+HAMSPIRIT_STATS_AVG_SWR=Average SWR: {0}
+HAMSPIRIT_STATS_PA_HEALTH=Final PA health: {0} percent
+HAMSPIRIT_BONUS_ACHIEVED=HAMSPIRIT bonus achieved!
+HAMSPIRIT_THANKS=Thank you for playing Ham Spirit!
+HAMSPIRIT_PLAY_AGAIN=Play again? Press any key to replay, or Escape to exit.
+HAMSPIRIT_LAP_COMPLETE=Lap complete!
+HAMSPIRIT_INTRO_START=Get ready! The game starts now. Good luck!
+
+# Tuner status announcements
+HAMSPIRIT_TUNER_STATUS=L: {0} microhenry, C: {1} picofarad, UnUn: {2} to 1, SWR: {3}
+HAMSPIRIT_TUNER_L=L: {0} microhenry
+HAMSPIRIT_TUNER_C=C: {0} picofarad
+HAMSPIRIT_TUNER_UNUN=UnUn {0} to 1
+HAMSPIRIT_BUMPER=Limit reached
+HAMSPIRIT_ALL_CURVES=All Curves
+
+# Band crossing announcements
+HAMSPIRIT_BAND_ENTER=Welcome to the {0} band!
+HAMSPIRIT_BAND_LEAVE=You are now leaving the {0} band.
+
+# Speed display
+HAMSPIRIT_STATUS_SPEED_KHZ=Speed: {0} kHz per second
+
+# Border collision  
+HAMSPIRIT_BORDER_WARNING=Warning: Approaching track edge!
+HAMSPIRIT_BORDER_CRASH=Crash! You hit the barrier!
+HAMSPIRIT_BORDER_SCRAPE=Scraping along the barrier!
+
+# QSO Störer
+HAMSPIRIT_QSO_STOERER_DETECTED=Intruder Monitoring: QSO interferer detected ahead!
+HAMSPIRIT_QSO_STOERER_HIT=Interferer hit!
+HAMSPIRIT_QSO_STOERER_COLLISION=QSO interferer collision!
+HAMSPIRIT_QSO_STOERER_DRIVING_ERROR=Interferer driving error!
+HAMSPIRIT_QSO_STOERER_99=99! QSO interferer signs off. 73!
+
+# Config
+HAMSPIRIT_CFG_INTRUDER_MONITORING=Intruder Monitoring: {0}
+HAMSPIRIT_CFG_BORDER_WARNING=Border Warning: {0}
+
+# Config navigation
+HAMSPIRIT_CONFIG_BACK=Back
+
+# Game mode selection
+HAMSPIRIT_GAMEMODE_TITLE=Game Mode
+HAMSPIRIT_GAMEMODE_SINGLE=Singleplayer
+HAMSPIRIT_GAMEMODE_MULTI=Multiplayer
+HAMSPIRIT_GAMEMODE_PROMPT=Game mode. Use up and down to select, then confirm.
+
+# Main menu
+HAMSPIRIT_MAINMENU_NEWGAME=New Game
+HAMSPIRIT_MAINMENU_TUTORIAL=Tutorial
+HAMSPIRIT_MAINMENU_SPEAKER_TEST=Speaker Test
+HAMSPIRIT_MAINMENU_LEARN_SOUNDS=Learn Sounds
+HAMSPIRIT_MAINMENU_CONFIG=Configuration
+HAMSPIRIT_MAINMENU_EXIT=Exit
+
+# Config category names
+HAMSPIRIT_CFG_CAT_CONTROLS=Controls
+HAMSPIRIT_CFG_CAT_AUDIO=Audio & Volume
+HAMSPIRIT_CFG_CAT_ACCESSIBILITY=Accessibility
+HAMSPIRIT_CFG_CAT_GAMEPLAY=Game Elements
+HAMSPIRIT_CFG_CAT_BRAILLE=Braille Display
+HAMSPIRIT_CFG_CAT_STATUS=Status Readout
+HAMSPIRIT_CFG_CAT_KEYS=Key Mapping
+
+# Braille config
+HAMSPIRIT_CFG_BRAILLE_ENABLED=Braille Display: {0}
+HAMSPIRIT_CFG_BRAILLE_SPEED=Show Speed: {0}
+HAMSPIRIT_CFG_BRAILLE_FREQ=Show Frequency: {0}
+HAMSPIRIT_CFG_BRAILLE_SWR=Show SWR: {0}
+HAMSPIRIT_CFG_BRAILLE_PA=Show PA Health: {0}
+HAMSPIRIT_CFG_BRAILLE_SCORE=Show Score: {0}
+HAMSPIRIT_CFG_BRAILLE_LAP=Show Lap: {0}
+HAMSPIRIT_CFG_BRAILLE_TUNER=Show Tuner: {0}
+
+# On/Off labels
+HAMSPIRIT_ON=On
+HAMSPIRIT_OFF=Off
+
+# Multiplayer setup
+HAMSPIRIT_MP_SELECT_PLAYERS=Select number of players.
+HAMSPIRIT_MP_PLAYERS=Players
+HAMSPIRIT_MP_PLAYER=Player
+HAMSPIRIT_MP_PLAYER_COUNT_TITLE=Multiplayer — Player Count
+HAMSPIRIT_MP_SCREEN_SPLIT=Screen split.
+HAMSPIRIT_MP_HORIZONTAL=Horizontal, side by side
+HAMSPIRIT_MP_VERTICAL=Vertical, top and bottom
+HAMSPIRIT_MP_SPLIT_TITLE=Multiplayer — Screen Split
+HAMSPIRIT_MP_SELECT_INPUT=Select input device.
+HAMSPIRIT_MP_INPUT=Input
+HAMSPIRIT_MP_SELECT_CONTROLLER=Select controller profile for
+HAMSPIRIT_MP_CONTROLLER_PROFILE=Controller Profile
+HAMSPIRIT_MP_SELECT_AUDIO=Select audio output for
+HAMSPIRIT_MP_AUDIO_OUTPUT=Audio Output
+
+# Input device selection
+HAMSPIRIT_SELECT_INPUT_TITLE=Select input device for Player 1.
+HAMSPIRIT_INPUT_KEYBOARD=Keyboard
+HAMSPIRIT_INPUT_TITLE=Input Device

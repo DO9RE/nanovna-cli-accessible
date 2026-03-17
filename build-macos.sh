@@ -17,6 +17,7 @@ echo ""
 # Parse command-line arguments
 USE_BUNDLED_PORTAUDIO=0
 SKIP_PORTAUDIO_PROMPT=0
+BUILD_MODE_FLAG=""
 
 show_help() {
     echo "Usage: ./build-macos.sh [OPTIONS]"
@@ -24,6 +25,8 @@ show_help() {
     echo "Options:"
     echo "  --bundled-portaudio    Download and use bundled static PortAudio (recommended for distribution)"
     echo "  --system-portaudio     Use system/Homebrew installed PortAudio"
+    echo "  --incremental          Reuse existing build directory (skip prompt)"
+    echo "  --full                 Clean rebuild from scratch (skip prompt)"
     echo "  --help                 Show this help message"
     echo ""
     echo "If no option is specified, you will be prompted to choose."
@@ -41,6 +44,14 @@ for arg in "$@"; do
         --system-portaudio)
             USE_BUNDLED_PORTAUDIO=0
             SKIP_PORTAUDIO_PROMPT=1
+            shift
+            ;;
+        --incremental)
+            BUILD_MODE_FLAG="incremental"
+            shift
+            ;;
+        --full)
+            BUILD_MODE_FLAG="full"
             shift
             ;;
         --help)
@@ -111,13 +122,48 @@ fi
 echo "      Done."
 echo ""
 
-# Check if build directory exists
-if [ -d "build" ]; then
-    echo "[1/7] Removing existing build directory..."
-    rm -rf build
-    echo "      Done."
+# Determine build mode: full or incremental
+FULL_REBUILD=1
+
+if [ -d "build" ] && { [ -f "build/Makefile" ] || [ -f "build/CMakeCache.txt" ]; }; then
+    if [ "$BUILD_MODE_FLAG" = "incremental" ]; then
+        FULL_REBUILD=0
+        echo "CLI flag: Incremental build (existing build directory preserved)."
+    elif [ "$BUILD_MODE_FLAG" = "full" ]; then
+        FULL_REBUILD=1
+        echo "CLI flag: Full rebuild requested."
+    else
+        echo "An existing build was found."
+        echo ""
+        echo "  1) Incremental build (only recompile changed files - faster)"
+        echo "  2) Full rebuild (clean build from scratch)"
+        echo ""
+        read -p "Select build mode (1 or 2) [default: 1]: " BUILD_MODE
+        
+        if [ -z "$BUILD_MODE" ] || [ "$BUILD_MODE" = "1" ]; then
+            FULL_REBUILD=0
+            echo ""
+            echo "Selected: Incremental build"
+        else
+            FULL_REBUILD=1
+            echo ""
+            echo "Selected: Full rebuild"
+        fi
+    fi
+    echo ""
+fi
+
+if [ $FULL_REBUILD -eq 1 ]; then
+    # Full rebuild: remove and recreate build directory
+    if [ -d "build" ]; then
+        echo "[1/7] Removing existing build directory..."
+        rm -rf build
+        echo "      Done."
+    else
+        echo "[1/7] No existing build directory found."
+    fi
 else
-    echo "[1/7] No existing build directory found."
+    echo "[1/7] Keeping existing build directory (incremental mode)."
 fi
 
 # Download and build bundled PortAudio if requested
@@ -284,13 +330,18 @@ else
     echo "[2/7] Skipping bundled PortAudio setup."
 fi
 
-# Create fresh build directory
-echo "[3/7] Creating fresh build directory..."
-mkdir build
+# Create build directory (or reuse existing for incremental)
+if [ $FULL_REBUILD -eq 1 ]; then
+    echo "[3/7] Creating fresh build directory..."
+    mkdir build
+else
+    echo "[3/7] Reusing existing build directory (incremental mode)..."
+    mkdir -p build
+fi
 cd build
 echo "      Done."
 
-# Run CMake
+# Run CMake (safe to re-run — CMake only reconfigures if needed)
 echo "[4/7] Running CMake..."
 CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
 
@@ -307,7 +358,11 @@ fi
 echo "      Done."
 
 # Run make with parallel builds for faster compilation
+# In incremental mode, make only recompiles changed .o files
 echo "[5/7] Building with make..."
+if [ $FULL_REBUILD -eq 0 ]; then
+    echo "      (incremental: only recompiling changed files)"
+fi
 # Detect number of CPU cores for parallel builds
 if command -v sysctl &> /dev/null; then
     CORES=$(sysctl -n hw.ncpu)
@@ -357,6 +412,11 @@ cp -r ../Training/README.md Training/ 2>/dev/null || echo "      Warning: No tra
 echo "      Copying MIDI preset files..."
 mkdir -p midi
 cp -r ../midi/*.cfg midi/ 2>/dev/null || echo "      Warning: No MIDI preset files found"
+
+# Copy image files (Ham Spirit wallpaper)
+echo "      Copying image files..."
+mkdir -p img
+cp -r ../img/*.PNG img/ 2>/dev/null || cp -r ../img/*.png img/ 2>/dev/null || echo "      Warning: No image files found"
 
 echo "      Done."
 

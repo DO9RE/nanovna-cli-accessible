@@ -1,6 +1,6 @@
 # nanoVNA-cli-accessible
 
-<!-- BUILD_VERSION --> **Build Version:** 0.6.2-beta (2026-02-16 07:55:47)
+<!-- BUILD_VERSION --> **Build Version:** 0.7.0-beta (2026-03-17 20:27:28)
 
 Accessible console application for controlling, measuring, and audibly visualizing the NanoVNA-H4.  
 
@@ -55,7 +55,7 @@ Transform measurements into interactive multi-channel audio:
 1. **SWR** - Sine wave / String Ensemble
 2. **Return Loss** - Pure sine / Drawbar Organ
 3. **Impedance |Z|** - Triangle wave / Church Organ
-4. **Reactance X** - Sawtooth / Violin (rising=inductive, falling=capacitive)
+4. **Reactance X** - Sawtooth / Violin (mapped as |X|; status line shows capacitive/inductive label)
 5. **Phase** - Sine / Synth Lead
 
 **Smith Diagram Visualization (NEW!):**
@@ -92,6 +92,13 @@ Experience impedance matching through 3D spatial audio:
 - Configurable dead zone, 8 effect types, 5 scaling curves
 - Separate settings for Gliding (sustained) and Dotted (percussive) modes
 
+**Configurable Range Presets (B key in Audio Config):**
+- RL (Return Loss) range presets: 0–10 dB, 0–30 dB (default), 0–60 dB, or Custom
+- SWR range presets: 1–3, 1–10 (default), 1–20, or Custom
+- RL inversion toggle (default: inverted/S11-style)
+- Robust autoscale using p0.5/p99.5 percentiles — auto-updates on each sweep
+- Custom range input with validation (min clamp, max > min check)
+
 ### 📊 Measurement & Data
 - S11 and S21 parameter support
 - Interactive frequency range configuration
@@ -111,6 +118,8 @@ Export acoustic analysis curves as tactile graphics for Index Braille printers:
   - Standard escape sequences: `ESC G` (enter graphics), `ESC E` (exit graphics), `0x1A` (end document)
   - Includes header with frequency range and curve information
   - **NEW: Direct printing** - Print directly to Windows printers without saving files
+  - **NEW: Audio-coupled downsampling** - Braille uses same LTTB indices as audio playback
+  - **NEW: Reactance zero-crossing markers** - Schmitt-trigger debounced X=0 markers (Dots 2+5) with configurable hysteresis
 - **Usage**: 
   - In acoustic mode, press **E** → select option **3** (save file) or **4** (direct print)
   - For direct print: Choose curves → Select printer from list → Print
@@ -141,8 +150,6 @@ Access the application from any browser on your local network:
 
 **Debugging:**
 - Comprehensive debug logging for troubleshooting
-- See WEB_INTERFACE_DEBUGGING.md for complete guide
-- German guide: WEB_INTERFACE_DEBUGGING_DE.md
 
 **Security Note:** Web interface is HTTP-only, intended for local network use only.
 
@@ -369,12 +376,13 @@ This is a cross-platform application with platform-specific backends:
 
 The current beta is available for multiple platforms:
 
-## Windows Version (v0.6.2-beta)
-**[📥 nanovna-cli-accessible-beta-windows-0.6.2-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.6.2-beta.zip)**
+## Windows Version (v0.7.0-beta)
+**[📥 nanovna-cli-accessible-beta-windows-0.7.0-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-windows-0.7.0-beta.zip)**
 
 ## macOS Version (v0.6.2-beta)
+> ⚠️ **Note:** This is an older version. Version 0.7.0-beta for macOS has not been built yet.
 **[📥 nanovna-cli-accessible-beta-macos-0.6.2-beta.zip](https://github.com/DO9RE/nanovna-cli-accessible/raw/refs/heads/main/nanovna-cli-accessible-beta-macos-0.6.2-beta.zip)**
 
 ## Linux Version
-> ⚠️ **Not yet available.** The Linux build for version 0.6.2-beta has not been created yet. Please check back later.
+> ⚠️ **Not yet available.** The Linux build for version 0.7.0-beta has not been created yet. Please check back later.
 <!-- BETA_DOWNLOADS_END -->

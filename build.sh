@@ -2,9 +2,24 @@
 #
 # Build script for nanovna-cli-accessible
 # This script automates the build process using CMake and MinGW
+# Supports incremental builds to save time when only some files changed
+#
+# Usage: ./build.sh [--incremental|--full]
+#   --incremental   Reuse existing build directory (skip prompt)
+#   --full          Clean rebuild from scratch (skip prompt)
+#   (no flag)       Prompt user if build directory exists
 #
 
 set -e  # Exit on error
+
+# Parse command-line arguments
+BUILD_MODE_FLAG=""
+for arg in "$@"; do
+    case $arg in
+        --incremental) BUILD_MODE_FLAG="incremental" ;;
+        --full)        BUILD_MODE_FLAG="full" ;;
+    esac
+done
 
 # Clear screen for better visibility
 clear
@@ -14,31 +29,88 @@ echo " NanoVNA CLI Accessible - Build Script"
 echo "=========================================="
 echo ""
 
-# Check if build directory exists
-if [ -d "build" ]; then
-    echo "[1/6] Removing existing build directory..."
-    rm -rf build
-    echo "      Done."
-else
-    echo "[1/6] No existing build directory found."
+# Determine build mode: full or incremental
+FULL_REBUILD=1
+
+# If a previous build exists, decide based on flag or ask the user
+if [ -d "build" ] && { [ -f "build/Makefile" ] || [ -f "build/CMakeCache.txt" ]; }; then
+    if [ "$BUILD_MODE_FLAG" = "incremental" ]; then
+        FULL_REBUILD=0
+        echo "CLI flag: Incremental build (existing build directory preserved)."
+    elif [ "$BUILD_MODE_FLAG" = "full" ]; then
+        FULL_REBUILD=1
+        echo "CLI flag: Full rebuild requested."
+    else
+        echo "An existing build was found."
+        echo ""
+        echo "  1) Incremental build (only recompile changed files - faster)"
+        echo "  2) Full rebuild (clean build from scratch)"
+        echo ""
+        read -p "Select build mode (1 or 2) [default: 1]: " BUILD_MODE
+        
+        if [ -z "$BUILD_MODE" ] || [ "$BUILD_MODE" = "1" ]; then
+            FULL_REBUILD=0
+            echo ""
+            echo "Selected: Incremental build"
+        else
+            FULL_REBUILD=1
+            echo ""
+            echo "Selected: Full rebuild"
+        fi
+    fi
+    echo ""
 fi
 
-# Create fresh build directory
-echo "[2/6] Creating fresh build directory..."
-mkdir build
-cd build
-echo "      Done."
+if [ $FULL_REBUILD -eq 1 ]; then
+    # Full rebuild: remove and recreate build directory
+    if [ -d "build" ]; then
+        echo "[1/6] Removing existing build directory..."
+        rm -rf build
+        echo "      Done."
+    else
+        echo "[1/6] No existing build directory found."
+    fi
+    
+    echo "[2/6] Creating fresh build directory..."
+    mkdir build
+    cd build
+    echo "      Done."
+else
+    # Incremental build: reuse existing build directory
+    echo "[1/6] Keeping existing build directory (incremental mode)."
+    echo "[2/6] Entering build directory..."
+    cd build
+    echo "      Done."
+fi
 
-# Run CMake
+# Run CMake (safe to re-run — CMake only reconfigures if needed)
 echo "[3/6] Running CMake..."
-if ! cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release; then
+BUILD_TYPE=${BUILD_TYPE:-Release}
+EXTRA_CMAKE_FLAGS=()
+if [[ "${BUILD_TYPE}" == "Debug" ]]; then
+    echo "Note: Debug flags assume GCC/Clang toolchain."
+    DEBUG_FLAGS="-g3 -O0 -fno-omit-frame-pointer"
+    EXTRA_CMAKE_FLAGS+=("-DCMAKE_CXX_FLAGS_DEBUG=${DEBUG_FLAGS}")
+    EXTRA_CMAKE_FLAGS+=("-DCMAKE_C_FLAGS_DEBUG=${DEBUG_FLAGS}")
+else
+    echo "Note: Set BUILD_TYPE=Debug to build a debug version."
+fi
+cmake_args=(-G "MinGW Makefiles" -DCMAKE_BUILD_TYPE="${BUILD_TYPE}")
+if [[ ${#EXTRA_CMAKE_FLAGS[@]} -gt 0 ]]; then
+    cmake_args+=("${EXTRA_CMAKE_FLAGS[@]}")
+fi
+if ! cmake .. "${cmake_args[@]}"; then
     echo "ERROR: CMake configuration failed!"
     exit 1
 fi
 echo "      Done."
 
 # Run make with parallel builds for faster compilation
+# In incremental mode, make only recompiles changed .o files
 echo "[4/6] Building with MinGW make..."
+if [ $FULL_REBUILD -eq 0 ]; then
+    echo "      (incremental: only recompiling changed files)"
+fi
 # Detect number of CPU cores for parallel builds
 if command -v nproc &> /dev/null; then
     CORES=$(nproc)
@@ -88,6 +160,11 @@ cp -r ../Training/README.md Training/ 2>/dev/null || echo "      Warning: No tra
 echo "      Copying MIDI preset files..."
 mkdir -p midi
 cp -r ../midi/*.cfg midi/ 2>/dev/null || echo "      Warning: No MIDI preset files found"
+
+# Copy image files (Ham Spirit wallpaper)
+echo "      Copying image files..."
+mkdir -p img
+cp -r ../img/*.PNG img/ 2>/dev/null || cp -r ../img/*.png img/ 2>/dev/null || echo "      Warning: No image files found"
 
 echo "      Done."
 

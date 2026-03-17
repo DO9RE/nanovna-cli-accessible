@@ -71,6 +71,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Option for bundled PortAudio on macOS
 option(USE_BUNDLED_PORTAUDIO "Use bundled static PortAudio library (macOS only)" OFF)
 
+# Ham Spirit Easter Egg is always enabled
+set(WITH_HAM_SPIRIT ON)
+
 # Detect platform
 if(WIN32)
     set(PLATFORM_NAME "Windows")
@@ -86,6 +89,18 @@ else()
 endif()
 
 message(STATUS "Building for platform: ${PLATFORM_NAME}")
+
+# Ham Spirit Easter Egg is always enabled
+add_definitions(-DWITH_HAM_SPIRIT)
+message(STATUS "Ham Spirit Easter Egg: ALWAYS ENABLED")
+
+# Optional: enable verbose TTS diagnostics on macOS (prints spawn/exit info to stderr)
+# Pass -DTTS_MACOS_DEBUG=ON to cmake to activate.
+option(TTS_MACOS_DEBUG "Enable verbose TTS spawn/exit logging on macOS" OFF)
+if(TTS_MACOS_DEBUG)
+    add_definitions(-DTTS_MACOS_DEBUG)
+    message(STATUS "macOS TTS debug logging: ENABLED")
+endif()
 
 # Static linking for Windows to avoid MinGW runtime dependencies
 if (WIN32 AND MINGW)
@@ -106,9 +121,18 @@ include_directories(${CMAKE_SOURCE_DIR}/src/platform/interface)
 # Collect core source files
 file(GLOB CORE_SOURCES "src/*.cpp")
 
+# Exclude platform-specific TTS implementations from core sources
+list(FILTER CORE_SOURCES EXCLUDE REGEX "tts_engine_.*\\.cpp$")
+
+# Ham Spirit game is always included (no conditional exclusion needed)
+
 # Collect platform-specific source files
 if(WIN32)
     file(GLOB PLATFORM_SOURCES "src/platform/windows/*.cpp")
+    # Add Windows-specific TTS implementation
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/windows/tts_engine_win.cpp")
+    # Add Windows-specific gamepad implementation (always included)
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/windows/gamepad_win.cpp")
 elseif(APPLE)
     # Use POSIX implementation for macOS
     file(GLOB PLATFORM_SOURCES "src/platform/posix/*.cpp")
@@ -116,6 +140,12 @@ elseif(APPLE)
     # Exclude console_input_mac.cpp as it's replaced by console_input_posix.cpp
     list(FILTER MACOS_SPECIFIC_SOURCES EXCLUDE REGEX "console_input_mac\\.cpp$")
     list(APPEND PLATFORM_SOURCES ${MACOS_SPECIFIC_SOURCES})
+    # Add macOS-specific TTS implementation (Objective-C++ for NSSpeechSynthesizer)
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/macos/tts_engine_macos.mm")
+    # Add macOS-specific gamepad implementation (always included)
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/macos/gamepad_macos.cpp")
+    # Add native macOS GUI for Ham Spirit (Objective-C++, AppKit/Cocoa)
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/macos/hamspirit_gui_macos.mm")
 elseif(UNIX)
     # Use POSIX implementation for Linux
     file(GLOB PLATFORM_SOURCES "src/platform/posix/*.cpp")
@@ -123,6 +153,10 @@ elseif(UNIX)
     # Exclude console_input_linux.cpp as it's replaced by console_input_posix.cpp
     list(FILTER LINUX_SPECIFIC_SOURCES EXCLUDE REGEX "console_input_linux\\.cpp$")
     list(APPEND PLATFORM_SOURCES ${LINUX_SPECIFIC_SOURCES})
+    # Add Linux-specific TTS implementation
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/linux/tts_engine_linux.cpp")
+    # Add Linux-specific gamepad implementation (always included)
+    list(APPEND PLATFORM_SOURCES "${CMAKE_SOURCE_DIR}/src/platform/linux/gamepad_linux.cpp")
 endif()
 
 set(ALL_SOURCES ${CORE_SOURCES} ${PLATFORM_SOURCES})
@@ -135,6 +169,10 @@ if (WIN32)
     target_link_libraries(nanovna-cli PRIVATE setupapi)
     target_link_libraries(nanovna-cli PRIVATE winspool)
     target_link_libraries(nanovna-cli PRIVATE ws2_32)
+    target_link_libraries(nanovna-cli PRIVATE ole32)
+    target_link_libraries(nanovna-cli PRIVATE urlmon)  # For URLDownloadToFile (NVDA controller client DLL download fallback)
+    target_link_libraries(nanovna-cli PRIVATE gdiplus)  # GDI+ for Ham Spirit wallpaper image rendering
+    target_link_libraries(nanovna-cli PRIVATE hid)     # HID API for PS4/PS5 controller support
     # Media Foundation libraries for MIDI to WAV rendering
     target_link_libraries(nanovna-cli PRIVATE mf)
     target_link_libraries(nanovna-cli PRIVATE mfplat)
@@ -186,6 +224,10 @@ elseif(APPLE)
     target_link_libraries(nanovna-cli PRIVATE "-framework CoreAudio")
     target_link_libraries(nanovna-cli PRIVATE "-framework AudioToolbox")
     target_link_libraries(nanovna-cli PRIVATE "-framework CoreMIDI")
+    # AppKit for native Ham Spirit GUI window (NSWindow + Core Graphics rendering)
+    target_link_libraries(nanovna-cli PRIVATE "-framework AppKit")
+    target_compile_definitions(nanovna-cli PRIVATE HAVE_NATIVE_GUI)
+    message(STATUS "Ham Spirit GUI: Native macOS (AppKit/Cocoa) — no third-party dependencies")
     
     # Additional frameworks needed for bundled static PortAudio
     if(USE_BUNDLED_PORTAUDIO)
@@ -223,9 +265,65 @@ elseif(UNIX)
     endif()
 endif()
 
+# SDL2 + SDL2_ttf for Linux GUI window (optional)
+# macOS uses native AppKit GUI (no third-party deps needed).
+# On Linux, provides a graphical window if SDL2 is installed.
+# Falls back to terminal-based ANSI GUI if not available.
+if(UNIX AND NOT APPLE)
+    find_package(PkgConfig QUIET)
+    set(SDL2_FOUND_COMBINED FALSE)
+    
+    # Try pkg-config first
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SDL2 QUIET sdl2)
+        pkg_check_modules(SDL2_TTF QUIET SDL2_ttf)
+    endif()
+    
+    # Fallback: manual library search
+    if(NOT SDL2_FOUND)
+        find_library(SDL2_LIBRARY SDL2 PATHS /usr/local/lib)
+        find_path(SDL2_INCLUDE_DIR SDL2/SDL.h PATHS /usr/local/include /usr/include)
+        if(SDL2_LIBRARY AND SDL2_INCLUDE_DIR)
+            set(SDL2_FOUND TRUE)
+            set(SDL2_LIBRARIES ${SDL2_LIBRARY})
+            set(SDL2_INCLUDE_DIRS ${SDL2_INCLUDE_DIR})
+        endif()
+    endif()
+    
+    if(NOT SDL2_TTF_FOUND)
+        find_library(SDL2_TTF_LIBRARY SDL2_ttf PATHS /usr/local/lib)
+        find_path(SDL2_TTF_INCLUDE_DIR SDL2/SDL_ttf.h PATHS /usr/local/include /usr/include)
+        if(SDL2_TTF_LIBRARY AND SDL2_TTF_INCLUDE_DIR)
+            set(SDL2_TTF_FOUND TRUE)
+            set(SDL2_TTF_LIBRARIES ${SDL2_TTF_LIBRARY})
+            set(SDL2_TTF_INCLUDE_DIRS ${SDL2_TTF_INCLUDE_DIR})
+        endif()
+    endif()
+    
+    if(SDL2_FOUND AND SDL2_TTF_FOUND)
+        message(STATUS "Found SDL2: ${SDL2_LIBRARIES}")
+        message(STATUS "Found SDL2_ttf: ${SDL2_TTF_LIBRARIES}")
+        target_include_directories(nanovna-cli PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+        target_link_libraries(nanovna-cli PRIVATE ${SDL2_LIBRARIES} ${SDL2_TTF_LIBRARIES})
+        target_compile_definitions(nanovna-cli PRIVATE HAVE_SDL2)
+        set(SDL2_FOUND_COMBINED TRUE)
+        message(STATUS "Ham Spirit GUI: SDL2 windowed mode (Linux)")
+    else()
+        message(STATUS "SDL2 or SDL2_ttf not found — Ham Spirit will use terminal-based GUI on Linux.")
+        message(STATUS "  Install via apt: sudo apt-get install libsdl2-dev libsdl2-ttf-dev")
+    endif()
+endif()
+
 # Copy midi preset directory to build output
 file(GLOB MIDI_PRESETS "${CMAKE_SOURCE_DIR}/midi/*.cfg")
 if(MIDI_PRESETS)
     file(COPY ${MIDI_PRESETS} DESTINATION "${CMAKE_BINARY_DIR}/midi")
     message(STATUS "Copied MIDI preset files to build directory")
+endif()
+
+# Copy Ham Spirit wallpaper images to build output
+file(GLOB HAMSPIRIT_IMAGES "${CMAKE_SOURCE_DIR}/img/*.PNG" "${CMAKE_SOURCE_DIR}/img/*.png")
+if(HAMSPIRIT_IMAGES)
+    file(COPY ${HAMSPIRIT_IMAGES} DESTINATION "${CMAKE_BINARY_DIR}/img")
+    message(STATUS "Copied Ham Spirit image files to build directory")
 endif()
